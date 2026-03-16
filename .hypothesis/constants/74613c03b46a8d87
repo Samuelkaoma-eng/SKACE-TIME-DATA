@@ -1,0 +1,4 @@
+# file: C:\Users\Samuel\Desktop\4th year\Final year project\SKACE-Time-Data\src\parsers\surveycto_parser.py
+# hypothesis_version: 6.151.9
+
+[1000, 'coerce', 'duration_ms', 'end', 'end_time', 'event', 'event_type', 'ms', 'node', 'question_name', 'start', 'start_time', 'unknown']
