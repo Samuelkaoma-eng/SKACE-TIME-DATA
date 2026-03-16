@@ -1,0 +1,4 @@
+file_name,interview_id,mean_response_time_ms,median_response_time_ms,variance_response_time_ms,entropy_response_time,total_duration_ms,pause_frequency,total_pause_duration_ms,backtrack_count,straightlining_count,rhythm_variance_mean,rhythm_variance_max,speed_index,is_anomalous
+paradata_sample.csv,INT_001_NORMAL,31366.666666666668,33000.0,92447126.43678162,2.784943972308736,941000.0,0,0.0,0,0,91365384.61538461,179500000.0,1.0,0
+paradata_sample.csv,INT_002_FAST,1966.6666666666667,2000.0,447126.4367816093,0.5432727813369008,59000.0,0,0.0,0,7,465384.6153846154,1000000.0,0.06269925611052073,0
+paradata_sample.csv,INT_003_SLOW,118281.25,101500.0,8820853830.64516,3.2551105127277413,3785000.0,0,0.0,1,0,9762746428.571428,50731000000.0,4.022316684378321,0
