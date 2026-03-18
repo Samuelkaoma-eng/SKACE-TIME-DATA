@@ -28,11 +28,11 @@ INT_2,q2,2023-10-01T09:00:02,2023-10-01T09:00:04,Question
     
     # Verify INT_1
     int1_features = next(f for f in features_list if f['interview_id'] == 'INT_1')
-    assert int1_features['total_duration_ms'] == 15000.0 # 10s + 5s
+    assert int1_features['total_duration'] == 15000.0 # 10s + 5s
     
     # Verify INT_2
     int2_features = next(f for f in features_list if f['interview_id'] == 'INT_2')
-    assert int2_features['total_duration_ms'] == 4000.0 # 2s + 2s
+    assert int2_features['total_duration'] == 4000.0 # 2s + 2s
     
     # INT_2 should show straightlining (default threshold is 1500ms or 2000ms, wait, default in navigation is 1500, but they are 2000ms. Actually duration is 2s max. Since threshold is 1500ms, it might be 0 straightlining if exactly 2000, wait, it's 2 seconds. Let's just check straightlining is a key and backtrack is 0)
     assert int1_features['backtrack_count'] == 0

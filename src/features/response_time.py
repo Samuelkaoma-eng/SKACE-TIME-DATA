@@ -18,47 +18,66 @@ def calculate_basic_timing(df: pd.DataFrame) -> dict:
     """
     if 'duration_ms' not in df.columns or df.empty:
         return {
-            'mean_response_time_ms': np.nan,
-            'median_response_time_ms': np.nan,
-            'variance_response_time_ms': np.nan,
-            'entropy_response_time': np.nan,
-            'total_duration_ms': np.nan
+            'mean_response_time': np.nan,
+            'median_response_time': np.nan,
+            'response_time_variance': np.nan,
+            'min_response_time': np.nan,
+            'max_response_time': np.nan,
+            'response_time_entropy': np.nan,
+            'response_time_skewness': np.nan,
+            'response_time_kurtosis': np.nan,
+            'total_duration': np.nan,
+            'uniform_speed_score': np.nan
         }
         
     durations = df['duration_ms'].dropna()
     
-    if durations.empty:
+    if len(durations) == 0:
         return {
-            'mean_response_time_ms': np.nan,
-            'median_response_time_ms': np.nan,
-            'variance_response_time_ms': np.nan,
-            'entropy_response_time': np.nan,
-            'total_duration_ms': np.nan
+            'mean_response_time': np.nan,
+            'median_response_time': np.nan,
+            'response_time_variance': np.nan,
+            'min_response_time': np.nan,
+            'max_response_time': np.nan,
+            'response_time_entropy': np.nan,
+            'response_time_skewness': np.nan,
+            'response_time_kurtosis': np.nan,
+            'total_duration': np.nan,
+            'uniform_speed_score': np.nan
         }
 
-    # Calculate Shannon entropy by binning response times
-    # This detects if responses are unnaturally identical (low entropy)
+    # Shannon entropy calculation
+    entropy = 0.0
     if len(durations) > 2:
-        # Bin into 1-second intervals up to the 95th percentile to handle outliers
         cap = durations.quantile(0.95)
-        if cap == 0 or np.isnan(cap):
-            entropy = 0.0
-        else:
+        if cap > 0 and not np.isnan(cap):
             bins = np.arange(0, cap + 1000, 1000)
             if len(bins) > 1:
                 hist, _ = np.histogram(durations, bins=bins)
                 entropy = float(stats.entropy(hist))
-            else:
-                entropy = 0.0
+
+    # Skewness and Kurtosis require sufficient variance and n > 3
+    variance = float(durations.var()) if len(durations) > 1 else 0.0
+    uniform_speed_score = float(durations.std()) if len(durations) > 1 else 0.0
+    
+    if variance < 1e-6:
+        skewness = 0.0 if len(durations) > 2 else np.nan
+        kurtosis = 0.0 if len(durations) > 3 else np.nan
     else:
-        entropy = 0.0
+        skewness = float(stats.skew(durations)) if len(durations) > 2 else np.nan
+        kurtosis = float(stats.kurtosis(durations)) if len(durations) > 3 else np.nan
 
     return {
-        'mean_response_time_ms': float(durations.mean()),
-        'median_response_time_ms': float(durations.median()),
-        'variance_response_time_ms': float(durations.var()) if len(durations) > 1 else 0.0,
-        'entropy_response_time': entropy,
-        'total_duration_ms': float(durations.sum())
+        'mean_response_time': float(durations.mean()),
+        'median_response_time': float(durations.median()),
+        'response_time_variance': variance,
+        'min_response_time': float(durations.min()),
+        'max_response_time': float(durations.max()),
+        'response_time_entropy': entropy,
+        'response_time_skewness': skewness,
+        'response_time_kurtosis': kurtosis,
+        'total_duration': float(durations.sum()),
+        'uniform_speed_score': uniform_speed_score
     }
 
 def calculate_speed_index(interview_duration: float, global_median_duration: float) -> float:
