@@ -8,9 +8,9 @@ def calculate_navigation_metrics(df: pd.DataFrame, straightline_threshold_ms: fl
     Parameters
     ----------
     df : pd.DataFrame
-        Standardized paradata DataFrame for a single interview.
+        Paradata DataFrame for a single interview.
     straightline_threshold_ms : float
-        Threshold for considering a response an element of straightlining (e.g. < 1.5s).
+        Threshold for considering a response an element of straightlining.
         
     Returns
     -------
@@ -19,28 +19,37 @@ def calculate_navigation_metrics(df: pd.DataFrame, straightline_threshold_ms: fl
     """
     if df.empty or 'event_type' not in df.columns:
         return {
-            'backtrack_count': 0,
-            'straightlining_count': 0
-        }
+        'backtrack_count': 0,
+        'forward_jump_count': 0,
+        'screen_revisit_rate': 0.0,
+        'straightlining_count': 0
+    }
     
-    # Identify backwards navigation if using ODK or explicitly marked events
-    # Or by tracking repeated node accesses.
-    
-    # Simplified approach for explicitly marked backwards events
-    # In some logs this might be 'jump backward', 'backward', etc.
     backtrack_keywords = ['backward', 'back', 'jump_backward']
+    forward_keywords = ['forward', 'skip', 'jump_forward']
     
-    is_backtrack = df['event_type'].astype(str).str.lower().isin(backtrack_keywords)
-    backtrack_count = int(is_backtrack.sum())
+    str_events = df['event_type'].astype(str).str.lower()
     
-    # For straightlining, we examine questions answered very quickly
+    backtrack_count = int(str_events.isin(backtrack_keywords).sum())
+    forward_count = int(str_events.isin(forward_keywords).sum())
+    
+    # Screen revisit rate: number of duplicate occurrences of the same question node normalized
+    revisit_rate = 0.0
+    if 'question_name' in df.columns:
+        valid_nodes = df['question_name'].dropna()
+        total_views = len(valid_nodes)
+        if total_views > 0:
+            duplicates = total_views - len(valid_nodes.unique())
+            revisit_rate = float(duplicates) / float(total_views)
+    
     straightlining_count = 0
     if 'duration_ms' in df.columns:
         valid_responses = df[df['duration_ms'] > 0]
-        # Number of responses below the straightlining threshold
         straightlining_count = int((valid_responses['duration_ms'] < straightline_threshold_ms).sum())
         
     return {
         'backtrack_count': backtrack_count,
+        'forward_jump_count': forward_count,
+        'screen_revisit_rate': revisit_rate,
         'straightlining_count': straightlining_count
     }

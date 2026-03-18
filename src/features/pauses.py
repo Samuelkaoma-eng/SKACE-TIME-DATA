@@ -3,20 +3,14 @@ import numpy as np
 
 def calculate_pauses(df: pd.DataFrame, pause_threshold_ms: float = 60000) -> dict:
     """
-    Calculate the frequency and total duration of pauses within an interview.
-    A pause can be detected in two ways depending on the survey tool:
-    1. Explicit 'pause' or 'resume' events.
-    2. Gaps between the end of one question and the start of the next 
-       that exceed a given threshold.
-       
-    This function primarily relies on finding gaps between consecutive events.
+    Calculate the frequency and duration of pauses within an interview.
     
     Parameters
     ----------
     df : pd.DataFrame
-        Standardized paradata DataFrame for a single interview, ideally sorted by start_time.
+        Paradata DataFrame for a single interview.
     pause_threshold_ms : float
-        The duration in milliseconds above which a gap is considered a pause.
+        Duration in milliseconds above which a gap is considered a pause.
         
     Returns
     -------
@@ -25,20 +19,24 @@ def calculate_pauses(df: pd.DataFrame, pause_threshold_ms: float = 60000) -> dic
     """
     if 'end_time' not in df.columns or 'start_time' not in df.columns or len(df) < 2:
         return {
-            'pause_frequency': 0,
-            'total_pause_duration_ms': 0.0
-        }
-        
+        'pause_count': 0,
+        'total_pause_duration': 0.0,
+        'average_pause_length': 0.0
+    }
+    
     df_sorted = df.sort_values(by='start_time').copy()
     
-    # Calculate gap between end of current event and start of next event
     df_sorted['next_start'] = df_sorted['start_time'].shift(-1)
     df_sorted['gap_ms'] = (df_sorted['next_start'] - df_sorted['end_time']).dt.total_seconds() * 1000
     
-    # Identify gaps that exceed the threshold
     pauses = df_sorted[df_sorted['gap_ms'] >= pause_threshold_ms]['gap_ms']
     
+    pause_count = int(len(pauses))
+    total_pause = float(pauses.sum()) if pause_count > 0 else 0.0
+    avg_pause = total_pause / pause_count if pause_count > 0 else 0.0
+    
     return {
-        'pause_frequency': int(len(pauses)),
-        'total_pause_duration_ms': float(pauses.sum()) if not pauses.empty else 0.0
+        'pause_count': pause_count,
+        'total_pause_duration': total_pause,
+        'average_pause_length': avg_pause
     }

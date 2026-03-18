@@ -3,16 +3,12 @@ import numpy as np
 
 def calculate_rhythm_metrics(df: pd.DataFrame, window_size: int = 5) -> dict:
     """
-    Calculate interview rhythm and irregularity features.
-    
-    Rhythm can be measured as the variability in response times over a rolling window.
-    High variability might indicate a struggling respondent, while low variability
-    might indicate rushing or an engaged, smooth flow.
+    Calculate rhythm and irregularity features over rolling windows.
     
     Parameters
     ----------
     df : pd.DataFrame
-        Standardized paradata DataFrame for a single interview.
+        Paradata DataFrame for a single interview.
     window_size : int
         Size of the rolling window for variance calculations.
         
@@ -23,28 +19,29 @@ def calculate_rhythm_metrics(df: pd.DataFrame, window_size: int = 5) -> dict:
     """
     if 'duration_ms' not in df.columns or len(df.dropna(subset=['duration_ms'])) < window_size:
         return {
-            'rhythm_variance_mean': np.nan,
-            'rhythm_variance_max': np.nan
+            'rolling_variance_mean': np.nan,
+            'rolling_variance_max': np.nan,
+            'straightlining_duration': 0.0
         }
         
-    # Sort by time if possible
-    if 'start_time' in df.columns:
-        df_sorted = df.sort_values(by='start_time')
-    else:
-        df_sorted = df
-        
+    df_sorted = df.sort_values(by='start_time') if 'start_time' in df.columns else df
     durations = df_sorted['duration_ms'].dropna()
     
-    # Rolling variance of response times
     rolling_var = durations.rolling(window=window_size).var().dropna()
+    
+    # Straightlining duration: Time spent repeatedly answering < 1500ms
+    straightlining_mask = durations < 1500
+    straightlining_dur = float(durations[straightlining_mask].sum()) if straightlining_mask.any() else 0.0
     
     if rolling_var.empty:
         return {
-            'rhythm_variance_mean': np.nan,
-            'rhythm_variance_max': np.nan
+            'rolling_variance_mean': np.nan,
+            'rolling_variance_max': np.nan,
+            'straightlining_duration': straightlining_dur
         }
         
     return {
-        'rhythm_variance_mean': float(rolling_var.mean()),
-        'rhythm_variance_max': float(rolling_var.max())
+        'rolling_variance_mean': float(rolling_var.mean()),
+        'rolling_variance_max': float(rolling_var.max()),
+        'straightlining_duration': straightlining_dur
     }

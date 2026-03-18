@@ -15,14 +15,14 @@ from src.features.rhythm import calculate_rhythm_metrics
 def test_calculate_basic_timing_empty():
     df = pd.DataFrame()
     res = calculate_basic_timing(df)
-    assert np.isnan(res['mean_response_time_ms'])
+    assert np.isnan(res['mean_response_time'])
 
 def test_calculate_basic_timing_valid():
     df = pd.DataFrame({'duration_ms': [1000, 2000, 3000]})
     res = calculate_basic_timing(df)
-    assert res['mean_response_time_ms'] == 2000.0
-    assert res['median_response_time_ms'] == 2000.0
-    assert res['total_duration_ms'] == 6000.0
+    assert res['mean_response_time'] == 2000.0
+    assert res['median_response_time'] == 2000.0
+    assert res['total_duration'] == 6000.0
 
 @given(st.floats(min_value=0.1, max_value=1e6), st.floats(min_value=0.1, max_value=1e6))
 def test_speed_index_properties(interview_dur, median_dur):
@@ -42,8 +42,8 @@ def test_calculate_pauses():
     
     # Gap is 4 seconds (10:00:01 to 10:00:05), threshold is 3 seconds
     res = calculate_pauses(df, pause_threshold_ms=3000)
-    assert res['pause_frequency'] == 1
-    assert res['total_pause_duration_ms'] == 4000.0
+    assert res['pause_count'] == 1
+    assert res['total_pause_duration'] == 4000.0
 
 def test_calculate_navigation_metrics():
     df = pd.DataFrame({
@@ -63,6 +63,6 @@ def test_calculate_rhythm_metrics():
     
     # Constant duration should yield 0 variance
     res = calculate_rhythm_metrics(df, window_size=3)
-    assert res['rhythm_variance_mean'] == 0.0
-    assert res['rhythm_variance_max'] == 0.0
+    assert res['rolling_variance_mean'] == 0.0
+    assert res['rolling_variance_max'] == 0.0
 
