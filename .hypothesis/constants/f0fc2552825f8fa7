@@ -1,4 +1,0 @@
-# file: c:\Users\Samuel\Desktop\4th year\Final year project\SKACE-Time-Data\src\validation\anomaly_detector.py
-# hypothesis_version: 6.151.9
-
-[0.1, 0.25, 0.5, 0.75, 1.5, 5000, 3600000, 'Int64', 'Q-07_idle_time_ms', 'T-01_rt_variance', 'T-03_rt_entropy', 'T-06_rt_mean', 'T-09_rt_min', 'T-10_rt_max', 'anomalous', 'anomaly_category', 'anomaly_score', 'dq_issue', 'flag_high_back_nav', 'flag_invalid_ratio', 'flag_iqr_duration', 'flag_low_entropy', 'flag_max_duration', 'flag_missing_data', 'flag_rule_pause', 'flag_too_fast', 'flag_too_slow', 'flag_uniform_timing', 'flag_zero_back_nav', 'is_anomalous', 'normal', 'suspicious']

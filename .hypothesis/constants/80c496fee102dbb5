@@ -1,4 +1,0 @@
-# file: C:\Users\Samuel\Desktop\4th year\Final year project\SKACE-Time-Data\src\features\rhythm.py
-# hypothesis_version: 6.151.9
-
-['duration_ms', 'rhythm_variance_max', 'rhythm_variance_mean', 'start_time']

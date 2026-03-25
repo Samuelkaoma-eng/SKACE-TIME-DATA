@@ -55,7 +55,7 @@ class SurveyCTOParser(BaseParser):
             if pt in df.columns:
                 s_col = pd.to_numeric(df[pt], errors='coerce')
                 if s_col.isna().all() and not df[pt].isna().all():
-                    s_col = pd.to_datetime(df[pt], errors='coerce', format='mixed').astype('datetime64[ms]').astype('int64')
+                    s_col = pd.to_datetime(df[pt], errors='coerce', format='mixed', utc=True).astype('int64') // 10**6
                     s_col.loc[s_col < 0] = np.nan
                 std_df['start_ms'] = s_col
                 break
@@ -65,7 +65,7 @@ class SurveyCTOParser(BaseParser):
             if pt in df.columns:
                 e_col = pd.to_numeric(df[pt], errors='coerce')
                 if e_col.isna().all() and not df[pt].isna().all():
-                    e_col = pd.to_datetime(df[pt], errors='coerce', format='mixed').astype('datetime64[ms]').astype('int64')
+                    e_col = pd.to_datetime(df[pt], errors='coerce', format='mixed', utc=True).astype('int64') // 10**6
                     e_col.loc[e_col < 0] = np.nan
                 std_df['end_ms'] = e_col
                 break

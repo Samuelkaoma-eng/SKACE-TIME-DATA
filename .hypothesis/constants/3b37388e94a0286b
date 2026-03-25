@@ -1,4 +1,0 @@
-# file: C:\Users\Samuel\Desktop\4th year\Final year project\SKACE-Time-Data\src\features\pauses.py
-# hypothesis_version: 6.151.9
-
-[0.0, 1000, 60000, 'average_pause_length', 'end_time', 'gap_ms', 'next_start', 'pause_count', 'start_time', 'total_pause_duration']
