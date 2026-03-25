@@ -17,12 +17,9 @@ class PipelineController:
     Ensures low coupling by passing only DataFrames between components.
     """
     
-    def __init__(self, parser_type: str = 'surveycto'):
-        if parser_type.lower() == 'surveycto':
-            self.parser = SurveyCTOParser()
-        elif parser_type.lower() == 'odk':
-            self.parser = ODKParser()
-        else:
+    def __init__(self, parser_type: str = 'auto'):
+        self.parser_type = parser_type.lower()
+        if self.parser_type not in ['auto', 'surveycto', 'odk']:
             raise ValueError(f"Unknown parser type: {parser_type}")
             
         self.q_extractor = QuestionFeatureExtractor()
@@ -37,14 +34,51 @@ class PipelineController:
         Returns a list of dictionaries, one per interview in the log.
         """
         filepath = Path(filepath)
-        print(f"  -> Parsing {filepath.name} using {type(self.parser).__name__}...")
         
-        try:
-            # Parse into CIR
-            cir_df = self.parser.parse(filepath)
-        except Exception as e:
-            print(f"  [ERROR] Parsing failed for {filepath.name}: {e}")
-            return []
+        # Determine parser dynamically
+        if self.parser_type == 'auto':
+            try:
+                # Content-based auto-detection and Hybrid Routing
+                df_raw = pd.read_csv(filepath, comment='#', low_memory=False)
+                cols = set(str(c).lower().strip() for c in df_raw.columns)
+                
+                # Check if it's a Frankenstein file (contains both structural IDs)
+                if 'instance_id' in cols and ('interview_id' in cols or 'uuid' in cols):
+                    print(f"  -> Hybrid format detected in {filepath.name}. Splitting dataset...")
+                    odk_raw = df_raw[df_raw['instance_id'].notna()]
+                    scto_raw = df_raw[df_raw['instance_id'].isna()]
+                    
+                    cir_dfs = []
+                    import os
+                    if not odk_raw.empty:
+                        odk_raw.to_csv('temp_odk.csv', index=False)
+                        cir_dfs.append(ODKParser().parse('temp_odk.csv'))
+                        os.remove('temp_odk.csv')
+                        
+                    if not scto_raw.empty:
+                        scto_raw.to_csv('temp_scto.csv', index=False)
+                        cir_dfs.append(SurveyCTOParser().parse('temp_scto.csv'))
+                        os.remove('temp_scto.csv')
+                        
+                    cir_df = pd.concat(cir_dfs, ignore_index=True) if cir_dfs else pd.DataFrame()
+                    
+                elif 'instance_id' in cols or 'name' in cols:
+                    print(f"  -> Parsing {filepath.name} using ODKParser...")
+                    cir_df = ODKParser().parse(filepath)
+                else:
+                    print(f"  -> Parsing {filepath.name} using SurveyCTOParser...")
+                    cir_df = SurveyCTOParser().parse(filepath)
+                    
+            except Exception as e:
+                print(f"  [ERROR] Auto-detection failed for {filepath.name}: {e}")
+                return []
+                
+        elif self.parser_type == 'odk':
+            print(f"  -> Parsing {filepath.name} using ODKParser...")
+            cir_df = ODKParser().parse(filepath)
+        else:
+            print(f"  -> Parsing {filepath.name} using SurveyCTOParser...")
+            cir_df = SurveyCTOParser().parse(filepath)
             
         if cir_df.empty:
             print(f"  [WARN] {filepath.name} produced an empty abstract DataFrame.")
