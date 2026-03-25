@@ -1,0 +1,4 @@
+# file: c:\Users\Samuel\Desktop\4th year\Final year project\SKACE-Time-Data\src\parsers\odk_parser.py
+# hypothesis_version: 6.151.9
+
+['#', 'all', 'coerce', 'duration_ms', 'end', 'end_ms', 'end_time', 'event', 'event_type', 'field', 'field_end', 'field_name', 'field_start', 'form-end', 'form-start', 'form_end', 'form_start', 'instance_id', 'int64', 'interview_id', 'name', 'node', 'question-end', 'question-start', 'start', 'start_ms', 'start_time', 'ts_end', 'ts_start', 'unknown_event', 'unknown_field']

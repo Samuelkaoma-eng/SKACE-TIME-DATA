@@ -62,90 +62,64 @@ class AnomalyDetector:
             df.loc[df['Q-07_idle_time_ms'] > df['V-01_total_interview_duration_ms'], 'flag_inconsistent_metrics'] = 1
 
         # --- LAYER 3: BEHAVIORAL ANALYSIS (CLEAN LOGS ONLY) ---
-        # Note: Behavioral flags can still be set, but is_anomalous_behavior only triggers for DQ=0
         
-        # Temporal Bounds
+        # Temporal Bounds (User Rule: Too Fast < 5000ms, Too Slow > 3600000ms)
         if 'V-01_total_interview_duration_ms' in df.columns:
             dur = df['V-01_total_interview_duration_ms']
-            med = dur.median()
-            if med > 0:
-                df.loc[dur < (med * 0.3), 'flag_too_fast'] = 1
-                df.loc[dur > (med * 10), 'flag_too_slow'] = 1
+            df.loc[dur < 5000, 'flag_too_fast'] = 1
+            df.loc[dur > 3600000, 'flag_too_slow'] = 1
             
-            # Absolute max thresholds
-            df.loc[dur > 1800000, 'flag_too_slow'] = 1
-            df.loc[dur > 1800000, 'flag_max_duration'] = 1
-
+            # Additional IQR Audit Flag
             if len(df) > 3:
                 Q1, Q3 = dur.quantile(0.25), dur.quantile(0.75)
                 IQR = Q3 - Q1
                 df.loc[(dur < Q1 - 1.5*IQR) | (dur > Q3 + 1.5*IQR), 'flag_iqr_duration'] = 1
 
-        # Uniformity & Entropy Linkage
+        # Entropy & Uniformity (User Rule: Entropy < 0.5, Variance < 10)
         if 'T-03_rt_entropy' in df.columns:
-            # Smart Fraud often has entropy < 1.0 (natural is 1.5 - 2.5)
-            df.loc[df['T-03_rt_entropy'] < 1.0, 'flag_low_entropy'] = 1
-            df.loc[df['T-03_rt_entropy'] == 0, 'flag_low_entropy'] = 1
+            df.loc[df['T-03_rt_entropy'] < 0.5, 'flag_low_entropy'] = 1
             
-        if 'T-08_rt_cv' in df.columns:
-            df.loc[df['T-08_rt_cv'] < self.uniform_timing_cv, 'flag_uniform_timing'] = 1
+        if 'T-01_rt_variance' in df.columns:
+            df.loc[df['T-01_rt_variance'] < 10, 'flag_uniform_timing'] = 1
 
-
-        # Navigation patterns
+        # Navigation patterns (User Rule: Back-Nav Rate > 0.5, Count == 0)
         if 'V-06_back_navigation_total_count' in df.columns:
-            # Row-level straight-lining
             df.loc[df['V-06_back_navigation_total_count'] == 0, 'flag_zero_back_nav'] = 1
-            # High Back-Nav (Confused/Correction Fraud)
             if 'V-05_back_navigation_rate' in df.columns:
-                df.loc[df['V-05_back_navigation_rate'] > 0.4, 'flag_high_back_nav'] = 1
-
-        # --- LAYER 4: DATASET-LEVEL INTELLIGENCE (Removed per user request) ---
-        # df = self.detect_population_patterns(df)
+                df.loc[df['V-05_back_navigation_rate'] > 0.5, 'flag_high_back_nav'] = 1
 
         # --- DATA QUALITY TRIGGER ---
-        # Trigger if Layers 1-2 fail OR if metrics are degenerate
         df['is_data_quality_issue'] = (
             df['flag_missing_data'] | 
             df['flag_invalid_ratio'] | 
-            df['flag_inconsistent_metrics']
+            df['flag_inconsistent_metrics'] |
+            (df['V-01_total_interview_duration_ms'] <= 0 if 'V-01_total_interview_duration_ms' in df.columns else False)
         ).astype(int)
-        
-        # Extreme Temporal DQ (1 hour or more)
-        if 'V-01_total_interview_duration_ms' in df.columns:
-            df.loc[df['V-01_total_interview_duration_ms'] >= 3600000, 'is_data_quality_issue'] = 1
 
-        # --- EXPLAINABLE ANOMALY SCORING ---
-        # Formula: Transparent & Weighted
-        # Adjusted for requested scale: 0-5 Normal, 6-9 Suspicious, 10-15 Anomaly
+        # --- EXPLAINABLE ANOMALY SCORING (User Weights) ---
+        # Formula: fast*3, slow*2, entropy*2, uniform*2, back_nav*1, invalid_ratio*3
         df['anomaly_score'] = (
-            4 * df['flag_invalid_ratio'].fillna(0) +
-            4 * df['flag_inconsistent_metrics'].fillna(0) +
-            4 * df['flag_uniform_timing'].fillna(0) +
-            3 * df['flag_low_entropy'].fillna(0) +
             3 * df['flag_too_fast'].fillna(0) +
-            3 * df['flag_max_duration'].fillna(0) +
-            2 * df['flag_zero_back_nav'].fillna(0) +
+            2 * df['flag_too_slow'].fillna(0) +
+            2 * df['flag_low_entropy'].fillna(0) +
+            2 * df['flag_uniform_timing'].fillna(0) +
             1 * df['flag_high_back_nav'].fillna(0) +
-            1 * df['flag_rule_pause'].fillna(0)
+            3 * df['flag_invalid_ratio'].fillna(0)
         )
         
-        # 3-Tier Categorical Scaling
-        # 0 - 5  : normal (or minor_dq if DQ)
-        # 6 - 9  : suspicious
-        # 10 - 15: strong_anomaly
-        df['anomaly_category'] = pd.cut(
-            df['anomaly_score'], 
-            bins=[-np.inf, 5, 9, np.inf], 
-            labels=['normal', 'suspicious', 'strong_anomaly']
-        ).astype(str)
-        
-        # We classify suspicious and strong_anomaly as behavior flags
-        df['is_anomalous_behavior'] = (df['anomaly_score'] >= 6).astype(int)
-        
-        # DQ isolation: Behavior only applies to Clean logs
-        df.loc[df['is_data_quality_issue'] == 1, 'is_anomalous_behavior'] = 0
-        df.loc[df['is_data_quality_issue'] == 1, 'anomaly_category'] = 'minor_dq'
-        
+        # User Categorization: 0-3 Normal, 4-7 Suspicious, 8-15 Anomalous
+        def get_category(row):
+            if row['is_data_quality_issue'] == 1:
+                return "dq_issue"
+            elif row['anomaly_score'] >= 8:
+                return "anomalous"
+            elif row['anomaly_score'] >= 4:
+                return "suspicious"
+            else:
+                return "normal"
+
+        df['anomaly_category'] = df.apply(get_category, axis=1)
+        df['is_anomalous_behavior'] = (df['anomaly_score'] >= 4).astype(int)
         df['is_anomalous'] = (df['is_anomalous_behavior'] | df['is_data_quality_issue']).astype(int)
         
         # Cleanup: Standardize Flag Types to Int64 (Nullable Integer) to prevent 1.0/0.0

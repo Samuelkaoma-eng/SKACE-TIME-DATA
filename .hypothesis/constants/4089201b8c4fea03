@@ -1,0 +1,4 @@
+# file: c:\Users\Samuel\Desktop\4th year\Final year project\SKACE-Time-Data\src\features\statistical_features.py
+# hypothesis_version: 6.151.9
+
+[0.0, 1000, 10000, 'T-01_rt_variance', 'T-02_rt_iqr', 'T-03_rt_entropy', 'T-04_rt_skewness', 'T-05_rt_kurtosis', 'T-06_rt_mean', 'T-07_rt_median', 'T-08_rt_cv', 'T-09_rt_min', 'T-10_rt_max']
