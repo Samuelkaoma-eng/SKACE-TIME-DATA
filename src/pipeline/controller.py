@@ -45,21 +45,45 @@ class PipelineController:
                 # Check if it's a Frankenstein file (contains both structural IDs)
                 if 'instance_id' in cols and ('interview_id' in cols or 'uuid' in cols):
                     print(f"  -> Hybrid format detected in {filepath.name}. Splitting dataset...")
-                    odk_raw = df_raw[df_raw['instance_id'].notna()]
-                    scto_raw = df_raw[df_raw['instance_id'].isna()]
-                    
+
+                    # BUG-5 FIX: Filter out errant header rows where instance_id == 'instance_id'
+                    df_raw = df_raw[df_raw['instance_id'] != 'instance_id']
+
+                    odk_raw = df_raw[df_raw['instance_id'].notna()].copy()
+                    scto_raw = df_raw[df_raw['instance_id'].isna()].copy()
+
                     cir_dfs = []
-                    import os
+                    import os, tempfile
+
+                    # BUG-4 FIX: Drop all-NaN columns before writing each temp file so each
+                    # parser only sees its own columns, preventing cross-format column pollution.
                     if not odk_raw.empty:
-                        odk_raw.to_csv('temp_odk.csv', index=False)
-                        cir_dfs.append(ODKParser().parse('temp_odk.csv'))
-                        os.remove('temp_odk.csv')
-                        
+                        odk_clean = odk_raw.dropna(axis=1, how='all')
+                        # BUG-9 FIX: Use try/finally so temp files are always cleaned up
+                        tmp_odk = tempfile.NamedTemporaryFile(
+                            mode='w', suffix='.csv', delete=False, encoding='utf-8'
+                        )
+                        try:
+                            odk_clean.to_csv(tmp_odk.name, index=False)
+                            tmp_odk.close()
+                            cir_dfs.append(ODKParser().parse(tmp_odk.name))
+                        finally:
+                            if os.path.exists(tmp_odk.name):
+                                os.remove(tmp_odk.name)
+
                     if not scto_raw.empty:
-                        scto_raw.to_csv('temp_scto.csv', index=False)
-                        cir_dfs.append(SurveyCTOParser().parse('temp_scto.csv'))
-                        os.remove('temp_scto.csv')
-                        
+                        scto_clean = scto_raw.dropna(axis=1, how='all')
+                        tmp_scto = tempfile.NamedTemporaryFile(
+                            mode='w', suffix='.csv', delete=False, encoding='utf-8'
+                        )
+                        try:
+                            scto_clean.to_csv(tmp_scto.name, index=False)
+                            tmp_scto.close()
+                            cir_dfs.append(SurveyCTOParser().parse(tmp_scto.name))
+                        finally:
+                            if os.path.exists(tmp_scto.name):
+                                os.remove(tmp_scto.name)
+
                     cir_df = pd.concat(cir_dfs, ignore_index=True) if cir_dfs else pd.DataFrame()
                     
                 elif 'instance_id' in cols or 'name' in cols:

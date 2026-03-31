@@ -13,15 +13,27 @@ def generate_visualizations():
 
     os.makedirs('output/plots', exist_ok=True)
     
-    # Locate dataset
+    # Locate dataset — check timestamped outputs first, then fallbacks
     files = glob.glob('output/features_output_*.csv')
-    if not files:
+    if files:
+        file_path = max(files, key=os.path.getctime)
+    elif os.path.exists('output/final_combined_features.csv'):
+        file_path = 'output/final_combined_features.csv'
+    elif os.path.exists('output/final_combined_features_400series.csv'):
         file_path = 'output/final_combined_features_400series.csv'
     else:
-        file_path = max(files, key=os.path.getctime)
-        
+        print(
+            "[WARN] No pipeline output file found in output/. "
+            "Run `python run_pipeline.py` first to generate features."
+        )
+        return
+
     print(f"Reading dataset from {file_path}")
-    df = pd.read_csv(file_path)
+    try:
+        df = pd.read_csv(file_path)
+    except Exception as e:
+        print(f"[ERROR] Could not read {file_path}: {e}")
+        return
     
     if df.empty:
         print("Dataset is empty.")

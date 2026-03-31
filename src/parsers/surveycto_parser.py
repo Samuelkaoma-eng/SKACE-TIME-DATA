@@ -55,8 +55,15 @@ class SurveyCTOParser(BaseParser):
             if pt in df.columns:
                 s_col = pd.to_numeric(df[pt], errors='coerce')
                 if s_col.isna().all() and not df[pt].isna().all():
-                    s_col = pd.to_datetime(df[pt], errors='coerce', format='mixed', utc=True).astype('int64') // 10**6
+                    # Fallback: parse as ISO datetime. On pandas >= 2.0, this yields datetime64[us], so div 10**3 -> ms.
+                    s_col = pd.to_datetime(df[pt], errors='coerce', format='mixed', utc=True).astype('int64') // 10**3
                     s_col.loc[s_col < 0] = np.nan
+                else:
+                    # Epoch-seconds guard: SurveyCTO canonical format is epoch-ms.
+                    # Values < 2e10 are epoch-seconds (before year 2603); multiply by 1000.
+                    valid = s_col.dropna()
+                    if len(valid) > 0 and valid.median() < 2e10:
+                        s_col = s_col * 1000
                 std_df['start_ms'] = s_col
                 break
             
@@ -65,8 +72,14 @@ class SurveyCTOParser(BaseParser):
             if pt in df.columns:
                 e_col = pd.to_numeric(df[pt], errors='coerce')
                 if e_col.isna().all() and not df[pt].isna().all():
-                    e_col = pd.to_datetime(df[pt], errors='coerce', format='mixed', utc=True).astype('int64') // 10**6
+                    # Fallback: parse as ISO datetime. On pandas >= 2.0, this yields datetime64[us], so div 10**3 -> ms.
+                    e_col = pd.to_datetime(df[pt], errors='coerce', format='mixed', utc=True).astype('int64') // 10**3
                     e_col.loc[e_col < 0] = np.nan
+                else:
+                    # Epoch-seconds guard
+                    valid = e_col.dropna()
+                    if len(valid) > 0 and valid.median() < 2e10:
+                        e_col = e_col * 1000
                 std_df['end_ms'] = e_col
                 break
             

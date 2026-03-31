@@ -2,8 +2,33 @@ import os
 import sys
 import argparse
 from pathlib import Path
+from typing import List, Union
 
 from src.pipeline.controller import PipelineController
+
+
+def process_interview(filepath: Union[str, Path], parser_type: str = 'auto') -> List[dict]:
+    """
+    Public API wrapper: process a single paradata file and return a list of
+    per-interview feature dictionaries.
+
+    Used by test_pipeline.py and any external caller that needs a simple
+    functional interface without instantiating PipelineController directly.
+
+    Parameters
+    ----------
+    filepath : str or Path
+        Path to the raw audit log CSV.
+    parser_type : str
+        One of 'auto', 'surveycto', 'odk'. Default = 'auto'.
+
+    Returns
+    -------
+    List[dict]
+        One dictionary per interview found in the file.
+    """
+    controller = PipelineController(parser_type=parser_type)
+    return controller.process_file(filepath)
 
 def interactive_cli(data_dir: Path):
     """Provide an interactive CLI to select a dataset if multiple exist."""

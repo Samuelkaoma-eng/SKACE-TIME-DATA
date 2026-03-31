@@ -20,9 +20,10 @@ class AnomalyDetector:
         df = df.copy()
         
         # Initialize ALL diagnostic flags (Harmonized with User Expectations)
+        # Note: flag_max_duration removed — upper-bound IQR already captured by flag_iqr_duration
         diag_flags = [
             'flag_invalid_ratio', 'flag_missing_data', 'flag_inconsistent_metrics',
-            'flag_too_fast', 'flag_too_slow', 'flag_max_duration',
+            'flag_too_fast', 'flag_too_slow',
             'flag_zero_back_nav', 'flag_low_entropy', 'flag_uniform_timing',
             'flag_rule_pause', 'flag_population_pattern', 'flag_iqr_duration',
             'flag_high_back_nav'
