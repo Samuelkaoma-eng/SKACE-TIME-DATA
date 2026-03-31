@@ -18,6 +18,12 @@ class SectionFeatureExtractor:
             lambda x: str(x).split('_')[0] if '_' in str(x) else 'MainSection'
         )
         
+        # Pre-compute the max fields in any single section for S-10 denominator
+        section_field_counts = {}
+        for sec_name, sec_grp in cir_df.groupby('section_name'):
+            section_field_counts[sec_name] = sec_grp['field_name'].nunique()
+        max_fields_any_section = max(section_field_counts.values()) if section_field_counts else 1
+
         s_features = []
         groups = cir_df.groupby('section_name')
         
@@ -65,7 +71,14 @@ class SectionFeatureExtractor:
             back_nav = len(group[group['event_type'].str.contains('back|backward', case=False, na=False)])
             
             # S-10 section_completion_rate
-            comp_rate = 1.0 # Approximate without full questionnaire logic
+            # BUG-8 FIX: Within-dataset approximation.
+            # Since no master questionnaire schema is available, we use:
+            #   fields_visited_in_section / max_fields_in_any_section_across_dataset
+            # This yields 1.0 for the most-visited section and < 1.0 for shorter/skipped sections,
+            # giving genuine discriminative variance across the dataset (thesis §1.3 Obj 3).
+            fields_visited = group['field_name'].nunique()
+            denom = max(max_fields_any_section, 1)
+            comp_rate = min(1.0, fields_visited / denom)
             
             s_features.append({
                 'section_name': section,
