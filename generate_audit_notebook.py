@@ -49,6 +49,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+from IPython.display import display
 
 sns.set_theme(style='whitegrid')
 
@@ -71,19 +72,26 @@ Load the latest combined feature dataset from the output directory.""")
     add_code("""def load_latest():
     output_dir = os.path.join(PROJECT_ROOT, 'output')
     
-    # Priority 1: Combined full features
+    # Priority 1: Latest combined pipeline export
+    combined_pattern = os.path.join(output_dir, 'pipeline_output_*.csv')
+    combined_files = glob.glob(combined_pattern)
+    if combined_files:
+        latest = max(combined_files, key=os.path.getctime)
+        return latest, pd.read_csv(latest)
+
+    # Priority 2: Historical combined full features
     fallback = os.path.join(output_dir, 'final_combined_features.csv')
     if os.path.exists(fallback):
         return fallback, pd.read_csv(fallback)
         
-    # Priority 2: Latest individual export
+    # Priority 3: Latest individual feature export
     pattern = os.path.join(output_dir, 'features_output_*.csv')
     files = glob.glob(pattern)
     if files:
         latest = max(files, key=os.path.getctime)
         return latest, pd.read_csv(latest)
         
-    # Priority 3: Academic fallback
+    # Priority 4: Academic fallback
     academic_fallback = os.path.join(output_dir, 'final_combined_features_400series.csv')
     if os.path.exists(academic_fallback):
         return academic_fallback, pd.read_csv(academic_fallback)
@@ -143,7 +151,7 @@ else:
     # 6. Rule Engine Verification
     add_md("""# 6. Rule Engine Verification
 Reapply the anomaly detection rules using the same thresholds as the pipeline anomaly detector:
-- Too fast: total duration below 5000 ms
+- Too fast: total duration below 6000 ms
 - Too slow: total duration above 3600000 ms
 - IQR-based duration outlier detection (Q1 - 1.5*IQR, Q3 + 1.5*IQR)
 - Low entropy (< 0.5), uniform timing (variance < 10)
@@ -151,7 +159,7 @@ Reapply the anomaly detection rules using the same thresholds as the pipeline an
 
     add_code("""if 'V-01_total_interview_duration_ms' in df.columns:
     # Hard thresholds aligned with anomaly_detector.py
-    df['flag_too_fast'] = df['V-01_total_interview_duration_ms'] < 5000
+    df['flag_too_fast'] = df['V-01_total_interview_duration_ms'] < 6000
     df['flag_too_slow'] = df['V-01_total_interview_duration_ms'] > 3600000
 
     # IQR-based duration outlier (proposal Section 3.3, anomaly_detector.py Layer 3)
@@ -205,15 +213,15 @@ else:
 Classify interviews into categories using the same logic as the current pipeline:
 - Data quality issue (if flagged by DQ checks)
 - Anomalous (score >= 5)
-- Suspicious (score >= 2)
-- Normal (score < 2)""")
+- Suspicious (score >= 3)
+- Normal (score < 3)""")
 
     add_code("""def classify(row):
     if 'is_data_quality_issue' in df.columns and row.get('is_data_quality_issue', 0) == 1:
         return 'dq_issue'
     elif row['computed_anomaly_score'] >= 5:
         return 'anomalous'
-    elif row['computed_anomaly_score'] >= 2:
+    elif row['computed_anomaly_score'] >= 3:
         return 'suspicious'
     else:
         return 'normal'

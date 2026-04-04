@@ -1,6 +1,10 @@
 import argparse
 import json
+import os
+import sys
 from pathlib import Path
+
+sys.path.insert(0, os.path.abspath("."))
 
 from tests.test_adversarial import AdversarialDataGenerator
 
