@@ -1,0 +1,4 @@
+# file: C:\Users\Samuel\Desktop\4th year\Final year project\SKACE-Time-Data\src\features\navigation.py
+# hypothesis_version: 6.151.9
+
+[0.0, 1500, 'back', 'backtrack_count', 'backward', 'duration_ms', 'event_type', 'forward', 'forward_jump_count', 'jump_backward', 'jump_forward', 'question_name', 'screen_revisit_rate', 'skip', 'straightlining_count']

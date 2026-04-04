@@ -1,0 +1,10 @@
+Dataset,Anomaly Type,Total,Detected,Detection Rate
+n500,fabricated,99,99,1.0
+n500,disengaged,102,102,1.0
+n500,speeding,99,99,1.0
+n2000,speeding,300,300,1.0
+n2000,fabricated,301,301,1.0
+n2000,disengaged,301,301,1.0
+n10000,fabricated,835,835,1.0
+n10000,speeding,852,852,1.0
+n10000,disengaged,843,843,1.0
