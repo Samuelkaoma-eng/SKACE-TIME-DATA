@@ -1,0 +1,4 @@
+# file: C:\Users\Samuel\Desktop\4th year\Final year project\SKACE-Time-Data\src\features\section_features.py
+# hypothesis_version: 6.151.9
+
+[1.0, 5000, 30000, 'MainSection', 'S-05_pause_count_5s', 'S-06_pause_count_30s', '_', 'back|backward', 'end_ms', 'event_type', 'field_name', 'section_name', 'start_ms']

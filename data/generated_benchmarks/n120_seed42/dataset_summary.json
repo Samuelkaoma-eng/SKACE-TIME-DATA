@@ -1,0 +1,11 @@
+{
+  "dataset_size": 120,
+  "anomaly_ratio": 0.2,
+  "seed": 42,
+  "n_normal": 96,
+  "n_fabricated": 8,
+  "n_speeding": 8,
+  "n_disengaged": 8,
+  "surveycto_rows": 2659,
+  "odk_rows": 2701
+}

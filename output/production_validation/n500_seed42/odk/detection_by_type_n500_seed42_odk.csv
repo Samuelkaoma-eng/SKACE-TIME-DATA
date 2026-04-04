@@ -1,0 +1,4 @@
+anomaly_type,total,detected,detection_rate
+disengaged,34,34,1.0
+fabricated,33,33,1.0
+speeding,33,33,1.0

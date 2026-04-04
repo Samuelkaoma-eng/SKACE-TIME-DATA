@@ -1,0 +1,4 @@
+# file: C:\Users\Samuel\Desktop\4th year\Final year project\SKACE-Time-Data\src\parsers\base_parser.py
+# hypothesis_version: 6.151.9
+
+['duration_ms', 'end_ms', 'event_type', 'field_name', 'interview_id', 'start_ms']

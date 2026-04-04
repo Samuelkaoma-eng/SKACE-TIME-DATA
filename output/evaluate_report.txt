@@ -1,0 +1,20 @@
+
+--- Pipeline Anomaly Detection Metrics ---
+Total Anomalous (Ground Truth): 3732
+Total Normal (Ground Truth): 14768
+Total Flagged Anomaly (Predictions): 18500
+----------------------------------------
+True Positives (TP) : 3732
+False Positives (FP): 14768
+True Negatives (TN) : 0
+False Negatives (FN): 0
+----------------------------------------
+Precision : 0.2017 (20.17%)
+Recall    : 1.0000 (100.00%)
+F1-Score  : 0.3357
+
+--- Recall by Truth Anomaly Type ---
+Normal (False Positives): 14768/14768 (100.00%) wrongly flagged
+Fabricated: 1235/1235 (100.00%) detected
+Speeding: 1251/1251 (100.00%) detected
+Disengaged: 1246/1246 (100.00%) detected
