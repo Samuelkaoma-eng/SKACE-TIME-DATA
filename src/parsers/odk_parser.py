@@ -18,7 +18,8 @@ class ODKParser(BaseParser):
         except Exception as e:
             raise ValueError(f"CRITICAL ERROR: Failed to read ODK CSV file '{filepath}'. Details: {e}")
             
-        std_df = pd.DataFrame()
+        # Create std_df with the same number of rows as input df
+        std_df = pd.DataFrame(index=df.index)
         
         # 1. Interview ID
         if 'interview_id' in df.columns:
@@ -42,7 +43,10 @@ class ODKParser(BaseParser):
                 'form-start': 'form_start',
                 'form-end': 'form_end',
                 'question-start': 'field_start',
-                'question-end': 'field_end'
+                'question-end': 'field_end',
+                'form start': 'form_start',  # Synthetic data format
+                'question': 'field_start',   # Synthetic data format
+                'end screen': 'form_end'     # Synthetic data format
             })
         else:
             std_df['event_type'] = 'unknown_event'
@@ -53,8 +57,17 @@ class ODKParser(BaseParser):
             if pt in df.columns:
                 s_col = pd.to_numeric(df[pt], errors='coerce')
                 if s_col.isna().all() and not df[pt].isna().all():
+                    # Parse ISO 8601 including ms-precision (e.g. 2023-01-02T09:00:00.180+00:00).
+                    # pandas >= 2.0 returns datetime64[us]; astype int64 = microseconds since epoch.
+                    # // 10**3 converts microseconds -> milliseconds (correct).
+                    # Do NOT use // 10**6 (gives epoch-seconds, loses sub-second precision).
                     s_col = pd.to_datetime(df[pt], errors='coerce', utc=True).astype('int64') // 10**3
-                    s_col.loc[s_col < 0] = np.nan
+                    s_col = s_col.where(s_col > 0, np.nan)
+                else:
+                    # Numeric epoch data: apply epoch-seconds guard.
+                    valid = s_col.dropna()
+                    if len(valid) > 0 and valid.median() < 2e10:
+                        s_col = s_col * 1000
                 std_df['start_ms'] = s_col
                 break
                 
@@ -64,7 +77,11 @@ class ODKParser(BaseParser):
                 e_col = pd.to_numeric(df[pt], errors='coerce')
                 if e_col.isna().all() and not df[pt].isna().all():
                     e_col = pd.to_datetime(df[pt], errors='coerce', utc=True).astype('int64') // 10**3
-                    e_col.loc[e_col < 0] = np.nan
+                    e_col = e_col.where(e_col > 0, np.nan)
+                else:
+                    valid = e_col.dropna()
+                    if len(valid) > 0 and valid.median() < 2e10:
+                        e_col = e_col * 1000
                 std_df['end_ms'] = e_col
                 break
             
@@ -73,7 +90,22 @@ class ODKParser(BaseParser):
             
         # Clean up invalid durations
         std_df.loc[std_df['duration_ms'] < 0, 'duration_ms'] = np.nan
-        
+
+        # Synthetic audit logs may arrive as one file with repeated form-start/end blocks
+        # and no explicit interview identifiers. In that case we assign sequential IDs.
+        if 'interview_id' not in df.columns and 'instance_id' not in df.columns and 'uuid' not in df.columns:
+            if 'event' in df.columns:
+                event_strings = df['event'].astype(str).str.lower()
+                start_mask = event_strings.isin(['form start', 'form-start'])
+                if start_mask.sum() > 1:
+                    synthetic_ids = []
+                    current = 0
+                    for ev in event_strings:
+                        if ev in ['form start', 'form-start']:
+                            current += 1
+                        synthetic_ids.append(f"INT-{current:05d}")
+                    std_df['interview_id'] = synthetic_ids
+
         # Drop rows with entirely missing structural info
         std_df.dropna(subset=['event_type', 'start_ms', 'end_ms'], how='all', inplace=True)
         

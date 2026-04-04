@@ -18,7 +18,8 @@ class SurveyCTOParser(BaseParser):
         except Exception as e:
             raise ValueError(f"CRITICAL ERROR: Failed to read SurveyCTO CSV file '{filepath}'. Details: {e}")
             
-        std_df = pd.DataFrame()
+        # Create std_df with the same number of rows as input df
+        std_df = pd.DataFrame(index=df.index)
         
         # 1. Interview ID
         if 'interview_id' in df.columns:
@@ -42,7 +43,10 @@ class SurveyCTOParser(BaseParser):
                 'form-start': 'form_start',
                 'form-end': 'form_end',
                 'question-start': 'field_start',
-                'question-end': 'field_end'
+                'question-end': 'field_end',
+                'question': 'field_start',    # Synthetic data format
+                'end': 'form_end',           # Synthetic data format
+                'constraint': 'constraint'   # Keep as is
             })
         elif 'event_type' in df.columns:
             std_df['event_type'] = df['event_type'].fillna('unknown_event')
@@ -91,7 +95,22 @@ class SurveyCTOParser(BaseParser):
             
         # Clean up invalid durations
         std_df.loc[std_df['duration_ms'] < 0, 'duration_ms'] = np.nan
-        
+
+        # Synthetic audit logs may arrive as one file with repeated form-start/end blocks
+        # and no explicit interview identifiers. In that case we assign sequential IDs.
+        if 'interview_id' not in df.columns and 'uuid' not in df.columns:
+            if 'event' in df.columns:
+                event_strings = df['event'].astype(str).str.lower()
+                start_mask = event_strings.isin(['form start', 'form-start'])
+                if start_mask.sum() > 1:
+                    synthetic_ids = []
+                    current = 0
+                    for ev in event_strings:
+                        if ev in ['form start', 'form-start']:
+                            current += 1
+                        synthetic_ids.append(f"INT-{current:05d}")
+                    std_df['interview_id'] = synthetic_ids
+
         # Drop rows with entirely missing structural info
         std_df.dropna(subset=['event_type', 'start_ms', 'end_ms'], how='all', inplace=True)
         

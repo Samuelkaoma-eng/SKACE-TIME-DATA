@@ -50,10 +50,12 @@ class SurveyFeatureExtractor:
             features['V-04_speed_trajectory_ratio'] = None
             
         # V-05 back_navigation_rate and V-06 back_navigation_total_count
-        backs = len(df[df['event_type'].str.contains('back|backward|jump', case=False, na=False)])
+        back_mask = df['event_type'].str.contains('back|backward|jump', case=False, na=False)
+        backs = int(back_mask.sum())
         features['V-06_back_navigation_total_count'] = backs
-        features['V-05_back_navigation_rate'] = backs / n_events if n_events > 0 else 0
-        
+        n_question_events = len(df[~back_mask])          # events that are actual questions
+        features['V-05_back_navigation_rate'] = backs / n_question_events if n_question_events > 0 else 0
+
         # V-07 time_of_day_hour
         first_ms = df['start_ms'].min()
         if pd.notna(first_ms):
@@ -63,11 +65,24 @@ class SurveyFeatureExtractor:
         else:
             features['V-07_time_of_day_hour'] = np.nan
             features['V-08_day_of_week'] = np.nan
-            
+
         # V-09 session_length_vs_median (Will be calculated at global level in controller)
-        features['V-09_session_length_vs_median'] = np.nan 
-        
+        features['V-09_session_length_vs_median'] = np.nan
+
         # V-10 zero_back_nav_flag
-        features['V-10_zero_back_nav_flag'] = 1 if backs == 0 and n_events > 20 else 0
-        
+        # BUG-H4 FIX: thesis definition = "no back-navigation across more than 20
+        # CONSECUTIVE questions".  The old code just checked (backs==0 and n_events>20)
+        # which misses interviews with one early back-nav then 21+ clean questions.
+        # Correct approach: walk the event sequence and find the longest run of
+        # question events without any back/jump event between them.
+        max_consecutive = 0
+        current_run = 0
+        for evt in df['event_type']:
+            if str(evt).lower() not in ('back', 'backward', 'jump'):
+                current_run += 1
+                max_consecutive = max(max_consecutive, current_run)
+            else:
+                current_run = 0
+        features['V-10_zero_back_nav_flag'] = 1 if max_consecutive >= 20 else 0
+
         return features
