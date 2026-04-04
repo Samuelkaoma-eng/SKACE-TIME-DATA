@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import os
 import glob
+import argparse
 from scipy import stats as scipy_stats
 
 
@@ -87,16 +88,38 @@ def run_mannwhitney_per_feature(merged: pd.DataFrame, y_true: np.ndarray) -> str
     return "\n".join(lines)
 
 
-def calculate_metrics():
+def calculate_metrics(input_file: str = None, output_file: str = 'docs/validation_report.md'):
     truth_df = generate_ground_truth()
 
-    files = glob.glob('output/features_output_*.csv')
-    if not files:
-        file_path = 'output/final_combined_features_400series.csv'
+    # BUG-M1 FIX: explicit --input argument instead of silent glob-based file selection.
+    # Old behaviour would pick up whatever timestamped file happened to exist, creating
+    # a non-reproducible evaluation that silently switched between the generate_400 path
+    # and the run_pipeline path depending on execution order.
+    if input_file and os.path.exists(input_file):
+        file_path = input_file
     else:
-        file_path = max(files, key=os.path.getctime)
+        # Auto-detect: prefer the most recent combined pipeline output, then fall back.
+        files = glob.glob('output/pipeline_output_*.csv')
+        if files:
+            file_path = max(files, key=os.path.getctime)
+            print(f"[AUTO] No --input specified. Using most recent combined pipeline output.")
+        else:
+            files = glob.glob('output/features_output_*.csv')
+            if files:
+                file_path = max(files, key=os.path.getctime)
+                print(f"[AUTO] No --input specified. Using most recent feature output.")
+            elif os.path.exists('output/final_combined_features_400series.csv'):
+                file_path = 'output/final_combined_features_400series.csv'
+                print(f"[AUTO] Using 400-series features file.")
+            else:
+                print("[ERROR] No pipeline output found. Run `python run_pipeline.py` first.")
+                return None
 
-    print(f"Reading pipeline output from {file_path}")
+    print(f"Reading pipeline output from: {file_path}")
+    if not os.path.exists(file_path):
+        print(f"[ERROR] File not found: {file_path}")
+        return None
+
     pipeline_df = pd.read_csv(file_path)
 
     merged = pipeline_df.merge(truth_df, on='interview_id', how='inner')
@@ -205,13 +228,20 @@ profiles (normal, fabricated, speeding, disengaged/dq_issue) in SurveyCTO and OD
 Ground truth labels saved to: `data/ground_truth_labels.csv`
 """
 
-    os.makedirs('docs', exist_ok=True)
-    with open('docs/validation_report.md', 'w', encoding='utf-8') as f:
+    os.makedirs(os.path.dirname(output_file) if os.path.dirname(output_file) else 'docs', exist_ok=True)
+    with open(output_file, 'w', encoding='utf-8') as f:
         f.write(report)
 
-    print("Metrics compiled. Wrote docs/validation_report.md")
+    print(f"Metrics compiled. Wrote {output_file}")
     print(f"  Precision={precision:.4f}  Recall={recall:.4f}  F1={f1:.4f}  [{pass_fail}]")
+    return {'precision': precision, 'recall': recall, 'f1': f1, 'pass_fail': pass_fail}
 
 
 if __name__ == "__main__":
-    calculate_metrics()
+    ap = argparse.ArgumentParser(description="Compute academic validation metrics.")
+    ap.add_argument('--input',  default=None,
+                    help='Path to pipeline feature output CSV. Defaults to most recent features_output_*.csv')
+    ap.add_argument('--output', default='docs/validation_report.md',
+                    help='Path to write the validation report markdown.')
+    args = ap.parse_args()
+    calculate_metrics(input_file=args.input, output_file=args.output)

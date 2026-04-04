@@ -125,14 +125,20 @@ print("Validation flags created")""")
 
     # 5. Feature Recalculation
     add_md("""# 5. Feature Recalculation
-Independently recompute derived metrics (e.g. navigation rate) to verify pipeline calculations.""")
+Recompute only the aggregated metrics that can be verified from the flattened feature table itself.
 
-    add_code("""if 'V-01_total_interview_duration_ms' in df.columns and 'V-06_back_navigation_total_count' in df.columns:
-    df['recomputed_nav_rate'] = np.where(
-        df['V-01_total_interview_duration_ms'] > 0,
-        df['V-06_back_navigation_total_count'] / df['V-01_total_interview_duration_ms'],
-        0
-    )""")
+Some raw-log metrics, such as back-navigation rate, cannot be recomputed exactly from the
+final one-row-per-interview dataset because the event sequence is no longer present.""")
+
+    add_code("""if all(c in df.columns for c in ['T-06_rt_mean', 'T-07_rt_median', 'T-09_rt_min', 'T-10_rt_max']):
+    df['flag_stat_order_issue'] = (
+        (df['T-09_rt_min'] > df['T-06_rt_mean']) |
+        (df['T-06_rt_mean'] > df['T-10_rt_max']) |
+        (df['T-09_rt_min'] > df['T-07_rt_median']) |
+        (df['T-07_rt_median'] > df['T-10_rt_max'])
+    )
+else:
+    df['flag_stat_order_issue'] = False""")
 
     # 6. Rule Engine Verification
     add_md("""# 6. Rule Engine Verification
@@ -196,18 +202,18 @@ else:
 
     # 8. Classification
     add_md("""# 8. Classification
-Classify interviews into categories using the same logic as the pipeline:
+Classify interviews into categories using the same logic as the current pipeline:
 - Data quality issue (if flagged by DQ checks)
-- Anomalous (score >= 8)
-- Suspicious (score >= 4)
-- Normal (score < 4)""")
+- Anomalous (score >= 5)
+- Suspicious (score >= 2)
+- Normal (score < 2)""")
 
     add_code("""def classify(row):
     if 'is_data_quality_issue' in df.columns and row.get('is_data_quality_issue', 0) == 1:
         return 'dq_issue'
-    elif row['computed_anomaly_score'] >= 8:
+    elif row['computed_anomaly_score'] >= 5:
         return 'anomalous'
-    elif row['computed_anomaly_score'] >= 4:
+    elif row['computed_anomaly_score'] >= 2:
         return 'suspicious'
     else:
         return 'normal'
@@ -378,16 +384,18 @@ if len(available_pair) > 1 and 'computed_category' in available_pair:
 else:
     print("Required features for pairplot are missing.")""")
 
-    # Write Notebook
-    notebook_path = os.path.join(os.getcwd(), 'notebooks', 'System_Audit_Report.ipynb')
-    os.makedirs(os.path.dirname(notebook_path), exist_ok=True)
-    
-    try:
-        with open(notebook_path, 'w', encoding='utf-8') as f:
-            json.dump(notebook, f, indent=2)
-        print("Notebook created successfully at:", notebook_path)
-    except Exception as e:
-        print("ERROR saving notebook:", e)
+    # Write Notebook variants
+    notebook_dir = os.path.join(os.getcwd(), 'notebooks')
+    os.makedirs(notebook_dir, exist_ok=True)
+
+    for filename in ['System_Audit_Report.ipynb', 'System_Audit_Report_Final.ipynb']:
+        notebook_path = os.path.join(notebook_dir, filename)
+        try:
+            with open(notebook_path, 'w', encoding='utf-8') as f:
+                json.dump(notebook, f, indent=2)
+            print("Notebook created successfully at:", notebook_path)
+        except Exception as e:
+            print("ERROR saving notebook:", e)
 
 if __name__ == '__main__':
     create_audit_report_notebook()

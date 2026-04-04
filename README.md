@@ -48,13 +48,39 @@ The system utilizes a 4-Layer Architecture to ensure mathematical integrity:
 4. **Classification Layer:** Maps weight-based scores to 3-tier severity bins.
 
 ### 3. Execution
-Run the automated pipeline to process all datasets:
+Run the automated pipeline on explicit files:
 ```bash
-python run_pipeline.py
+python run_pipeline.py --inputs data/odk.csv data/surveycto.csv
+```
+
+If you also have ground truth labels for a synthetic or otherwise labelled
+dataset, pass them in the same command to generate metrics automatically:
+
+```bash
+python run_pipeline.py \
+  --inputs data/synthetic_datasets/n500/audit_logs_surveycto.csv \
+  --ground-truth data/synthetic_datasets/n500/ground_truth_labels.csv \
+  --label n500_surveycto
 ```
 
 ### 4. The Output
-The pipeline outputs a master file: `output/features_output_XXXX.csv`. 
+Each run now writes three first-class artifacts:
+
+- `output/feature_dataset_<label>.csv`: pure per-interview feature matrix
+- `output/anomaly_report_<label>.csv`: anomaly scores and review status
+- `output/pipeline_output_<label>.csv`: combined feature + anomaly dataset
+
+If `--ground-truth` is provided, the same run also writes:
+
+- `output/predictions_<label>.csv`
+- `output/metrics_<label>.csv`
+- `output/metrics_<label>.json`
+- `output/metrics_<label>.md`
+
+Legacy compatibility files (`output/features_output_*.csv` and
+`output/anomaly_report.csv`) are still written, but the labelled artifacts above
+are the authoritative outputs for new runs.
+
 Notable features include:
 
 **>  IMPORTANT: All output timing features are recorded in MILLISECONDS.** As a result, variances like `response_time_variance` will appear extremely large compared to seconds. This is normal behavior.
@@ -70,11 +96,110 @@ Notable features include:
     - `relative_speed_score`: Relative to global mean.
 - **Pause & Navigation Features:** `pause_count`, `total_pause_duration`, `average_pause_length`, `backtrack_count`, `forward_jump_count`, `straightlining_count`.
     - `screen_revisit_rate`: Normalized between `0.0` (no revisits) and `1.0` (revisited every single question).
-- **Anomaly Detection:** `is_anomalous` (0 or 1). Because survey timing data is heavily skewed (non-normal), we use **Robust IQR (Interquartile Range)** bounds rather than naive Z-scores. An interview is flagged if its total duration falls outside $Q1 - 3*IQR$ or $Q3 + 3*IQR$.
+- **Anomaly Detection:** `is_anomalous` (0 or 1). Because survey timing data is heavily skewed (non-normal), we use **Robust IQR (Interquartile Range)** bounds rather than naive Z-scores. An interview is flagged if its total duration falls outside $Q1 - 1.5*IQR$ or $Q3 + 1.5*IQR$.
 
-### 4. Analysis & Jupyter Notebooks
+### 5. Full Verification Workflow
+To regenerate the canonical synthetic data, evaluate the large benchmark packs,
+run the fresh production-readiness sweep, recompute calibration diagnostics,
+regenerate plots, and rebuild the audit notebooks:
+
+```bash
+python run_complete_workflow.py
+```
+
+### 6. Analysis & Jupyter Notebooks
 Once you have `features_output.csv`, you use the **Jupyter Notebooks** in the `notebooks/` folder.
 The notebooks are where the actual research and data science happen. Instead of terminal commands, notebooks give you an interactive, visual environment where you can:
 - Import your `features_output.csv`.
 - Run statistical tests (from `src.validation`) to see if the fast response times correlate with poor data quality.
 - Generate charts and graphs (from `src.visualization`) to visually prove your findings for academic publication.
+
+## Recalibration for New Datasets
+
+The pipeline was optimized on synthetic validation data. For best performance on new real-world datasets, recalibrate the anomaly detection parameters:
+
+### Threshold Recalibration
+Find the optimal anomaly threshold for your data distribution:
+
+```bash
+python threshold_recalibration.py --data-paths data/your_data.csv --ground-truth data/your_labels.csv
+```
+
+This will:
+- Run ROC analysis on your data
+- Find the optimal threshold (currently set to 2.0)
+- Generate ROC curve plots
+- Save results to `output/threshold_recalibration_results.txt`
+
+### Feature Validation
+Identify which features are statistically significant for your dataset:
+
+```bash
+python feature_validation.py --data-paths data/your_data.csv --ground-truth data/your_labels.csv
+```
+
+This will:
+- Perform Mann-Whitney U statistical tests
+- Apply Bonferroni correction for multiple testing
+- Identify significant features (currently 20 features validated)
+- Save detailed results to `output/feature_validation_results.txt`
+
+### Updating the Pipeline
+After recalibration:
+1. Update `src/validation/anomaly_detector.py` with the new threshold
+2. Adjust feature weights based on significance testing results
+3. Re-run validation to confirm thesis requirements are met
+
+### Generalizability Notes
+- **Parser fixes and event mappings**: Work for any SurveyCTO/ODK data
+- **Pipeline architecture**: Modular design handles any survey data
+- **Threshold and features**: May need recalibration for different survey types/contexts
+- **Statistical methods**: ROC analysis and feature testing are universally applicable
+
+## Synthetic Data And Ground Truth
+
+The canonical synthetic generator now writes the audit logs and a matching
+ground-truth label file together:
+
+```bash
+python tests/generate_synthetic_final.py --overwrite
+```
+
+This produces:
+- `data/surveycto.csv`
+- `data/odk.csv`
+- `data/ground_truth_labels.csv`
+
+Timestamped runs under `data/synthetic/<timestamp>/` also include their own
+`ground_truth_labels.csv`.
+
+For fresh larger benchmark packs, generate both SurveyCTO and ODK exports plus
+ground truth with:
+
+```bash
+python tests/generate_benchmark_datasets.py --dataset-size 500 --seed 42 --output-dir data/generated_benchmarks/n500_seed42
+```
+
+To validate repeated fresh synthetic runs and check the acceptance contract
+directly, use:
+
+```bash
+python validate_production_readiness.py --sizes 120 500 --seeds 11 42 --formats surveycto odk
+```
+
+## Current Validation Outputs
+
+The current, dataset-aware validation outputs are:
+- `output/synthetic_dataset_metrics.csv`
+- `output/synthetic_dataset_metrics.md`
+- `output/synthetic_detection_by_type.csv`
+- `output/production_validation/production_readiness_summary.csv`
+- `output/production_validation/production_readiness_summary.md`
+- `output/threshold_recalibration_results.txt`
+- `output/feature_validation_results.csv`
+- `output/synthetic_metrics_overview.png`
+- `output/synthetic_detection_by_type.png`
+
+Older evaluation artifacts such as `output/detailed_metrics.csv` and
+`output/evaluate_report.txt` should be treated as legacy outputs from an earlier,
+now-superseded analysis path.
