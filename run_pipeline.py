@@ -87,6 +87,11 @@ def main():
     parser.add_argument("--inputs", nargs="*", help="Optional explicit CSV files to process")
     parser.add_argument("--ground-truth", help="Optional labelled ground-truth CSV for metric generation")
     parser.add_argument("--label", help="Optional stable label to use in output filenames")
+    parser.add_argument(
+        "--write-legacy-outputs",
+        action="store_true",
+        help="Also write legacy compatibility files (features_output_*.csv and anomaly_report.csv).",
+    )
     
     args = parser.parse_args()
     
@@ -130,21 +135,25 @@ def main():
 
     feature_dataset_file = output_dir / f"feature_dataset_{run_label}.csv"
     anomaly_report_file = output_dir / f"anomaly_report_{run_label}.csv"
-    legacy_feature_file = output_dir / f"features_output_{timestamp}.csv"
-    legacy_anomaly_file = output_dir / "anomaly_report.csv"
     combined_output_file = output_dir / f"pipeline_output_{run_label}.csv"
 
     feature_dataset.to_csv(feature_dataset_file, index=False, na_rep="NaN")
     anomaly_report.to_csv(anomaly_report_file, index=False, na_rep="NaN")
-    feature_dataset.to_csv(legacy_feature_file, index=False, na_rep="NaN")
-    anomaly_report.to_csv(legacy_anomaly_file, index=False, na_rep="NaN")
     final_df.to_csv(combined_output_file, index=False, na_rep="NaN")
+
+    if args.write_legacy_outputs:
+        legacy_feature_file = output_dir / f"features_output_{timestamp}.csv"
+        legacy_anomaly_file = output_dir / "anomaly_report.csv"
+        feature_dataset.to_csv(legacy_feature_file, index=False, na_rep="NaN")
+        anomaly_report.to_csv(legacy_anomaly_file, index=False, na_rep="NaN")
 
     print(f"\nFeatures engineered for {len(final_df)} extracted interviews.")
     print("Anomaly Detection Rules (IQR + Entropy + Speed) successfully applied.")
     print(f"Feature dataset written to: {feature_dataset_file.absolute()}")
     print(f"Anomaly report written to: {anomaly_report_file.absolute()}")
     print(f"Combined pipeline dataset written to: {combined_output_file.absolute()}")
+    if args.write_legacy_outputs:
+        print("Legacy compatibility files also written to output/.")
 
     if args.ground_truth:
         ground_truth_path = Path(args.ground_truth)

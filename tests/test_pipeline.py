@@ -8,6 +8,9 @@ from pathlib import Path
 
 # BUG-3 FIX: process_interview() now exists in run_pipeline.py
 from run_pipeline import process_interview
+from src.pipeline.controller import PipelineController
+from src.parsers.odk_parser import ODKParser
+from src.parsers.surveycto_parser import SurveyCTOParser
 
 
 def test_process_interview_aggregation(tmp_path):
@@ -79,3 +82,48 @@ def test_process_interview_empty_file(tmp_path):
     result = process_interview(p, parser_type='surveycto')
     assert isinstance(result, list)
     assert len(result) == 0
+
+
+def test_auto_parser_detects_iso_timestamp_file_as_odk(tmp_path, monkeypatch):
+    p = tmp_path / "odk_like.csv"
+    p.write_text(
+        "event,node,start,end\n"
+        "form start,/data/root,2024-03-29T14:42:47.397,2024-03-29T14:42:49.086\n"
+    )
+
+    called = {"odk": 0, "surveycto": 0}
+
+    def fake_odk_parse(self, filepath):
+        called["odk"] += 1
+        return pd.DataFrame(
+            {
+                "interview_id": ["ODK-1"],
+                "field_name": ["root"],
+                "event_type": ["form_start"],
+                "start_ms": [1],
+                "end_ms": [2],
+                "duration_ms": [1],
+            }
+        )
+
+    def fake_scto_parse(self, filepath):
+        called["surveycto"] += 1
+        return pd.DataFrame(
+            {
+                "interview_id": ["SCTO-1"],
+                "field_name": ["root"],
+                "event_type": ["form_start"],
+                "start_ms": [1],
+                "end_ms": [2],
+                "duration_ms": [1],
+            }
+        )
+
+    monkeypatch.setattr(ODKParser, "parse", fake_odk_parse)
+    monkeypatch.setattr(SurveyCTOParser, "parse", fake_scto_parse)
+
+    controller = PipelineController(parser_type="auto")
+    controller.process_file(p)
+
+    assert called["odk"] == 1
+    assert called["surveycto"] == 0

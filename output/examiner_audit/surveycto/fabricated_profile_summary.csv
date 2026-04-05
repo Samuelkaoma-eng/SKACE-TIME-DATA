@@ -1,0 +1,3 @@
+anomaly_type,count,mean_rt_variance,mean_rt_iqr,mean_rt_entropy,mean_back_nav_count,mean_total_duration_ms
+normal,400,23325372.170585528,5040.055625,3.245894096408764,2.08,187789.3675
+fabricated,33,0.0,0.0,0.0,0.0,3790.0

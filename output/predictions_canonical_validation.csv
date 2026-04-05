@@ -10,7 +10,7 @@ INT407,anomalous,1,anomalous,7,0,1,1,0,4,"flag_too_fast,flag_zero_back_nav,flag_
 INT408,dq_issue,1,dq_issue,10,1,1,1,0,4,"flag_invalid_ratio,flag_missing_data,flag_too_fast,flag_zero_back_nav,flag_low_entropy,flag_uniform_timing",FLAGGED
 INT409,dq_issue,1,dq_issue,10,1,1,1,0,4,"flag_invalid_ratio,flag_missing_data,flag_too_fast,flag_zero_back_nav,flag_low_entropy,flag_uniform_timing",FLAGGED
 INT410,suspicious,1,suspicious,4,0,1,1,0,2,"flag_low_entropy,flag_uniform_timing",REVIEW
-INT411,suspicious,1,anomalous,5,0,1,1,0,3,"flag_too_fast,flag_zero_back_nav,flag_low_entropy",FLAGGED
+INT411,anomalous,1,anomalous,5,0,1,1,0,3,"flag_too_fast,flag_zero_back_nav,flag_low_entropy",FLAGGED
 ODK400,normal,0,normal,1,0,0,0,2,0,"flag_iqr_entropy,flag_iqr_variance",CLEAN
 ODK401,anomalous,1,anomalous,7,0,1,1,0,4,"flag_too_fast,flag_zero_back_nav,flag_low_entropy,flag_uniform_timing",FLAGGED
 ODK402,dq_issue,1,dq_issue,10,1,1,1,0,4,"flag_invalid_ratio,flag_missing_data,flag_too_fast,flag_zero_back_nav,flag_low_entropy,flag_uniform_timing",FLAGGED
@@ -22,4 +22,4 @@ ODK407,anomalous,1,anomalous,7,0,1,1,0,4,"flag_too_fast,flag_zero_back_nav,flag_
 ODK408,dq_issue,1,dq_issue,10,1,1,1,0,4,"flag_invalid_ratio,flag_missing_data,flag_too_fast,flag_zero_back_nav,flag_low_entropy,flag_uniform_timing",FLAGGED
 ODK409,dq_issue,1,dq_issue,10,1,1,1,0,4,"flag_invalid_ratio,flag_missing_data,flag_too_fast,flag_zero_back_nav,flag_low_entropy,flag_uniform_timing",FLAGGED
 ODK410,suspicious,1,suspicious,4,0,1,1,0,2,"flag_low_entropy,flag_uniform_timing",REVIEW
-ODK411,suspicious,1,anomalous,5,0,1,1,0,3,"flag_too_fast,flag_zero_back_nav,flag_low_entropy",FLAGGED
+ODK411,anomalous,1,anomalous,5,0,1,1,0,3,"flag_too_fast,flag_zero_back_nav,flag_low_entropy",FLAGGED

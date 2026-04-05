@@ -11,6 +11,7 @@ from src.features.response_time import calculate_basic_timing, calculate_speed_i
 from src.features.pauses import calculate_pauses
 from src.features.navigation import calculate_navigation_metrics
 from src.features.rhythm import calculate_rhythm_metrics
+from src.features.section_features import SectionFeatureExtractor
 
 def test_calculate_basic_timing_empty():
     df = pd.DataFrame()
@@ -66,3 +67,11 @@ def test_calculate_rhythm_metrics():
     assert res['rolling_variance_mean'] == 0.0
     assert res['rolling_variance_max'] == 0.0
 
+
+def test_infer_section_name_handles_xpath_and_flat_names():
+    infer = SectionFeatureExtractor._infer_section_name
+
+    assert infer('/data/household/q_name') == 'household'
+    assert infer('/data/q_name') == 'MainSection'
+    assert infer('demographics_q01') == 'demographics'
+    assert infer('plainfield') == 'MainSection'

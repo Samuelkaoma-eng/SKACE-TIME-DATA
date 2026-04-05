@@ -19,7 +19,10 @@ detection threshold, this test turns RED immediately.
 
 import os
 import sys
-import tempfile
+import shutil
+import uuid
+from pathlib import Path
+
 import pytest
 import pandas as pd
 import numpy as np
@@ -49,12 +52,28 @@ RECALL_THRESHOLD    = 0.75
 
 
 @pytest.fixture(scope="module")
-def pipeline_results(tmp_path_factory):
+def e2e_workdir():
+    """
+    Module-scoped temp dir under repo test_runtime_tmp/ (same pattern as conftest).
+    Cannot use tmp_path_factory: pytest.ini disables the tmpdir plugin (-p no:tmpdir).
+    """
+    root = Path(__file__).resolve().parent.parent / "test_runtime_tmp"
+    root.mkdir(exist_ok=True)
+    d = root / f"e2e_{uuid.uuid4().hex}"
+    d.mkdir(parents=True, exist_ok=True)
+    try:
+        yield d
+    finally:
+        shutil.rmtree(d, ignore_errors=True)
+
+
+@pytest.fixture(scope="module")
+def pipeline_results(e2e_workdir):
     """
     Generate raw logs, run the full pipeline, return the results DataFrame.
     Uses a module-scoped fixture so generation + processing runs only once.
     """
-    tmpdir = tmp_path_factory.mktemp("e2e_data")
+    tmpdir = e2e_workdir
     gen = AdversarialDataGenerator(seed=42)
 
     # Generate raw audit logs

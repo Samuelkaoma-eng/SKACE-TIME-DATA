@@ -27,6 +27,23 @@ class PipelineController:
         self.v_extractor = SurveyFeatureExtractor()
         self.t_extractor = StatisticalFeatureExtractor()
         self.anomaly_detector = AnomalyDetector()
+
+    @staticmethod
+    def _looks_like_iso_timestamp(df_raw: pd.DataFrame) -> bool:
+        """
+        Heuristic used by auto-detection for ODK-like logs that do not expose
+        `instance_id` or `name` but do store timestamps as ISO 8601 strings.
+        """
+        for candidate in ["start", "start_time", "ts_start", "end", "end_time", "ts_end"]:
+            if candidate not in df_raw.columns:
+                continue
+            sample = df_raw[candidate].dropna().astype(str).head(20)
+            if sample.empty:
+                continue
+            numeric_ratio = pd.to_numeric(sample, errors="coerce").notna().mean()
+            if numeric_ratio < 0.5:
+                return True
+        return False
         
     def process_file(self, filepath: Union[str, Path]) -> List[dict]:
         """
@@ -87,6 +104,9 @@ class PipelineController:
                     cir_df = pd.concat(cir_dfs, ignore_index=True) if cir_dfs else pd.DataFrame()
                     
                 elif 'instance_id' in cols or 'name' in cols:
+                    print(f"  -> Parsing {filepath.name} using ODKParser...")
+                    cir_df = ODKParser().parse(filepath)
+                elif self._looks_like_iso_timestamp(df_raw):
                     print(f"  -> Parsing {filepath.name} using ODKParser...")
                     cir_df = ODKParser().parse(filepath)
                 else:

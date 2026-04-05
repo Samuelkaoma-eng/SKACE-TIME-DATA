@@ -7,16 +7,42 @@ class SectionFeatureExtractor:
     Calculates features S-01 to S-10.
     Infers sections from prefixes on the field_name (e.g., matching split strings).
     """
+
+    @staticmethod
+    def _infer_section_name(field_name) -> str:
+        """
+        Infer a stable section label from either XPath-like nodes or flat names.
+
+        Examples:
+        - ``/data/household/q_name`` -> ``household``
+        - ``/data/q_name`` -> ``MainSection`` (question under the root form)
+        - ``demographics_q01`` -> ``demographics``
+        """
+        name = str(field_name).strip()
+        if not name or name == "unknown_field":
+            return "MainSection"
+
+        path_parts = [part for part in name.split("/") if part]
+        if path_parts:
+            if path_parts[0].lower() == "data":
+                if len(path_parts) >= 3:
+                    return path_parts[1]
+                if len(path_parts) == 2:
+                    return "MainSection"
+            return path_parts[-1].split("_")[0] if "_" in path_parts[-1] else "MainSection"
+
+        leaf_name = name.rsplit("/", 1)[-1]
+        if "_" in leaf_name:
+            return leaf_name.split("_", 1)[0]
+        return "MainSection"
     
     def extract(self, cir_df: pd.DataFrame, q_features_df: pd.DataFrame) -> pd.DataFrame:
         if cir_df.empty:
             return pd.DataFrame()
             
-        # Infer section by grabbing string before first underscore or using 'Main' if none
+        # Infer sections from either XPath-like field paths or flat synthetic names.
         cir_df = cir_df.copy()
-        cir_df['section_name'] = cir_df['field_name'].apply(
-            lambda x: str(x).split('_')[0] if '_' in str(x) else 'MainSection'
-        )
+        cir_df['section_name'] = cir_df['field_name'].apply(self._infer_section_name)
         
         # Pre-compute the max fields in any single section for S-10 denominator
         section_field_counts = {}
