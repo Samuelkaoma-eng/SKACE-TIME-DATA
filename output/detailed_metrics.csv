@@ -1,4 +1,0 @@
-Dataset,Total Samples,True Positive,True Negative,False Positive,False Negative,Precision,Recall,F1 Score,Accuracy,Sensitivity,Specificity,Anomalies (True),Anomalies (Predicted),Normals (True),Normals (Predicted)
-n500,1500,300,0,1200,0,0.2,1.0,0.3333333333333333,0.2,1.0,0.0,300,1500,1200,0
-n2000,4500,902,0,3598,0,0.20044444444444445,1.0,0.3339503887449093,0.20044444444444445,1.0,0.0,902,4500,3598,0
-n10000,12500,2530,0,9970,0,0.2024,1.0,0.3366600133067199,0.2024,1.0,0.0,2530,12500,9970,0

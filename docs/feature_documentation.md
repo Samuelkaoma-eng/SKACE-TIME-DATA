@@ -10,8 +10,8 @@ This document describes the 40 timing and behavioral features extracted by the a
 | **Q-01** | `response_time_ms` | Total sum of `duration_ms` for all events associated with the field. | Represents primary cognitive engagement time on a single item. | Yan & Tourangeau (2008) |
 | **Q-02** | `time_to_first_interaction` | `duration_ms` of the first log event on the field. | Indicates initial reading and comprehension time before action. | Couper (2000) |
 | **Q-03** | `edit_count` | `total_events - 1` | Identifies questions requiring repeated changes, indicating item difficulty. | Conrad et al. (2017) |
-| **Q-04** | `revisit_flag` | 1 if `edit_count > 0`, else 0. | Binary identifier for non-linear traversal. | Wenz et al. (2020) |
-| **Q-05** | `revisit_count` | Count of interaction sequences separated by idle time or navigation. | Indicates significant respondent doubt or survey complexity. | Kreuter (2013) |
+| **Q-04** | `revisit_flag` | 1 if the field is revisited non-consecutively after the respondent has moved away, else 0. | Binary identifier for genuine non-linear traversal rather than simple multi-event editing. | Wenz et al. (2020) |
+| **Q-05** | `revisit_count` | Number of times the field is re-entered after leaving it. | Indicates significant respondent doubt or survey complexity. | Kreuter (2013) |
 | **Q-06** | `field_completion_ratio` | 1.0 if `response_time_ms > 0` | Binary representation of data presence via timing logs. | Groves et al. (2012) |
 | **Q-07** | `idle_time_ms` | Sum of inter-event gaps > 0 for a single field sequence. | Distraction or heavy cognitive load during answering. | Conrad et al. (2017) |
 | **Q-08** | `keystroke_count` | Total number of recorded paradata events for the node. | Proxy for response complexity (open-ended vs categorical). | Yan & Tourangeau (2008) |
@@ -48,7 +48,7 @@ This document describes the 40 timing and behavioral features extracted by the a
 | **V-07** | `time_of_day_hour` | Hour derived from `min(start)`. | Fabrication detection (e.g., surveys logged at 2:00 AM). | Wenz et al. (2020) |
 | **V-08** | `day_of_week` | Day derived from `min(start)`. | Helps track expected working hours vs weekend anomalies. | Kreuter (2013) |
 | **V-09** | `session_length_vs_median` | `V-01 / median(V-01_all)` | Relative speed compared to the sample population. | Yan & Tourangeau (2008) |
-| **V-10** | `zero_back_nav_flag` | 1 if `V-06 == 0` & `events > 20`. | Extreme indication of fabrication (robots/fakers don't go back). | Conrad et al. (2017) |
+| **V-10** | `zero_back_nav_flag` | 1 if the interview contains at least 20 consecutive non-back-navigation events. | Flags unnaturally linear progression even if a rare early back-navigation event exists elsewhere in the interview. | Conrad et al. (2017) |
 
 ## 4. Statistical Features (T-Level)
 *Extracted by summarizing the distribution of Question-Level response times (Q-01).*

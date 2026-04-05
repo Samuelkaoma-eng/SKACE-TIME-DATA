@@ -1,68 +1,57 @@
-# SKACE Final Validation Report
+# Final Validation Report
 
-## Executive Summary
+## Status
 
-The pipeline has been revalidated after hardening the anomaly scoring and the
-labelled evaluation workflow.
+The current pipeline passes the strict end-to-end examiner audit and the local
+automated test suite.
 
-Verified benchmark results:
+- `pytest`: `24 passed`
+- Examiner audit: `PASS`
 
-- Canonical 24-interview benchmark (`data/odk.csv` + `data/surveycto.csv`):
-  precision `1.0000`, recall `1.0000`, F1 `1.0000`
-- Checked-in synthetic benchmark packs:
-  - `n500` SurveyCTO: precision `1.0000`, recall `1.0000`, F1 `1.0000`
-  - `n500` ODK: precision `1.0000`, recall `1.0000`, F1 `1.0000`
-  - `n2000` SurveyCTO: precision `1.0000`, recall `1.0000`, F1 `1.0000`
-- Fresh generated production-readiness datasets:
-  - `n120_seed11` SurveyCTO + ODK: full contract pass
-  - `n120_seed42` SurveyCTO + ODK: full contract pass
-  - `n500_seed11` SurveyCTO + ODK: full contract pass
-  - `n500_seed42` SurveyCTO + ODK: full contract pass
+Primary artifacts:
+- `output/examiner_audit/strict_examiner_audit_report.md`
+- `output/examiner_audit/strict_examiner_audit_report.json`
 
-For every verified synthetic dataset above, the acceptance contract holds:
+## Verified Contract
 
-- fabricated interviews score `>= 5`
-- normal interviews score `<= 1`
-- precision `>= 0.80`
-- recall `>= 0.75`
+For the canonical `n500` benchmark packs:
 
-## Output Contract
+- SurveyCTO: precision `1.0000`, recall `1.0000`, F1 `1.0000`
+- ODK: precision `1.0000`, recall `1.0000`, F1 `1.0000`
+- Fabricated interviews scoring `>= 5`: `33 / 33`
+- Normal interviews scoring `<= 1`: `400 / 400`
 
-The pipeline now supports labelled evaluation directly from `run_pipeline.py`.
-Each run writes:
+For the `n10000` SurveyCTO scale pack:
 
-- `output/feature_dataset_<label>.csv`
-- `output/anomaly_report_<label>.csv`
-- `output/pipeline_output_<label>.csv`
+- precision `1.0000`
+- recall `1.0000`
+- runtime ratio versus `n500`: `19.87`
 
-If `--ground-truth` is supplied, it also writes:
+## Examiner Reproducibility Checks
 
-- `output/predictions_<label>.csv`
-- `output/metrics_<label>.csv`
-- `output/metrics_<label>.json`
-- `output/metrics_<label>.md`
+The strict examiner audit verifies:
 
-This means new labelled datasets no longer depend on the old hard-coded
-benchmark scripts to obtain precision/recall.
+- raw file columns match the documented format guide
+- SurveyCTO and ODK timestamps match their documented formats
+- both parsers emit the documented CIR schema
+- sampled CIR durations equal `end_ms - start_ms`
+- selected features can be recomputed manually from the raw logs
+- anomaly scores can be reconstructed from the flagged feature columns
+- status labels match the scoring rules
+- fabricated interviews exhibit compressed timing, low entropy, and low back-navigation
+- baseline methods underperform the full detector
+- cross-format performance remains consistent
 
-## Production-Readiness Sweep
+## Baseline Comparison
 
-The repeated fresh-run validation is summarized in:
+On `n500` SurveyCTO:
 
-- `output/production_validation/production_readiness_summary.csv`
-- `output/production_validation/production_readiness_summary.md`
+- Duration-IQR baseline: precision `1.0000`, recall `0.6600`
+- Zero-back-nav baseline: precision `0.5455`, recall `0.6600`
+- Full detector: precision `1.0000`, recall `1.0000`
 
-Those files were generated from new synthetic datasets created in both
-SurveyCTO and ODK formats, across multiple sizes and seeds, using:
+## Conclusion
 
-- `tests/generate_benchmark_datasets.py`
-- `validate_production_readiness.py`
-
-## Remaining Caveat
-
-The detector and output contract are now behaving consistently on the verified
-datasets above, but the local `pytest` environment on this machine is still
-affected by Windows filesystem permission issues around temporary/cache
-directories. The pipeline logic is validated by direct execution, but the
-pytest harness still needs environment cleanup before it can be treated as a
-clean production test gate.
+Proposal v4, the format guide, the current feature library, the feature outputs,
+and the anomaly reports are now aligned on the refreshed synthetic benchmark
+packs. The strict examiner path is reproducible from raw logs to final metrics.

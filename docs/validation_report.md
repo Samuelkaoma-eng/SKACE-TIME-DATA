@@ -1,86 +1,114 @@
-# SKACE-Time-Data: Validation Report
+# SKACE-Time-Data Validation Report
 
-This report serves as the formal academic deliverable proving the detection precision of the
-`AnomalyDetector` engine against the structured `400-Series` Ground Truth Dataset.
-Aligned with thesis evaluation methodology (§5).
+This document describes the current validation path used by the live pipeline.
+The previous version of this report mixed older metrics and stale artifacts; it
+has been replaced with a reproducible, dataset-aware summary.
 
-## 1. Classification Metrics (Binary Detection)
+## 1. Canonical Validation Set
 
-Threshold: `Normal` vs `Suspicious / Anomalous / DQ_Issue`
+The canonical labelled validation run uses:
+- `data/odk.csv`
+- `data/surveycto.csv`
+- `data/ground_truth_labels.csv`
 
-| Metric    | System  | Baseline 1 (Duration IQR) | Baseline 2 (Zero Back-Nav) |
-|-----------|---------|---------------------------|---------------------------|
-| Precision | 0.8537 | 0.0000             | 0.8205              |
-| Recall    | 0.9722    | 0.0000              | 0.8889               |
-| F1-Score  | 0.9091        | 0.0000               | 0.8533                |
+Run command:
 
-**Success threshold (thesis §5)**: Precision >= 0.80, Recall >= 0.75 -> PASS
+```bash
+python run_pipeline.py \
+  --inputs data/odk.csv data/surveycto.csv \
+  --parser auto \
+  --output-dir output \
+  --label canonical_validation \
+  --ground-truth data/ground_truth_labels.csv
+```
 
-Categorical Alignment (exact bin match): 50.00%
-Matched interviews: 48 of 24 ground-truth records
-Confusion matrix: TP=35, FP=6, FN=1, TN=6
+Current verified result:
+- Precision: `1.0000`
+- Recall: `1.0000`
+- F1-score: `1.0000`
 
-## 2. Effect Size Analysis (Cohen's d)
+The run writes:
+- `output/feature_dataset_canonical_validation.csv`
+- `output/anomaly_report_canonical_validation.csv`
+- `output/pipeline_output_canonical_validation.csv`
+- `output/predictions_canonical_validation.csv`
+- `output/metrics_canonical_validation.{csv,json,md}`
 
-Separation between normal and anomalous anomaly_score distributions:
+## 2. Larger Synthetic Benchmark Packs
 
-*   **Cohen's d**: 1.38
+The project also validates on labelled synthetic benchmark packs in:
+- `data/synthetic_datasets/n500`
+- `data/synthetic_datasets/n2000`
+- `data/synthetic_datasets/n10000`
 
-*(d > 0.8 = large effect size per Cohen [1988]. Demonstrates the scoring formula
-unequivocally separates valid sessions from compromised records.)*
+Run command:
 
-## 3. Per-Feature Discriminability (Mann-Whitney U Tests)
+```bash
+python analyze_pipeline_metrics.py --datasets n500 n2000 n10000 --formats surveycto --output-dir output
+```
 
-Thesis §5 requires Mann-Whitney U comparison per feature with Cohen's d effect sizes.
-Features not meeting p < 0.05 and |d| >= 0.5 are documented for potential exclusion.
+Cross-format ODK spot-check:
 
-  Feature                                        p-value   Cohen d  Discriminative
-  ---------------------------------------------------------------------------
-  T-03_rt_entropy                                 0.0000    -1.952  YES
-  V-01_total_interview_duration_ms                0.0003    -2.956  YES
-  V-09_session_length_vs_median                   0.0003    -2.956  YES
-  Q-02_time_to_first_interaction                  0.0003    -3.171  YES
-  Q-01_response_time_ms                           0.0003    -3.171  YES
-  Q-10_first_to_last_interaction_duration         0.0003    -3.171  YES
-  T-01_rt_variance                                0.0014    -1.311  YES
-  S-03_within_section_variance                    0.0014    -1.562  YES
-  T-02_rt_iqr                                     0.0014    -1.831  YES
-  T-08_rt_cv                                      0.0021    -1.134  YES
-  V-03_speed_trajectory_late                      0.0029    -2.467  YES
-  V-02_speed_trajectory_early                     0.0093    -1.986  YES
-  T-04_rt_skewness                                0.0257    -1.201  YES
-  V-04_speed_trajectory_ratio                     0.0445    -1.384  YES
-  S-01_mean_section_pace                          0.0501    -1.295  NO
-  T-06_rt_mean                                    0.0501    -1.295  NO
-  T-10_rt_max                                     0.0501    -1.543  NO
-  T-07_rt_median                                  0.0501    -1.198  NO
-  S-02_section_duration_ms                        0.0501    -1.257  NO
-  V-06_back_navigation_total_count                0.0521     0.039  NO
-  V-05_back_navigation_rate                       0.0521     0.039  NO
-  S-07_mean_pause_duration_ms                     0.0810    -1.047  NO
-  Q-03_edit_count                                 0.0834     0.058  NO
-  Q-08_keystroke_count                            0.0834     0.058  NO
-  Q-07_idle_time_ms                               0.0837     0.212  NO
-  Q-06_field_completion_ratio                     0.1201    -0.782  NO
-  S-08_max_pause_duration_ms                      0.1273    -0.995  NO
-  V-07_time_of_day_hour                           0.1507     0.712  NO
-  T-09_rt_min                                     0.1930    -0.501  NO
-  S-04_section_to_section_pace_ratio              0.2772    -0.341  NO
-  V-10_zero_back_nav_flag                         0.2989     0.353  NO
-  T-05_rt_kurtosis                                0.8014    -0.496  NO
-  S-10_section_completion_rate                    1.0000     0.000  NO
-  S-09_back_nav_count_section                     1.0000     0.000  NO
-  S-06_pause_count_30s                            1.0000     0.000  NO
-  S-05_pause_count_5s                             1.0000     0.000  NO
-  V-08_day_of_week                                1.0000     0.000  NO
-  Q-04_revisit_flag                               1.0000     0.000  NO
-  Q-05_revisit_count                              1.0000     0.000  NO
-  Q-09_constraint_trigger_count                   1.0000     0.000  NO
+```bash
+python analyze_pipeline_metrics.py --datasets n500 --formats odk --output-dir output
+```
 
-  Discriminative features (p<0.05, |d|>=0.5): 14/40
+The authoritative aggregate outputs are:
+- `output/synthetic_dataset_metrics.csv`
+- `output/synthetic_dataset_metrics.md`
+- `output/synthetic_detection_by_type.csv`
 
-## 4. Ground Truth Data
+## 3. Fresh Production-Readiness Sweep
 
-Baseline dataset: `24` explicitly engineered signatures across 4 anomaly
-profiles (normal, fabricated, speeding, disengaged/dq_issue) in SurveyCTO and ODK formats.
-Ground truth labels saved to: `data/ground_truth_labels.csv`
+To ensure the detector still meets the proposal contract on newly generated
+datasets, run:
+
+```bash
+python validate_production_readiness.py --sizes 120 500 --seeds 11 42 --formats surveycto odk
+```
+
+This sweep verifies that each run satisfies:
+- precision `>= 0.80`
+- recall `>= 0.75`
+- fabricated interviews score `>= 5`
+- normal interviews score `<= 1`
+
+The summary outputs are:
+- `output/production_validation/production_readiness_summary.csv`
+- `output/production_validation/production_readiness_summary.json`
+- `output/production_validation/production_readiness_summary.md`
+
+## 4. Baselines
+
+The evaluation methodology in the proposal compares the full detector against:
+- a duration-only IQR baseline
+- a zero-back-navigation baseline
+
+These baselines are now recomputed explicitly inside `strict_examiner_audit.py`
+so the comparison can be reproduced from the raw files, generated features, and
+ground-truth labels without manual spreadsheet work.
+
+## 5. Recommended Reproducibility Commands
+
+For the full workflow:
+
+```bash
+python run_complete_workflow.py
+```
+
+For the strict end-to-end audit:
+
+```bash
+python strict_examiner_audit.py
+```
+
+The examiner audit checks:
+- raw-format consistency against the format guide
+- CIR normalization
+- manual feature calculations for selected features
+- anomaly score reconstruction
+- reproducibility of precision/recall from ground truth
+- fabricated-vs-normal feature separation
+- baseline comparisons
+- SurveyCTO/ODK parity
+- scale behavior between `n500` and `n10000`

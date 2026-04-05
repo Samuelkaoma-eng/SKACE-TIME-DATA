@@ -96,7 +96,7 @@ def main() -> int:
                 "--formats",
                 "odk",
                 "--parser",
-                "surveycto",
+                "auto",
                 "--output-dir",
                 "output",
             ],

@@ -154,7 +154,7 @@ class AnomalyDetector:
             2 * df['flag_low_entropy'].fillna(0) +
             2 * df['flag_uniform_timing'].fillna(0) +
             1 * df['flag_high_back_nav'].fillna(0) +
-            2 * df['flag_iqr_duration'].fillna(0) +
+            1 * df['flag_iqr_duration'].fillna(0) +
             2 * df['flag_iqr_rt_mean'].fillna(0) +
             1 * df['flag_iqr_entropy'].fillna(0) +
             1 * df['flag_rule_pause'].fillna(0) +

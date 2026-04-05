@@ -4,10 +4,10 @@ Threshold Recalibration Results
 Data paths: data/synthetic_datasets/n500/audit_logs_surveycto.csv
 Ground truth: data/synthetic_datasets/n500/ground_truth_labels.csv
 Sample size: 500
-ROC AUC: 0.9964
+ROC AUC: 1.0000
 
 Best threshold by F1 score
-  Threshold: 1.10
-  Precision: 0.9434
+  Threshold: 0.50
+  Precision: 1.0000
   Recall: 1.0000
-  F1 score: 0.9709
+  F1 score: 1.0000

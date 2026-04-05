@@ -44,7 +44,7 @@ Includes:
     add_md("""# 2. Environment Setup
 Import dependencies and resolve the project root directory.""")
 
-    add_code("""import os, sys, glob
+    add_code("""import os, sys, glob, subprocess
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -69,9 +69,9 @@ print("Project Root:", PROJECT_ROOT)""")
     add_md("""# 3. Data Ingestion
 Load the latest combined feature dataset from the output directory.""")
 
-    add_code("""def load_latest():
+    add_code("""def find_latest_dataset():
     output_dir = os.path.join(PROJECT_ROOT, 'output')
-    
+
     # Priority 1: Latest combined pipeline export
     combined_pattern = os.path.join(output_dir, 'pipeline_output_*.csv')
     combined_files = glob.glob(combined_pattern)
@@ -95,8 +95,51 @@ Load the latest combined feature dataset from the output directory.""")
     academic_fallback = os.path.join(output_dir, 'final_combined_features_400series.csv')
     if os.path.exists(academic_fallback):
         return academic_fallback, pd.read_csv(academic_fallback)
-        
-    raise FileNotFoundError("No feature files found in 'output/' directory.")
+
+    return None, None
+
+def bootstrap_pipeline_output():
+    canonical_inputs = [
+        os.path.join(PROJECT_ROOT, 'data', 'odk.csv'),
+        os.path.join(PROJECT_ROOT, 'data', 'surveycto.csv'),
+    ]
+    if not all(os.path.exists(path) for path in canonical_inputs):
+        raise FileNotFoundError(
+            "No feature files found in 'output/' and canonical data inputs are missing. "
+            "Run `python run_pipeline.py --inputs ...` first."
+        )
+
+    cmd = [
+        sys.executable,
+        'run_pipeline.py',
+        '--parser', 'auto',
+        '--output-dir', 'output',
+        '--label', 'notebook_bootstrap',
+        '--inputs',
+        *canonical_inputs,
+    ]
+    ground_truth = os.path.join(PROJECT_ROOT, 'data', 'ground_truth_labels.csv')
+    if os.path.exists(ground_truth):
+        cmd.extend(['--ground-truth', ground_truth])
+
+    print("No pipeline output found. Bootstrapping canonical pipeline run...")
+    result = subprocess.run(cmd, cwd=PROJECT_ROOT)
+    if result.returncode != 0:
+        raise RuntimeError(
+            "Automatic notebook bootstrap failed. "
+            "Run `python run_pipeline.py --inputs data/odk.csv data/surveycto.csv` manually."
+        )
+
+def load_latest():
+    loaded_path, df = find_latest_dataset()
+    if loaded_path is None:
+        bootstrap_pipeline_output()
+        loaded_path, df = find_latest_dataset()
+
+    if loaded_path is None:
+        raise FileNotFoundError("No feature files found in 'output/' directory after notebook bootstrap.")
+
+    return loaded_path, df
 
 loaded_path, df = load_latest()
 print("Data source:", os.path.abspath(loaded_path))

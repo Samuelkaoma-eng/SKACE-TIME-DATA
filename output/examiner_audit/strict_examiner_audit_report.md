@@ -1,0 +1,217 @@
+# Strict Examiner Audit Report
+
+## Checklist Results
+
+```text
+                                                step  passed                                                                                                                                                                                                                                                                                                                                              details
+                     surveycto: raw required columns    True                                                                                                                                                                                                                                                           Required columns present: ['interview_id', 'node', 'event', 'start', 'end', 'duration_ms']
+                         surveycto: timestamp format    True                                                                                                                                                                                                                                                                               Sample timestamps: ['1672646400000', '1672646406500', '1672646406900']
+                               surveycto: CIR schema    True                                                                                                                                                                                                                                                       CIR columns: ['interview_id', 'field_name', 'event_type', 'start_ms', 'end_ms', 'duration_ms']
+                 surveycto: CIR duration consistency    True                                                                                                                                                                                                                                                                                     interview_id=INT-00001 field=demographics_q01 duration_ms=6000.0
+              surveycto: manual Q-01 aggregate check    True                                                                                                                                                                                                                                                                                     interview=INT-00001 field_count=20 chosen_field=demographics_q01
+                        surveycto: manual V-01 check    True                                                                                                                                                                                                                                                                                                                      manual=133500.0 pipeline=133500
+                        surveycto: manual T-02 check    True                                                                                                                                                                                                                                                                                                                              manual=0.0 pipeline=0.0
+             surveycto: anomaly score reconstruction    True                                                                                                                                                                                                                                                                                                                                  expected=5 actual=5
+                           surveycto: status mapping    True                                                                                                                                                                                                                                                                                                                      expected=FLAGGED actual=FLAGGED
+surveycto: fabricated vs normal signature separation    True anomaly_type  count  mean_rt_variance  mean_rt_iqr  mean_rt_entropy  mean_back_nav_count  mean_total_duration_ms\n      normal    400      2.332537e+07  5040.055625         3.245894                 2.08             187789.3675\n  fabricated     33      0.000000e+00     0.000000         0.000000                 0.00               3790.0000
+                           odk: raw required columns    True                                                                                                                                                                                                                                                                 Required columns present: ['instance_id', 'name', 'event', 'start_time', 'end_time']
+                               odk: timestamp format    True                                                                                                                                                                                                                               Sample timestamps: ['2023-01-02T08:00:00.000+00:00', '2023-01-02T08:00:06.500+00:00', '2023-01-02T08:00:06.900+00:00']
+                                     odk: CIR schema    True                                                                                                                                                                                                                                                       CIR columns: ['interview_id', 'field_name', 'event_type', 'start_ms', 'end_ms', 'duration_ms']
+                       odk: CIR duration consistency    True                                                                                                                                                                                                                                                                                     interview_id=INT-00001 field=demographics_q01 duration_ms=6000.0
+                                 cross-format parity    True                                                                                                                                                                                                                                                                         surveycto precision/recall=1.0000/1.0000, odk precision/recall=1.0000/1.0000
+          scale stability (n500 vs n10000 surveycto)    True                                                                                                                                                                                                                                                      runtime_ratio=19.87, n500 precision/recall=1.0000/1.0000, n10000 precision/recall=1.0000/1.0000
+```
+
+## Metrics Summary
+
+```text
+{
+  "datasets": {
+    "surveycto": {
+      "metrics": {
+        "total_samples": 500,
+        "true_positive": 100,
+        "true_negative": 400,
+        "false_positive": 0,
+        "false_negative": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1_score": 1.0,
+        "accuracy": 1.0,
+        "specificity": 1.0,
+        "anomalies_true": 100,
+        "anomalies_predicted": 100,
+        "normals_true": 400,
+        "normals_predicted": 400,
+        "precision_threshold": 0.8,
+        "recall_threshold": 0.75,
+        "fabricated_score_threshold": 5,
+        "normal_score_max": 1,
+        "passes_precision_threshold": true,
+        "passes_recall_threshold": true,
+        "fabricated_total": 33,
+        "fabricated_score_ge_threshold": 33,
+        "normal_total": 400,
+        "normal_score_le_threshold": 400,
+        "passes_fabricated_score_threshold": true,
+        "passes_normal_score_threshold": true,
+        "passes_overall_contract": true
+      },
+      "runtime_seconds": 37.3,
+      "baseline_duration_iqr": {
+        "total_samples": 500,
+        "true_positive": 66,
+        "true_negative": 400,
+        "false_positive": 0,
+        "false_negative": 34,
+        "precision": 1.0,
+        "recall": 0.66,
+        "f1_score": 0.7951807228915663,
+        "accuracy": 0.932,
+        "specificity": 1.0,
+        "anomalies_true": 100,
+        "anomalies_predicted": 66,
+        "normals_true": 400,
+        "normals_predicted": 434,
+        "precision_threshold": 0.8,
+        "recall_threshold": 0.75,
+        "fabricated_score_threshold": 5,
+        "normal_score_max": 1,
+        "passes_precision_threshold": true,
+        "passes_recall_threshold": false,
+        "fabricated_total": 0,
+        "fabricated_score_ge_threshold": 0,
+        "normal_total": 400,
+        "normal_score_le_threshold": 0,
+        "passes_fabricated_score_threshold": false,
+        "passes_normal_score_threshold": false,
+        "passes_overall_contract": false
+      },
+      "baseline_zero_back_nav": {
+        "total_samples": 500,
+        "true_positive": 66,
+        "true_negative": 345,
+        "false_positive": 55,
+        "false_negative": 34,
+        "precision": 0.5454545454545454,
+        "recall": 0.66,
+        "f1_score": 0.5972850678733032,
+        "accuracy": 0.822,
+        "specificity": 0.8625,
+        "anomalies_true": 100,
+        "anomalies_predicted": 121,
+        "normals_true": 400,
+        "normals_predicted": 379,
+        "precision_threshold": 0.8,
+        "recall_threshold": 0.75,
+        "fabricated_score_threshold": 5,
+        "normal_score_max": 1,
+        "passes_precision_threshold": false,
+        "passes_recall_threshold": false,
+        "fabricated_total": 0,
+        "fabricated_score_ge_threshold": 0,
+        "normal_total": 400,
+        "normal_score_le_threshold": 0,
+        "passes_fabricated_score_threshold": false,
+        "passes_normal_score_threshold": false,
+        "passes_overall_contract": false
+      }
+    },
+    "odk": {
+      "metrics": {
+        "total_samples": 500,
+        "true_positive": 100,
+        "true_negative": 400,
+        "false_positive": 0,
+        "false_negative": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1_score": 1.0,
+        "accuracy": 1.0,
+        "specificity": 1.0,
+        "anomalies_true": 100,
+        "anomalies_predicted": 100,
+        "normals_true": 400,
+        "normals_predicted": 400,
+        "precision_threshold": 0.8,
+        "recall_threshold": 0.75,
+        "fabricated_score_threshold": 5,
+        "normal_score_max": 1,
+        "passes_precision_threshold": true,
+        "passes_recall_threshold": true,
+        "fabricated_total": 33,
+        "fabricated_score_ge_threshold": 33,
+        "normal_total": 400,
+        "normal_score_le_threshold": 400,
+        "passes_fabricated_score_threshold": true,
+        "passes_normal_score_threshold": true,
+        "passes_overall_contract": true
+      },
+      "runtime_seconds": 36.83
+    }
+  },
+  "scale": {
+    "n500_runtime_seconds": 37.59,
+    "n10000_runtime_seconds": 747.05,
+    "runtime_ratio": 19.87363660548018,
+    "n500_metrics": {
+      "total_samples": 500,
+      "true_positive": 100,
+      "true_negative": 400,
+      "false_positive": 0,
+      "false_negative": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "accuracy": 1.0,
+      "specificity": 1.0,
+      "anomalies_true": 100,
+      "anomalies_predicted": 100,
+      "normals_true": 400,
+      "normals_predicted": 400,
+      "precision_threshold": 0.8,
+      "recall_threshold": 0.75,
+      "fabricated_score_threshold": 5,
+      "normal_score_max": 1,
+      "passes_precision_threshold": true,
+      "passes_recall_threshold": true,
+      "fabricated_total": 33,
+      "fabricated_score_ge_threshold": 33,
+      "normal_total": 400,
+      "normal_score_le_threshold": 400,
+      "passes_fabricated_score_threshold": true,
+      "passes_normal_score_threshold": true,
+      "passes_overall_contract": true
+    },
+    "n10000_metrics": {
+      "total_samples": 10000,
+      "true_positive": 2000,
+      "true_negative": 8000,
+      "false_positive": 0,
+      "false_negative": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "accuracy": 1.0,
+      "specificity": 1.0,
+      "anomalies_true": 2000,
+      "anomalies_predicted": 2000,
+      "normals_true": 8000,
+      "normals_predicted": 8000,
+      "precision_threshold": 0.8,
+      "recall_threshold": 0.75,
+      "fabricated_score_threshold": 5,
+      "normal_score_max": 1,
+      "passes_precision_threshold": true,
+      "passes_recall_threshold": true,
+      "fabricated_total": 666,
+      "fabricated_score_ge_threshold": 666,
+      "normal_total": 8000,
+      "normal_score_le_threshold": 8000,
+      "passes_fabricated_score_threshold": true,
+      "passes_normal_score_threshold": true,
+      "passes_overall_contract": true
+    }
+  }
+}
+```

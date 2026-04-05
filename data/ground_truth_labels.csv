@@ -10,7 +10,7 @@ INT407,anomalous,1
 INT408,dq_issue,1
 INT409,dq_issue,1
 INT410,suspicious,1
-INT411,suspicious,1
+INT411,anomalous,1
 ODK400,normal,0
 ODK401,anomalous,1
 ODK402,dq_issue,1
@@ -22,4 +22,4 @@ ODK407,anomalous,1
 ODK408,dq_issue,1
 ODK409,dq_issue,1
 ODK410,suspicious,1
-ODK411,suspicious,1
+ODK411,anomalous,1

@@ -1,0 +1,31 @@
+# Python caches
+__pycache__/
+*.py[cod]
+
+# Test and hypothesis caches
+.hypothesis/
+.pytest_cache/
+.pytest_tmp/
+pytest_runtime_tmp/
+pytest-cache-files-*/
+tmp_pytest/
+test_runtime_tmp/
+test_runtime_tmp_*/
+test_runtime_tmp_probe/
+test_runtime_tmp_manual_probe/
+
+# Scratch exports created during local auditing
+__main_fix/
+__main_fix.zip
+__root_fix.zip
+__src_fix.zip
+__tests_fix.zip
+jupyter_runtime_test/
+ipython_test_profile/
+
+# Office and Windows temp files
+~$*.docx
+~WRL*.tmp
+
+# Local backups
+*.local_backup

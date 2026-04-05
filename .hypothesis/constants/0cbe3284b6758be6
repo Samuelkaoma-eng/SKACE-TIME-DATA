@@ -1,4 +1,0 @@
-# file: C:\Users\Samuel\Desktop\4th year\Final year project\SKACE-Time-Data\src\features\question_features.py
-# hypothesis_version: 6.151.9
-
-[0.0, 1.0, 'MainSection', 'Q-03_edit_count', 'Q-04_revisit_flag', 'Q-05_revisit_count', 'Q-07_idle_time_ms', 'Q-08_keystroke_count', 'duration_ms', 'end_ms', 'event_type', 'field_name', 'form_end', 'form_start', 'start_ms', 'unknown_field']
