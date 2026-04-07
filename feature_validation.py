@@ -7,6 +7,8 @@ from scipy.stats import mannwhitneyu
 from statsmodels.stats.multitest import multipletests
 
 from src.pipeline.controller import PipelineController
+from src.validation.detector_config import load_detector_config
+from src.validation.reporting import load_ground_truth
 
 
 EXCLUDE_COLUMNS = {
@@ -23,18 +25,33 @@ EXCLUDE_COLUMNS = {
 }
 
 
-def run_pipeline(data_paths: list[str], parser_type: str) -> pd.DataFrame:
-    controller = PipelineController(parser_type=parser_type)
+def run_pipeline(data_paths: list[str], parser_type: str, detector_config: dict | None = None) -> pd.DataFrame:
+    controller = PipelineController(parser_type=parser_type, detector_config=detector_config)
     return controller.process_batch(data_paths)
 
 
-def prepare_eval_frame(results_df: pd.DataFrame, ground_truth_path: str) -> pd.DataFrame:
-    gt = pd.read_csv(ground_truth_path)
-    required = {"interview_id", "is_anomalous"}
-    missing = required - set(gt.columns)
-    if missing:
-        raise ValueError(f"Ground truth is missing columns {sorted(missing)}")
+def cohens_d(normal_values: pd.Series, anomalous_values: pd.Series) -> float:
+    n1 = len(normal_values)
+    n2 = len(anomalous_values)
+    if n1 < 2 or n2 < 2:
+        return float("nan")
 
+    var1 = float(normal_values.var(ddof=1))
+    var2 = float(anomalous_values.var(ddof=1))
+    pooled_denom = n1 + n2 - 2
+    if pooled_denom <= 0:
+        return float("nan")
+
+    pooled_std = (((n1 - 1) * var1 + (n2 - 1) * var2) / pooled_denom) ** 0.5
+    if pooled_std == 0:
+        if float(anomalous_values.mean()) == float(normal_values.mean()):
+            return 0.0
+        return float("inf")
+    return float((anomalous_values.mean() - normal_values.mean()) / pooled_std)
+
+
+def prepare_eval_frame(results_df: pd.DataFrame, ground_truth_path: str) -> pd.DataFrame:
+    gt = load_ground_truth(ground_truth_path)
     df = results_df.copy()
     df["interview_id"] = df["interview_id"].astype(str)
     gt["interview_id"] = gt["interview_id"].astype(str)
@@ -63,14 +80,19 @@ def compute_feature_stats(eval_df: pd.DataFrame, alpha: float) -> pd.DataFrame:
 
         stat, p_value = mannwhitneyu(normal_values, anomalous_values, alternative="two-sided")
         n1, n2 = len(normal_values), len(anomalous_values)
-        effect_size = abs((2 * stat / (n1 * n2)) - 1)
+        rank_biserial_effect_size = abs((2 * stat / (n1 * n2)) - 1)
+        d_value = cohens_d(normal_values, anomalous_values)
 
         rows.append(
             {
                 "feature": feature,
                 "p_value": float(p_value),
                 "statistic": float(stat),
-                "effect_size": float(effect_size),
+                "effect_size": float(d_value),
+                "effect_size_method": "cohens_d",
+                "cohens_d": float(d_value),
+                "abs_cohens_d": float(abs(d_value)) if np.isfinite(d_value) else float("inf"),
+                "rank_biserial_effect_size": float(rank_biserial_effect_size),
                 "normal_mean": float(normal_values.mean()),
                 "anomalous_mean": float(anomalous_values.mean()),
                 "normal_std": float(normal_values.std()),
@@ -87,7 +109,7 @@ def compute_feature_stats(eval_df: pd.DataFrame, alpha: float) -> pd.DataFrame:
     rejected, adjusted, _, _ = multipletests(stats_df["p_value"], alpha=alpha, method="bonferroni")
     stats_df["p_adjusted"] = adjusted
     stats_df["significant"] = rejected
-    stats_df = stats_df.sort_values(["significant", "effect_size", "p_value"], ascending=[False, False, True])
+    stats_df = stats_df.sort_values(["significant", "abs_cohens_d", "p_value"], ascending=[False, False, True])
     return stats_df
 
 
@@ -96,11 +118,13 @@ def main() -> int:
     parser.add_argument("--data-paths", nargs="+", required=True, help="One or more raw audit CSV files to process.")
     parser.add_argument("--ground-truth", required=True, help="CSV containing interview_id and is_anomalous.")
     parser.add_argument("--parser", default="auto", choices=["auto", "surveycto", "odk"])
+    parser.add_argument("--detector-config", help="Optional JSON config file for anomaly detector thresholds/settings.")
     parser.add_argument("--alpha", type=float, default=0.05, help="Bonferroni-adjusted significance level.")
     parser.add_argument("--output-dir", default="output", help="Directory to write validation outputs.")
     args = parser.parse_args()
 
-    results_df = run_pipeline(args.data_paths, args.parser)
+    detector_config = load_detector_config(args.detector_config) if args.detector_config else None
+    results_df = run_pipeline(args.data_paths, args.parser, detector_config=detector_config)
     eval_df = prepare_eval_frame(results_df, args.ground_truth)
     stats_df = compute_feature_stats(eval_df, args.alpha)
     output_dir = Path(args.output_dir)
@@ -120,6 +144,8 @@ def main() -> int:
         handle.write(f"Alpha: {args.alpha}\n")
         handle.write(f"Features tested: {len(stats_df)}\n")
         handle.write(f"Significant features: {significant_count}\n\n")
+        handle.write("Primary effect size reported: Cohen's d\n")
+        handle.write("Supplementary effect size reported: rank-biserial correlation derived from Mann-Whitney U\n\n")
         if not stats_df.empty:
             handle.write(stats_df.to_string(index=False))
             handle.write("\n")

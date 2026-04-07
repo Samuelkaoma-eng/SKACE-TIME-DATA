@@ -6,6 +6,7 @@ from pathlib import Path
 import pandas as pd
 
 from src.pipeline.controller import PipelineController
+from src.validation.detector_config import load_detector_config
 from src.validation.reporting import (
     anomaly_report_view,
     compute_binary_metrics,
@@ -25,8 +26,15 @@ FORMAT_TO_FILENAME = {
 }
 
 
-def evaluate_file(raw_file: Path, ground_truth_path: Path, parser_type: str, output_dir: Path, prefix: str) -> dict:
-    controller = PipelineController(parser_type=parser_type)
+def evaluate_file(
+    raw_file: Path,
+    ground_truth_path: Path,
+    parser_type: str,
+    output_dir: Path,
+    prefix: str,
+    detector_config: dict | None = None,
+) -> dict:
+    controller = PipelineController(parser_type=parser_type, detector_config=detector_config)
     started = time.time()
     predictions = controller.process_batch([raw_file])
     runtime_seconds = round(time.time() - started, 2)
@@ -90,12 +98,14 @@ def main() -> int:
     )
     parser.add_argument("--anomaly-ratio", type=float, default=0.2, help="Share of anomalous interviews.")
     parser.add_argument("--parser", default="auto", choices=["auto", "surveycto", "odk"], help="Pipeline parser mode.")
+    parser.add_argument("--detector-config", help="Optional JSON config file for anomaly detector thresholds/settings.")
     parser.add_argument("--data-root", default="data/generated_benchmarks", help="Where fresh synthetic datasets should be written.")
     parser.add_argument("--output-dir", default="output/production_validation", help="Where validation outputs should be written.")
     args = parser.parse_args()
 
     data_root = Path(args.data_root)
     output_root = Path(args.output_dir)
+    detector_config = load_detector_config(args.detector_config) if args.detector_config else None
     summary_rows = []
 
     for size in args.sizes:
@@ -114,7 +124,14 @@ def main() -> int:
                 raw_file = dataset_dir / FORMAT_TO_FILENAME[fmt]
                 prefix = sanitize_label(f"{dataset_name}_{fmt}")
                 run_output_dir = output_root / dataset_name / fmt
-                metrics = evaluate_file(raw_file, ground_truth_path, args.parser, run_output_dir, prefix)
+                metrics = evaluate_file(
+                    raw_file,
+                    ground_truth_path,
+                    args.parser,
+                    run_output_dir,
+                    prefix,
+                    detector_config=detector_config,
+                )
                 metrics.update(
                     {
                         "dataset": dataset_name,

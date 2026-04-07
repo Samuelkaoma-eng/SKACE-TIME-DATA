@@ -161,6 +161,13 @@ This will:
 - Find the optimal threshold for the supplied dataset (the latest full n500 recalibration selected `0.50`)
 - Generate ROC curve plots
 - Save results to `output/threshold_recalibration_results.txt`
+- Write a reusable detector config to `output/detector_config_recalibrated.json`
+
+Apply the recalibrated detector settings on a later run with:
+
+```bash
+python run_pipeline.py --detector-config output/detector_config_recalibrated.json --inputs data/your_data.csv
+```
 
 ### Feature Validation
 Identify which features are statistically significant for your dataset:
@@ -172,6 +179,7 @@ python feature_validation.py --data-paths data/your_data.csv --ground-truth data
 This will:
 - Perform Mann-Whitney U statistical tests
 - Apply Bonferroni correction for multiple testing
+- Report Cohen's d as the primary effect size, alongside a supplementary rank-biserial statistic from Mann-Whitney U
 - Evaluate 56 candidate features on the current benchmark path, with 37 marked significant in the latest full workflow run
 - Save detailed results to `output/feature_validation_results.csv`
 

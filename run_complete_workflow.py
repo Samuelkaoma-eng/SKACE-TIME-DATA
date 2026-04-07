@@ -191,6 +191,7 @@ def main() -> int:
     print("  - output/synthetic_dataset_metrics.csv")
     print("  - output/synthetic_detection_by_type.csv")
     print("  - output/production_validation/production_readiness_summary.csv")
+    print("  - output/detector_config_recalibrated.json")
     print("  - output/threshold_recalibration_results.txt")
     print("  - output/feature_validation_results.csv")
     print("  - output/synthetic_metrics_overview.png")

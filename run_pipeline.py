@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import List, Union
 
 from src.pipeline.controller import PipelineController
+from src.validation.detector_config import load_detector_config, validate_detector_config
 from src.validation.reporting import (
     anomaly_report_view,
     compute_binary_metrics,
@@ -18,7 +19,22 @@ from src.validation.reporting import (
 )
 
 
-def process_interview(filepath: Union[str, Path], parser_type: str = 'auto') -> List[dict]:
+def build_detector_config_from_args(args: argparse.Namespace) -> dict:
+    detector_config = {}
+    if getattr(args, "detector_config", None):
+        detector_config.update(load_detector_config(args.detector_config))
+    if getattr(args, "behavior_threshold", None) is not None:
+        detector_config["behavior_score_threshold"] = float(args.behavior_threshold)
+    if getattr(args, "anomalous_threshold", None) is not None:
+        detector_config["anomalous_score_threshold"] = float(args.anomalous_threshold)
+    return validate_detector_config(detector_config)
+
+
+def process_interview(
+    filepath: Union[str, Path],
+    parser_type: str = 'auto',
+    detector_config: dict | None = None,
+) -> List[dict]:
     """
     Public API wrapper: process a single paradata file and return a list of
     per-interview feature dictionaries.
@@ -38,7 +54,7 @@ def process_interview(filepath: Union[str, Path], parser_type: str = 'auto') -> 
     List[dict]
         One dictionary per interview found in the file.
     """
-    controller = PipelineController(parser_type=parser_type)
+    controller = PipelineController(parser_type=parser_type, detector_config=detector_config)
     return controller.process_file(filepath)
 
 def interactive_cli(data_dir: Path):
@@ -87,6 +103,9 @@ def main():
     parser.add_argument("--inputs", nargs="*", help="Optional explicit CSV files to process")
     parser.add_argument("--ground-truth", help="Optional labelled ground-truth CSV for metric generation")
     parser.add_argument("--label", help="Optional stable label to use in output filenames")
+    parser.add_argument("--detector-config", help="Optional JSON config file for anomaly detector thresholds/settings")
+    parser.add_argument("--behavior-threshold", type=float, help="Override behavior_score_threshold for this run")
+    parser.add_argument("--anomalous-threshold", type=float, help="Override anomalous_score_threshold for this run")
     parser.add_argument(
         "--write-legacy-outputs",
         action="store_true",
@@ -117,8 +136,12 @@ def main():
             print(f"No CSV files found in '{data_dir.absolute()}' or its subdirectories.")
             return 0
             
+    detector_config = build_detector_config_from_args(args)
+
     print(f"\nInitializing Pipeline Controller with config: Parser = {args.parser.upper()}")
-    controller = PipelineController(parser_type=args.parser)
+    if detector_config:
+        print(f"Applying detector config overrides: {detector_config}")
+    controller = PipelineController(parser_type=args.parser, detector_config=detector_config)
     
     print(f"Beginning Batch Processing for {len(csv_files)} files...")
     detailed_results = controller.process_batch_detailed(csv_files)
