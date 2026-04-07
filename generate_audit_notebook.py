@@ -67,7 +67,8 @@ print("Project Root:", PROJECT_ROOT)""")
 
     # 3. Data Ingestion
     add_md("""# 3. Data Ingestion
-Load the latest combined feature dataset from the output directory.""")
+Load the latest combined feature dataset from the output directory, then attach
+the matching question-level and section-level tables when available.""")
 
     add_code("""def find_latest_dataset():
     output_dir = os.path.join(PROJECT_ROOT, 'output')
@@ -141,10 +142,58 @@ def load_latest():
 
     return loaded_path, df
 
+def derive_run_label(path):
+    basename = os.path.splitext(os.path.basename(path))[0]
+    for prefix in ['pipeline_output_', 'feature_dataset_', 'features_output_']:
+        if basename.startswith(prefix):
+            return basename[len(prefix):]
+    return None
+
+def load_granular_outputs(source_path):
+    run_label = derive_run_label(source_path)
+    question_path = None
+    section_path = None
+    question_df = pd.DataFrame()
+    section_df = pd.DataFrame()
+
+    if run_label:
+        question_candidate = os.path.join(PROJECT_ROOT, 'output', f'question_features_{run_label}.csv')
+        section_candidate = os.path.join(PROJECT_ROOT, 'output', f'section_features_{run_label}.csv')
+
+        if os.path.exists(question_candidate):
+            question_path = question_candidate
+            question_df = pd.read_csv(question_candidate)
+
+        if os.path.exists(section_candidate):
+            section_path = section_candidate
+            section_df = pd.read_csv(section_candidate)
+
+    return question_path, question_df, section_path, section_df
+
 loaded_path, df = load_latest()
+question_path, question_df, section_path, section_df = load_granular_outputs(loaded_path)
 print("Data source:", os.path.abspath(loaded_path))
 print("Shape:", df.shape)
-print("Columns:", len(df.columns))""")
+print("Columns:", len(df.columns))
+print("Question feature file:", question_path if question_path else "not found for this run")
+print("Section feature file:", section_path if section_path else "not found for this run")""")
+
+    add_md("""# 3.1 Granular Feature Tables
+Preview the question-level and section-level outputs emitted by the pipeline for
+the same run label. These tables preserve the detailed feature grain before the
+interview-level feature dataset is flattened for anomaly detection.""")
+
+    add_code("""if question_df.empty:
+    print("Question-level output not available for the loaded run.")
+else:
+    print("Question-level shape:", question_df.shape)
+    display(question_df.head())
+
+if section_df.empty:
+    print("Section-level output not available for the loaded run.")
+else:
+    print("Section-level shape:", section_df.shape)
+    display(section_df.head())""")
 
     # 4. Data Validation Layer
     add_md("""# 4. Data Validation Layer

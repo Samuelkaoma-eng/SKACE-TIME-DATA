@@ -182,6 +182,8 @@ def main() -> int:
     print(f"Completed at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print("\nKey outputs:")
     print("  - data/ground_truth_labels.csv")
+    print("  - output/question_features_*.csv")
+    print("  - output/section_features_*.csv")
     print("  - output/feature_dataset_*.csv")
     print("  - output/anomaly_report_*.csv")
     print("  - output/pipeline_output_*.csv")

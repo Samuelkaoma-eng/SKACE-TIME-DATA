@@ -44,21 +44,17 @@ class PipelineController:
             if numeric_ratio < 0.5:
                 return True
         return False
-        
-    def process_file(self, filepath: Union[str, Path]) -> List[dict]:
+
+    def _parse_to_cir(self, filepath: Path) -> pd.DataFrame:
         """
-        Processes a single paradata CSV log. 
-        Returns a list of dictionaries, one per interview in the log.
+        Parse a raw audit log into the Common Intermediate Representation (CIR).
         """
-        filepath = Path(filepath)
-        
-        # Determine parser dynamically
         if self.parser_type == 'auto':
             try:
                 # Content-based auto-detection and Hybrid Routing
                 df_raw = pd.read_csv(filepath, comment='#', low_memory=False)
                 cols = set(str(c).lower().strip() for c in df_raw.columns)
-                
+
                 # Check if it's a Frankenstein file (contains both structural IDs)
                 if 'instance_id' in cols and ('interview_id' in cols or 'uuid' in cols):
                     print(f"  -> Hybrid format detected in {filepath.name}. Splitting dataset...")
@@ -101,105 +97,224 @@ class PipelineController:
                             if os.path.exists(tmp_scto.name):
                                 os.remove(tmp_scto.name)
 
-                    cir_df = pd.concat(cir_dfs, ignore_index=True) if cir_dfs else pd.DataFrame()
-                    
-                elif 'instance_id' in cols or 'name' in cols:
+                    return pd.concat(cir_dfs, ignore_index=True) if cir_dfs else pd.DataFrame()
+
+                if 'instance_id' in cols or 'name' in cols:
                     print(f"  -> Parsing {filepath.name} using ODKParser...")
-                    cir_df = ODKParser().parse(filepath)
-                elif self._looks_like_iso_timestamp(df_raw):
+                    return ODKParser().parse(filepath)
+
+                if self._looks_like_iso_timestamp(df_raw):
                     print(f"  -> Parsing {filepath.name} using ODKParser...")
-                    cir_df = ODKParser().parse(filepath)
-                else:
-                    print(f"  -> Parsing {filepath.name} using SurveyCTOParser...")
-                    cir_df = SurveyCTOParser().parse(filepath)
-                    
+                    return ODKParser().parse(filepath)
+
+                print(f"  -> Parsing {filepath.name} using SurveyCTOParser...")
+                return SurveyCTOParser().parse(filepath)
+
             except Exception as e:
                 print(f"  [ERROR] Auto-detection failed for {filepath.name}: {e}")
-                return []
-                
-        elif self.parser_type == 'odk':
+                return pd.DataFrame()
+
+        if self.parser_type == 'odk':
             print(f"  -> Parsing {filepath.name} using ODKParser...")
-            cir_df = ODKParser().parse(filepath)
+            return ODKParser().parse(filepath)
+
+        print(f"  -> Parsing {filepath.name} using SurveyCTOParser...")
+        return SurveyCTOParser().parse(filepath)
+
+    @staticmethod
+    def _with_interview_context(
+        features_df: pd.DataFrame,
+        filepath_name: str,
+        interview_id: str,
+        entity_label: str,
+    ) -> pd.DataFrame:
+        """
+        Convert a feature table indexed by field/section into an export-ready table.
+        """
+        if features_df.empty:
+            return pd.DataFrame(columns=['file_name', 'interview_id', entity_label])
+
+        export_df = features_df.reset_index()
+        export_df.insert(0, 'interview_id', interview_id)
+        export_df.insert(0, 'file_name', filepath_name)
+        return export_df
+
+    def _extract_interview_outputs(self, filepath_name: str, interview_id: str, group_df: pd.DataFrame) -> dict:
+        """
+        Build all per-interview artifacts needed by the pipeline.
+        """
+        # 1. Question level
+        q_df = self.q_extractor.extract(group_df)
+
+        # 2. Section level
+        s_df = self.s_extractor.extract(group_df, q_df)
+
+        # 3. Survey level
+        v_dict = self.v_extractor.extract(group_df)
+
+        # 4. Statistical level (built from Question level)
+        t_dict = self.t_extractor.extract(q_df)
+
+        # Combine all features into a single row summary for this interview
+        final_row = {'file_name': filepath_name, 'interview_id': interview_id}
+
+        # Aggregate Q and S features to preserve the current flat interview-level output.
+        if not s_df.empty:
+            s_summary = s_df.mean(numeric_only=True).to_dict()
         else:
-            print(f"  -> Parsing {filepath.name} using SurveyCTOParser...")
-            cir_df = SurveyCTOParser().parse(filepath)
-            
+            s_summary = {}
+
+        final_row.update(v_dict)
+        final_row.update(t_dict)
+        final_row.update(s_summary)
+
+        if not q_df.empty:
+            q_summary = q_df.mean(numeric_only=True).to_dict()
+            final_row.update(q_summary)
+
+            # Hierarchical Integrity Check
+            # sum(rt_ms) should be <= total_duration
+            q_sum = q_df['Q-01_response_time_ms'].sum()
+            v_total = v_dict.get('V-01_total_interview_duration_ms', 0)
+            if q_sum > v_total + 1000:  # 1s buffer for floating point/rounding
+                final_row['is_data_quality_issue'] = 1
+
+        question_features = self._with_interview_context(q_df, filepath_name, interview_id, 'field_name')
+        section_features = self._with_interview_context(s_df, filepath_name, interview_id, 'section_name')
+
+        return {
+            'interview_features': final_row,
+            'question_features': question_features,
+            'section_features': section_features,
+        }
+
+    def process_file_detailed(self, filepath: Union[str, Path]) -> dict:
+        """
+        Process a single paradata CSV log and retain the granular feature tables.
+
+        Returns
+        -------
+        dict
+            {
+                "interview_features": List[dict],
+                "question_features": pd.DataFrame,
+                "section_features": pd.DataFrame,
+            }
+        """
+        filepath = Path(filepath)
+        cir_df = self._parse_to_cir(filepath)
+
         if cir_df.empty:
             print(f"  [WARN] {filepath.name} produced an empty abstract DataFrame.")
-            return []
-            
-        # Group by interview_id
-        features_list = []
+            return {
+                'interview_features': [],
+                'question_features': pd.DataFrame(columns=['file_name', 'interview_id', 'field_name']),
+                'section_features': pd.DataFrame(columns=['file_name', 'interview_id', 'section_name']),
+            }
+
+        interview_features = []
+        question_frames = []
+        section_frames = []
+
         groups = cir_df.groupby('interview_id')
-        
+
         for interview_id, group_df in groups:
             try:
-                # 1. Question level
-                q_df = self.q_extractor.extract(group_df)
-                
-                # 2. Section level
-                s_df = self.s_extractor.extract(group_df, q_df)
-                
-                # 3. Survey level
-                v_dict = self.v_extractor.extract(group_df)
-                
-                # 4. Statistical level (built from Question level)
-                t_dict = self.t_extractor.extract(q_df)
-                
-                # Combine all features into a single row summary for this interview
-                final_row = {'file_name': filepath.name, 'interview_id': interview_id}
-                
-                # Aggregate Q and S features slightly or just keep them as JSON strings?
-                # The user expects a single row summary. We will take the mean of 
-                # Q and S features across the interview to make it flat.
-                if not s_df.empty:
-                    s_summary = s_df.mean(numeric_only=True).to_dict()
-                else:
-                    s_summary = {}
+                outputs = self._extract_interview_outputs(filepath.name, interview_id, group_df)
+                interview_features.append(outputs['interview_features'])
 
-                final_row.update(v_dict)
-                final_row.update(t_dict)
-                final_row.update(s_summary)
-                
-                if not q_df.empty:
-                    q_summary = q_df.mean(numeric_only=True).to_dict()
-                    final_row.update(q_summary)
-                    
-                    # Hierarchical Integrity Check
-                    # sum(rt_ms) should be <= total_duration
-                    q_sum = q_df['Q-01_response_time_ms'].sum()
-                    v_total = v_dict.get('V-01_total_interview_duration_ms', 0)
-                    if q_sum > v_total + 1000: # 1s buffer for floating point/rounding
-                        final_row['is_data_quality_issue'] = 1
-                    
-                features_list.append(final_row)
+                if not outputs['question_features'].empty:
+                    question_frames.append(outputs['question_features'])
+
+                if not outputs['section_features'].empty:
+                    section_frames.append(outputs['section_features'])
             except Exception as e:
-                 print(f"  [ERROR] Feature extraction failed for interview {interview_id}: {e}")
-                 
-        return features_list
+                print(f"  [ERROR] Feature extraction failed for interview {interview_id}: {e}")
+
+        question_features = (
+            pd.concat(question_frames, ignore_index=True)
+            if question_frames
+            else pd.DataFrame(columns=['file_name', 'interview_id', 'field_name'])
+        )
+        section_features = (
+            pd.concat(section_frames, ignore_index=True)
+            if section_frames
+            else pd.DataFrame(columns=['file_name', 'interview_id', 'section_name'])
+        )
+
+        return {
+            'interview_features': interview_features,
+            'question_features': question_features,
+            'section_features': section_features,
+        }
+        
+    def process_file(self, filepath: Union[str, Path]) -> List[dict]:
+        """
+        Processes a single paradata CSV log. 
+        Returns a list of dictionaries, one per interview in the log.
+        """
+        detailed = self.process_file_detailed(filepath)
+        return detailed['interview_features']
+
+    def process_batch_detailed(self, filepaths: List[Union[str, Path]]) -> dict:
+        """
+        Process multiple files and retain interview-, question-, and section-level outputs.
+        """
+        all_features = []
+        question_frames = []
+        section_frames = []
+
+        for fp in filepaths:
+            detailed = self.process_file_detailed(fp)
+            all_features.extend(detailed['interview_features'])
+
+            if not detailed['question_features'].empty:
+                question_frames.append(detailed['question_features'])
+
+            if not detailed['section_features'].empty:
+                section_frames.append(detailed['section_features'])
+
+        if not all_features:
+            empty_interview = pd.DataFrame()
+            return {
+                'interview_features': empty_interview,
+                'question_features': pd.DataFrame(columns=['file_name', 'interview_id', 'field_name']),
+                'section_features': pd.DataFrame(columns=['file_name', 'interview_id', 'section_name']),
+            }
+
+        interview_df = pd.DataFrame(all_features)
+
+        # Apply global survey-level logic (V-09 session_length_vs_median)
+        if 'V-01_total_interview_duration_ms' in interview_df.columns:
+            median_dur = interview_df['V-01_total_interview_duration_ms'].median()
+            if np.isnan(median_dur) or median_dur == 0:
+                interview_df['V-09_session_length_vs_median'] = 1.0
+            else:
+                interview_df['V-09_session_length_vs_median'] = interview_df['V-01_total_interview_duration_ms'] / median_dur
+
+        # Apply Anomaly Detection
+        interview_df = self.anomaly_detector.detect(interview_df)
+
+        question_features = (
+            pd.concat(question_frames, ignore_index=True)
+            if question_frames
+            else pd.DataFrame(columns=['file_name', 'interview_id', 'field_name'])
+        )
+        section_features = (
+            pd.concat(section_frames, ignore_index=True)
+            if section_frames
+            else pd.DataFrame(columns=['file_name', 'interview_id', 'section_name'])
+        )
+
+        return {
+            'interview_features': interview_df,
+            'question_features': question_features,
+            'section_features': section_features,
+        }
         
     def process_batch(self, filepaths: List[Union[str, Path]]) -> pd.DataFrame:
         """
         Process multiple files and apply global evaluations (like relative speed).
         """
-        all_features = []
-        for fp in filepaths:
-            all_features.extend(self.process_file(fp))
-            
-        if not all_features:
-            return pd.DataFrame()
-            
-        df = pd.DataFrame(all_features)
-        
-        # Apply global survey-level logic (V-09 session_length_vs_median)
-        if 'V-01_total_interview_duration_ms' in df.columns:
-            median_dur = df['V-01_total_interview_duration_ms'].median()
-            if np.isnan(median_dur) or median_dur == 0:
-                df['V-09_session_length_vs_median'] = 1.0
-            else:
-                df['V-09_session_length_vs_median'] = df['V-01_total_interview_duration_ms'] / median_dur
-                
-        # Apply Anomaly Detection
-        df = self.anomaly_detector.detect(df)
-        
-        return df
+        detailed = self.process_batch_detailed(filepaths)
+        return detailed['interview_features']

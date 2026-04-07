@@ -7,7 +7,7 @@ import pytest
 from pathlib import Path
 
 # BUG-3 FIX: process_interview() now exists in run_pipeline.py
-from run_pipeline import process_interview
+from run_pipeline import main as run_pipeline_main, process_interview
 from src.pipeline.controller import PipelineController
 from src.parsers.odk_parser import ODKParser
 from src.parsers.surveycto_parser import SurveyCTOParser
@@ -82,6 +82,94 @@ def test_process_interview_empty_file(tmp_path):
     result = process_interview(p, parser_type='surveycto')
     assert isinstance(result, list)
     assert len(result) == 0
+
+
+def test_process_file_detailed_preserves_question_and_section_grain(tmp_path):
+    p = tmp_path / "granular.csv"
+    p.write_text(
+        "interview_id,question_id,start_time,end_time,event_type\n"
+        "INT_A,demographics_q1,2023-10-01T08:00:00,2023-10-01T08:00:04,Question\n"
+        "INT_A,economics_q2,2023-10-01T08:00:05,2023-10-01T08:00:11,Question\n"
+        "INT_B,demographics_q1,2023-10-01T09:00:00,2023-10-01T09:00:03,Question\n"
+        "INT_B,economics_q2,2023-10-01T09:00:05,2023-10-01T09:00:09,Question\n"
+    )
+
+    controller = PipelineController(parser_type="surveycto")
+    detailed = controller.process_file_detailed(p)
+
+    assert len(detailed["interview_features"]) == 2
+
+    question_features = detailed["question_features"]
+    section_features = detailed["section_features"]
+
+    assert list(question_features.columns[:3]) == ["file_name", "interview_id", "field_name"]
+    assert list(section_features.columns[:3]) == ["file_name", "interview_id", "section_name"]
+
+    assert len(question_features) == 4
+    assert set(question_features["field_name"]) == {"demographics_q1", "economics_q2"}
+
+    assert len(section_features) == 4
+    assert set(section_features["section_name"]) == {"demographics", "economics"}
+
+
+def test_process_batch_detailed_returns_granular_tables(tmp_path):
+    p = tmp_path / "batch.csv"
+    p.write_text(
+        "interview_id,question_id,start_time,end_time,event_type\n"
+        "INT_A,demographics_q1,2023-10-01T08:00:00,2023-10-01T08:00:04,Question\n"
+        "INT_A,economics_q2,2023-10-01T08:00:05,2023-10-01T08:00:11,Question\n"
+        "INT_B,demographics_q1,2023-10-01T09:00:00,2023-10-01T09:00:03,Question\n"
+        "INT_B,economics_q2,2023-10-01T09:00:05,2023-10-01T09:00:09,Question\n"
+    )
+
+    controller = PipelineController(parser_type="surveycto")
+    detailed = controller.process_batch_detailed([p])
+
+    interview_df = detailed["interview_features"]
+    question_features = detailed["question_features"]
+    section_features = detailed["section_features"]
+
+    assert isinstance(interview_df, pd.DataFrame)
+    assert len(interview_df) == 2
+    assert "anomaly_score" in interview_df.columns
+
+    assert len(question_features) == 4
+    assert len(section_features) == 4
+
+
+def test_run_pipeline_writes_granular_output_files(tmp_path, monkeypatch):
+    input_path = tmp_path / "cli_input.csv"
+    output_dir = tmp_path / "output"
+    input_path.write_text(
+        "interview_id,question_id,start_time,end_time,event_type\n"
+        "INT_A,demographics_q1,2023-10-01T08:00:00,2023-10-01T08:00:04,Question\n"
+        "INT_A,economics_q2,2023-10-01T08:00:05,2023-10-01T08:00:11,Question\n"
+    )
+
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "run_pipeline.py",
+            "--parser",
+            "surveycto",
+            "--output-dir",
+            str(output_dir),
+            "--label",
+            "granular_cli",
+            "--inputs",
+            str(input_path),
+        ],
+    )
+
+    exit_code = run_pipeline_main()
+
+    assert exit_code == 0
+    assert (output_dir / "question_features_granular_cli.csv").exists()
+    assert (output_dir / "section_features_granular_cli.csv").exists()
+    assert (output_dir / "feature_dataset_granular_cli.csv").exists()
+    assert (output_dir / "anomaly_report_granular_cli.csv").exists()
+    assert (output_dir / "pipeline_output_granular_cli.csv").exists()
 
 
 def test_auto_parser_detects_iso_timestamp_file_as_odk(tmp_path, monkeypatch):
