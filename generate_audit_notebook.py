@@ -42,7 +42,8 @@ Includes:
 
     # 2. Environment Setup
     add_md("""# 2. Environment Setup
-Import dependencies and resolve the project root directory.""")
+Import dependencies, resolve the project root directory, and load the live
+detector/reporting helpers used by the production pipeline.""")
 
     add_code("""import os, sys, glob, subprocess
 import pandas as pd
@@ -63,24 +64,60 @@ def resolve_root():
 
 PROJECT_ROOT = resolve_root()
 os.chdir(PROJECT_ROOT)
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
+from src.validation.anomaly_detector import AnomalyDetector
+from src.validation.reporting import feature_dataset_view
+
 print("Project Root:", PROJECT_ROOT)""")
 
     # 3. Data Ingestion
     add_md("""# 3. Data Ingestion
-Load the latest combined feature dataset from the output directory, then attach
+Load a selected combined feature dataset from the output directory, then attach
 the matching question-level and section-level tables when available.""")
 
-    add_code("""def find_latest_dataset():
+    add_code("""PREFERRED_RUN_LABEL = os.environ.get('SKACE_NOTEBOOK_RUN_LABEL', 'canonical_validation')
+ALLOW_FALLBACK_TO_LATEST = False
+
+print("Preferred run label:", PREFERRED_RUN_LABEL)
+print("Fallback to latest if preferred run is missing:", ALLOW_FALLBACK_TO_LATEST)""")
+
+    add_code("""def list_pipeline_outputs():
     output_dir = os.path.join(PROJECT_ROOT, 'output')
+    pattern = os.path.join(output_dir, 'pipeline_output_*.csv')
+    files = glob.glob(pattern)
+    return sorted(files, key=os.path.getctime, reverse=True)
 
-    # Priority 1: Latest combined pipeline export
-    combined_pattern = os.path.join(output_dir, 'pipeline_output_*.csv')
-    combined_files = glob.glob(combined_pattern)
-    if combined_files:
-        latest = max(combined_files, key=os.path.getctime)
-        return latest, pd.read_csv(latest)
+def find_dataset_for_label(run_label):
+    if not run_label:
+        return None, None
+    candidate = os.path.join(PROJECT_ROOT, 'output', f'pipeline_output_{run_label}.csv')
+    if os.path.exists(candidate):
+        return candidate, pd.read_csv(candidate)
+    return None, None
 
-    # Priority 2: Historical combined full features
+def find_dataset_with_fallback(preferred_run_label):
+    output_dir = os.path.join(PROJECT_ROOT, 'output')
+    selected_path, selected_df = find_dataset_for_label(preferred_run_label)
+    if selected_path is not None:
+        return selected_path, selected_df
+
+    canonical_path, canonical_df = find_dataset_for_label('canonical_validation')
+    if canonical_path is not None:
+        return canonical_path, canonical_df
+
+    bootstrap_path, bootstrap_df = find_dataset_for_label('notebook_bootstrap')
+    if bootstrap_path is not None:
+        return bootstrap_path, bootstrap_df
+
+    if ALLOW_FALLBACK_TO_LATEST:
+        available = list_pipeline_outputs()
+        if available:
+            latest = available[0]
+            return latest, pd.read_csv(latest)
+
+    # Historical compatibility fallbacks
     fallback = os.path.join(output_dir, 'final_combined_features.csv')
     if os.path.exists(fallback):
         return fallback, pd.read_csv(fallback)
@@ -131,11 +168,18 @@ def bootstrap_pipeline_output():
             "Run `python run_pipeline.py --inputs data/odk.csv data/surveycto.csv` manually."
         )
 
-def load_latest():
-    loaded_path, df = find_latest_dataset()
+def load_selected_dataset():
+    loaded_path, df = find_dataset_with_fallback(PREFERRED_RUN_LABEL)
     if loaded_path is None:
+        available_outputs = list_pipeline_outputs()
+        if available_outputs and not ALLOW_FALLBACK_TO_LATEST:
+            raise FileNotFoundError(
+                "Preferred run label was not found and fallback-to-latest is disabled. "
+                "Set SKACE_NOTEBOOK_RUN_LABEL to one of the available pipeline_output labels "
+                "or set ALLOW_FALLBACK_TO_LATEST = True."
+            )
         bootstrap_pipeline_output()
-        loaded_path, df = find_latest_dataset()
+        loaded_path, df = find_dataset_with_fallback(PREFERRED_RUN_LABEL)
 
     if loaded_path is None:
         raise FileNotFoundError("No feature files found in 'output/' directory after notebook bootstrap.")
@@ -170,7 +214,12 @@ def load_granular_outputs(source_path):
 
     return question_path, question_df, section_path, section_df
 
-loaded_path, df = load_latest()
+available_outputs = list_pipeline_outputs()
+print("Available pipeline outputs (newest first):")
+for path in available_outputs[:10]:
+    print(" -", os.path.basename(path))
+
+loaded_path, df = load_selected_dataset()
 question_path, question_df, section_path, section_df = load_granular_outputs(loaded_path)
 print("Data source:", os.path.abspath(loaded_path))
 print("Shape:", df.shape)
@@ -197,7 +246,9 @@ else:
 
     # 4. Data Validation Layer
     add_md("""# 4. Data Validation Layer
-Apply input validation checks: missing data, negative durations, invalid ratios, and logical inconsistencies between dependent metrics.""")
+Apply general audit diagnostics: missing data, negative durations, invalid ratios,
+and logical inconsistencies between dependent metrics. These `audit_*` checks are
+for exploratory auditing and are separate from the production detector.""")
 
     add_code("""# Convert object columns to numeric where possible (pandas 3.x compatible)
 for col in df.select_dtypes(include='object').columns:
@@ -206,22 +257,22 @@ for col in df.select_dtypes(include='object').columns:
         df[col] = converted
 
 # Missing + invalid checks
-df['flag_missing_data'] = df.isna().any(axis=1)
+df['audit_missing_data'] = df.isna().any(axis=1)
 
 if 'V-01_total_interview_duration_ms' in df.columns:
-    df['flag_negative_duration'] = df['V-01_total_interview_duration_ms'] < 0
+    df['audit_negative_duration'] = df['V-01_total_interview_duration_ms'] < 0
 
 if 'V-04_speed_trajectory_ratio' in df.columns:
-    df['flag_invalid_ratio'] = df['V-04_speed_trajectory_ratio'].isna() | (df['V-04_speed_trajectory_ratio'] < 0)
+    df['audit_invalid_ratio'] = df['V-04_speed_trajectory_ratio'].isna() | (df['V-04_speed_trajectory_ratio'] < 0)
 
 # Logical inconsistencies
 if all(c in df.columns for c in ['T-06_rt_mean', 'T-09_rt_min', 'T-10_rt_max']):
-    df['flag_inconsistent_metrics'] = (
+    df['audit_inconsistent_metrics'] = (
         (df['T-06_rt_mean'] < df['T-09_rt_min']) |
         (df['T-06_rt_mean'] > df['T-10_rt_max'])
     )
 
-print("Validation flags created")""")
+print("Audit diagnostics created")""")
 
     # 5. Feature Recalculation
     add_md("""# 5. Feature Recalculation
@@ -240,111 +291,73 @@ final one-row-per-interview dataset because the event sequence is no longer pres
 else:
     df['flag_stat_order_issue'] = False""")
 
-    # 6. Rule Engine Verification
-    add_md("""# 6. Rule Engine Verification
-Reapply the anomaly detection rules using the same thresholds as the pipeline anomaly detector:
-- Too fast: total duration below 6000 ms
-- Too slow: total duration above 3600000 ms
-- IQR-based duration outlier detection (Q1 - 1.5*IQR, Q3 + 1.5*IQR)
-- Low entropy (< 0.5), uniform timing (variance < 10)
-- High back-navigation rate (> 0.5), zero back-navigation count""")
+    # 6. Live Detector Reproduction
+    add_md("""# 6. Live Detector Reproduction
+Recompute anomaly flags, scores, categories, and status using the production
+`AnomalyDetector` directly. This avoids drift between the notebook and the live
+pipeline logic.""")
 
-    add_code("""if 'V-01_total_interview_duration_ms' in df.columns:
-    # Hard thresholds aligned with anomaly_detector.py
-    df['flag_too_fast'] = df['V-01_total_interview_duration_ms'] < 6000
-    df['flag_too_slow'] = df['V-01_total_interview_duration_ms'] > 3600000
+    add_code("""detector_input = feature_dataset_view(df)
+detector = AnomalyDetector()
+recomputed = detector.detect(detector_input)
 
-    # IQR-based duration outlier (proposal Section 3.3, anomaly_detector.py Layer 3)
-    if len(df) > 3:
-        dur = df['V-01_total_interview_duration_ms']
-        Q1, Q3 = dur.quantile(0.25), dur.quantile(0.75)
-        IQR = Q3 - Q1
-        df['flag_iqr_duration'] = (dur < Q1 - 1.5 * IQR) | (dur > Q3 + 1.5 * IQR)
-    else:
-        df['flag_iqr_duration'] = False
+for col in [
+    'anomaly_score', 'anomaly_category', 'status', 'flagged_features',
+    'iqr_flags', 'rule_flags', 'is_data_quality_issue', 'is_anomalous_behavior', 'is_anomalous'
+]:
+    if col in recomputed.columns:
+        df[f'recomputed_{col}'] = recomputed[col]
 
-if 'T-03_rt_entropy' in df.columns:
-    df['flag_low_entropy'] = df['T-03_rt_entropy'] < 0.5
+df['computed_anomaly_score'] = df.get('recomputed_anomaly_score', pd.Series(0, index=df.index))
+df['computed_category'] = df.get('recomputed_anomaly_category', pd.Series('unknown', index=df.index))
 
-if 'T-01_rt_variance' in df.columns:
-    df['flag_uniform_timing'] = df['T-01_rt_variance'] < 10
-
-if 'V-05_back_navigation_rate' in df.columns:
-    df['flag_high_back_nav'] = df['V-05_back_navigation_rate'] > 0.5
-
-if 'V-06_back_navigation_total_count' in df.columns:
-    df['flag_zero_back_nav'] = df['V-06_back_navigation_total_count'] == 0""")
-
-    # 7. Anomaly Scoring
-    add_md("""# 7. Anomaly Scoring
-Compute the weighted anomaly score using the same formula as the pipeline anomaly detector:
-- flag_too_fast: weight 3
-- flag_too_slow: weight 2
-- flag_low_entropy: weight 2
-- flag_uniform_timing: weight 2
-- flag_high_back_nav: weight 1
-- flag_invalid_ratio: weight 3""")
-
-    add_code("""score = pd.Series(0, index=df.index)
-
-score += df.get('flag_too_fast', pd.Series(False, index=df.index)).astype(int) * 3
-score += df.get('flag_too_slow', pd.Series(False, index=df.index)).astype(int) * 2
-score += df.get('flag_low_entropy', pd.Series(False, index=df.index)).astype(int) * 2
-score += df.get('flag_uniform_timing', pd.Series(False, index=df.index)).astype(int) * 2
-score += df.get('flag_high_back_nav', pd.Series(False, index=df.index)).astype(int) * 1
-score += df.get('flag_invalid_ratio', pd.Series(False, index=df.index)).astype(int) * 3
-
-df['computed_anomaly_score'] = score
-if df['computed_anomaly_score'].max() > 0:
-    df['normalized_score'] = df['computed_anomaly_score'] / df['computed_anomaly_score'].max()
+if pd.to_numeric(df['computed_anomaly_score'], errors='coerce').max() > 0:
+    df['normalized_score'] = pd.to_numeric(df['computed_anomaly_score'], errors='coerce') / pd.to_numeric(df['computed_anomaly_score'], errors='coerce').max()
 else:
-    df['normalized_score'] = 0.0""")
+    df['normalized_score'] = 0.0
 
-    # 8. Classification
-    add_md("""# 8. Classification
-Classify interviews into categories using the same logic as the current pipeline:
-- Data quality issue (if flagged by DQ checks)
-- Anomalous (score >= 5)
-- Suspicious (score >= 3)
-- Normal (score < 3)""")
+print("Production detector reapplied to", len(recomputed), "rows")""")
 
-    add_code("""def classify(row):
-    if 'is_data_quality_issue' in df.columns and row.get('is_data_quality_issue', 0) == 1:
-        return 'dq_issue'
-    elif row['computed_anomaly_score'] >= 5:
-        return 'anomalous'
-    elif row['computed_anomaly_score'] >= 3:
-        return 'suspicious'
-    else:
-        return 'normal'
+    # 7. Audit Consistency Checks
+    add_md("""# 7. Audit Consistency Checks
+Compare the live detector recomputation against the source file when the loaded
+dataset already contains pipeline-produced anomaly outputs.""")
 
-df['computed_category'] = df.apply(classify, axis=1)""")
+    add_code("""comparison_pairs = [
+    ('anomaly_score', 'recomputed_anomaly_score'),
+    ('anomaly_category', 'recomputed_anomaly_category'),
+    ('status', 'recomputed_status'),
+    ('flagged_features', 'recomputed_flagged_features'),
+]
 
-    # 9. Audit Consistency Checks
-    add_md("""# 9. Audit Consistency Checks
-Compare audit-recomputed scores and categories against the pipeline-produced values to verify deterministic reproducibility.""")
+comparison_summary = []
+for source_col, recomputed_col in comparison_pairs:
+    if source_col in df.columns and recomputed_col in df.columns:
+        mismatches = (df[source_col].astype(str) != df[recomputed_col].astype(str)).sum()
+        comparison_summary.append({
+            'column': source_col,
+            'mismatches': int(mismatches),
+        })
 
-    add_code("""if 'anomaly_score' in df.columns:
-    mismatch = (df['computed_anomaly_score'] != df['anomaly_score']).sum()
-    print("Score mismatches:", mismatch)
+if comparison_summary:
+    comparison_df = pd.DataFrame(comparison_summary)
+    display(comparison_df)
+else:
+    print("Loaded dataset does not contain source anomaly outputs to compare against.")""")
 
-if 'anomaly_category' in df.columns:
-    mismatch_cat = (df['computed_category'] != df['anomaly_category']).sum()
-    print("Category mismatches:", mismatch_cat)""")
-
-    # 10. Summary Statistics
-    add_md("""# 10. Summary Statistics
+    # 8. Summary Statistics
+    add_md("""# 8. Summary Statistics
 Descriptive statistics for all numeric features and flag distribution counts.""")
 
     add_code("""print(df.describe())
 
 print("\\nFlag Distribution:")
-flags = [col for col in df.columns if col.startswith('flag_')]
+flags = [col for col in df.columns if col.startswith('flag_') or col.startswith('audit_')]
 for f in flags:
     print(f, df[f].sum())""")
 
-    # 11. Visualization
-    add_md("""# 11. Visualization
+    # 9. Visualization
+    add_md("""# 9. Visualization
 Distribution of anomaly scores and category breakdown across the dataset.""")
 
     add_code("""plt.figure()
@@ -360,11 +373,11 @@ sns.countplot(x='computed_category', data=df, order=['normal', 'suspicious', 'an
 plt.title('Category Distribution')
 plt.show()""")
 
-    # 12. Adversarial Edge Case Detection
-    add_md("""# 12. Adversarial Edge Case Detection
+    # 10. Adversarial Edge Case Detection
+    add_md("""# 10. Adversarial Edge Case Detection
 Identify interviews with extreme or degenerate data: missing values, non-positive durations, zero entropy.""")
 
-    add_code("""edge_condition = df['flag_missing_data'] == True
+    add_code("""edge_condition = df.get('audit_missing_data', pd.Series(False, index=df.index)) == True
 
 if 'V-01_total_interview_duration_ms' in df.columns:
     edge_condition = edge_condition | (df['V-01_total_interview_duration_ms'] <= 0)
@@ -376,8 +389,8 @@ edge_cases = df[edge_condition]
 print("Edge Cases Detected:", len(edge_cases))
 display(edge_cases.head() if not edge_cases.empty else "No edge cases matched.")""")
 
-    # 13. Final Output
-    add_md("""# 13. Final Output
+    # 11. Final Output
+    add_md("""# 11. Final Output
 Export the audit-enriched dataset with all recomputed flags, scores, and categories.""")
 
     add_code("""output_path = os.path.join(PROJECT_ROOT, 'output', 'audit_results.csv')
@@ -385,8 +398,8 @@ os.makedirs(os.path.dirname(output_path), exist_ok=True)
 df.to_csv(output_path, index=False)
 print("Audit results saved to:", output_path)""")
 
-    # 14. Correlation Analysis
-    add_md("""# 14. Correlation Analysis
+    # 12. Correlation Analysis
+    add_md("""# 12. Correlation Analysis
 Correlation heatmap of key structural and statistical paradata features to identify collinear metrics.""")
 
     add_code("""features_to_correlate = [
@@ -406,8 +419,8 @@ if available_features:
 else:
     print("Required features for correlation analysis are missing from the dataframe.")""")
 
-    # 15. Anomaly vs. Session Duration
-    add_md("""# 15. Anomaly vs. Session Duration
+    # 13. Anomaly vs. Session Duration
+    add_md("""# 13. Anomaly vs. Session Duration
 Examining the relationship between total survey duration and the calculated anomaly score.""")
 
     add_code("""if 'V-01_total_interview_duration_ms' in df.columns and 'computed_anomaly_score' in df.columns:
@@ -434,8 +447,8 @@ Examining the relationship between total survey duration and the calculated anom
     else:
         print("No valid duration data to plot.")""")
 
-    # 16. Section-Level Fatigue Analysis
-    add_md("""# 16. Section-Level Fatigue Analysis
+    # 14. Section-Level Fatigue Analysis
+    add_md("""# 14. Section-Level Fatigue Analysis
 Analyzing section-level features (pauses and section completion) by anomaly category to discover where anomalous respondents start showing fatigue.""")
 
     add_code("""s_features = ['S-05_pause_count_5s', 'S-07_mean_pause_duration_ms', 'S-10_section_completion_rate']
@@ -463,8 +476,8 @@ if available_s and 'computed_category' in df.columns:
 else:
     print("S-Series parameters not available for Section-Level Fatigue Analysis.")""")
 
-    # 17. Multidimensional Feature Pairplot
-    add_md("""# 17. Multidimensional Feature Pairplot
+    # 15. Multidimensional Feature Pairplot
+    add_md("""# 15. Multidimensional Feature Pairplot
 Pairwise scatterplots to visually cluster behavioral subsets using timing and structural metrics.""")
 
     add_code("""pairplot_features = ['T-03_rt_entropy', 'T-06_rt_mean', 'V-05_back_navigation_rate', 'computed_category']
@@ -484,18 +497,22 @@ if len(available_pair) > 1 and 'computed_category' in available_pair:
 else:
     print("Required features for pairplot are missing.")""")
 
-    # Write Notebook variants
+    # Write the canonical notebook and remove the old duplicate if it still exists.
     notebook_dir = os.path.join(os.getcwd(), 'notebooks')
     os.makedirs(notebook_dir, exist_ok=True)
 
-    for filename in ['System_Audit_Report.ipynb', 'System_Audit_Report_Final.ipynb']:
-        notebook_path = os.path.join(notebook_dir, filename)
-        try:
-            with open(notebook_path, 'w', encoding='utf-8') as f:
-                json.dump(notebook, f, indent=2)
-            print("Notebook created successfully at:", notebook_path)
-        except Exception as e:
-            print("ERROR saving notebook:", e)
+    notebook_path = os.path.join(notebook_dir, 'System_Audit_Report.ipynb')
+    try:
+        with open(notebook_path, 'w', encoding='utf-8') as f:
+            json.dump(notebook, f, indent=2)
+        print("Notebook created successfully at:", notebook_path)
+    except Exception as e:
+        print("ERROR saving notebook:", e)
+
+    duplicate_path = os.path.join(notebook_dir, 'System_Audit_Report_Final.ipynb')
+    if os.path.exists(duplicate_path):
+        os.remove(duplicate_path)
+        print("Removed duplicate notebook:", duplicate_path)
 
 if __name__ == '__main__':
     create_audit_report_notebook()

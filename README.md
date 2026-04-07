@@ -8,7 +8,7 @@ This project analyzes timing data collected from SurveyCTO and ODK surveys and e
 
 - `data/`: Raw paradata logs and **`ground_truth_labels.csv`** for adversarial validation.
 - `docs/`: Formal academic deliverables (Format Guides, Feature Library Manuals, Validation Reports).
-- `notebooks/`: **`System_Audit_Report.ipynb`** - The Standardized 15-point interactive audit engine.
+- `notebooks/`: **`System_Audit_Report.ipynb`** - The primary interactive audit notebook.
 - `output/`: Processed feature matrices and visualization plots.
 - `report/`: **`final_academic_report.md`** - The 7,000-word thesis structural blueprint.
 - `src/`: Core Python library implementing the 4-Layer Validation Engine.
@@ -139,8 +139,8 @@ This writes a report to:
 
 ### 6. Analysis & Jupyter Notebooks
 Once you have a pipeline output such as `output/pipeline_output_<label>.csv`, you use the **Jupyter Notebooks** in the `notebooks/` folder.
-The notebooks are where the actual research and data science happen. Instead of terminal commands, notebooks give you an interactive, visual environment where you can:
-- Import the latest pipeline output or feature dataset.
+The notebook is where the actual research and data science happen. Instead of terminal commands, it gives you an interactive, visual environment where you can:
+- Import a selected pipeline output or feature dataset.
 - Inspect the matching question-level and section-level tables for the same run.
 - Run statistical tests (from `src.validation`) to see if the fast response times correlate with poor data quality.
 - Generate charts and graphs (from `src.visualization`) to visually prove your findings for academic publication.
@@ -158,7 +158,7 @@ python threshold_recalibration.py --data-paths data/your_data.csv --ground-truth
 
 This will:
 - Run ROC analysis on your data
-- Find the optimal threshold (currently set to 2.0)
+- Find the optimal threshold for the supplied dataset (the latest full n500 recalibration selected `0.50`)
 - Generate ROC curve plots
 - Save results to `output/threshold_recalibration_results.txt`
 
@@ -172,8 +172,8 @@ python feature_validation.py --data-paths data/your_data.csv --ground-truth data
 This will:
 - Perform Mann-Whitney U statistical tests
 - Apply Bonferroni correction for multiple testing
-- Identify significant features (currently 20 features validated)
-- Save detailed results to `output/feature_validation_results.txt`
+- Evaluate 56 candidate features on the current benchmark path, with 37 marked significant in the latest full workflow run
+- Save detailed results to `output/feature_validation_results.csv`
 
 ### Updating the Pipeline
 After recalibration:
