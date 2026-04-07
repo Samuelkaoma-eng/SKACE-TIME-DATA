@@ -165,7 +165,7 @@ def main() -> int:
         ),
         (
             [python_exe, "generate_audit_notebook.py"],
-            "9. Regenerate audit notebooks",
+            "9. Regenerate the primary audit notebook",
             False,
         ),
     ]
@@ -196,7 +196,6 @@ def main() -> int:
     print("  - output/synthetic_metrics_overview.png")
     print("  - output/synthetic_detection_by_type.png")
     print("  - notebooks/System_Audit_Report.ipynb")
-    print("  - notebooks/System_Audit_Report_Final.ipynb")
 
     return 0
 
