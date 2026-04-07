@@ -1,4 +1,5 @@
 import argparse
+import json
 from pathlib import Path
 
 import matplotlib
@@ -8,21 +9,19 @@ import pandas as pd
 from sklearn.metrics import auc, f1_score, precision_score, recall_score, roc_curve
 
 from src.pipeline.controller import PipelineController
+from src.validation.detector_config import build_recalibrated_detector_config, load_detector_config
+from src.validation.reporting import load_ground_truth as load_ground_truth_df
 
 matplotlib.use("Agg")
 
 
-def run_pipeline(data_paths: list[str], parser_type: str) -> pd.DataFrame:
-    controller = PipelineController(parser_type=parser_type)
+def run_pipeline(data_paths: list[str], parser_type: str, detector_config: dict | None = None) -> pd.DataFrame:
+    controller = PipelineController(parser_type=parser_type, detector_config=detector_config)
     return controller.process_batch(data_paths)
 
 
 def load_ground_truth(path: str) -> dict[str, int]:
-    gt = pd.read_csv(path)
-    required = {"interview_id", "is_anomalous"}
-    missing = required - set(gt.columns)
-    if missing:
-        raise ValueError(f"Ground truth is missing columns {sorted(missing)}")
+    gt = load_ground_truth_df(path)
     return dict(zip(gt["interview_id"].astype(str), gt["is_anomalous"].astype(int)))
 
 
@@ -94,10 +93,12 @@ def main() -> int:
     parser.add_argument("--data-paths", nargs="+", required=True, help="One or more raw audit CSV files to process.")
     parser.add_argument("--ground-truth", required=True, help="CSV containing interview_id and is_anomalous.")
     parser.add_argument("--parser", default="auto", choices=["auto", "surveycto", "odk"])
+    parser.add_argument("--detector-config", help="Optional JSON config file for anomaly detector thresholds/settings.")
     parser.add_argument("--output-dir", default="output", help="Directory to write recalibration outputs.")
     args = parser.parse_args()
 
-    results_df = run_pipeline(args.data_paths, args.parser)
+    detector_config = load_detector_config(args.detector_config) if args.detector_config else None
+    results_df = run_pipeline(args.data_paths, args.parser, detector_config=detector_config)
     ground_truth = load_ground_truth(args.ground_truth)
     eval_df = prepare_eval_frame(results_df, ground_truth)
 
@@ -112,6 +113,15 @@ def main() -> int:
     roc_path = output_dir / "threshold_roc_curve.png"
     roc_auc = save_roc_curve(eval_df, roc_path)
 
+    detector_config_payload = build_recalibrated_detector_config(
+        behavior_score_threshold=optimal_threshold,
+        data_paths=args.data_paths,
+        ground_truth_path=args.ground_truth,
+        base_config=detector_config,
+    )
+    detector_config_path = output_dir / "detector_config_recalibrated.json"
+    detector_config_path.write_text(json.dumps(detector_config_payload, indent=2), encoding="utf-8")
+
     summary_path = output_dir / "threshold_recalibration_results.txt"
     with summary_path.open("w", encoding="utf-8") as handle:
         handle.write("Threshold Recalibration Results\n")
@@ -125,6 +135,13 @@ def main() -> int:
         handle.write(f"  Precision: {best_metrics['precision']:.4f}\n")
         handle.write(f"  Recall: {best_metrics['recall']:.4f}\n")
         handle.write(f"  F1 score: {best_metrics['f1_score']:.4f}\n")
+        handle.write("\nReusable detector configuration\n")
+        handle.write(f"  Config path: {detector_config_path}\n")
+        handle.write(
+            "  Applies recalibrated behavior_score_threshold directly; "
+            "anomalous_score_threshold is kept at least as high to preserve category ordering.\n"
+        )
+        handle.write("  Use with: python run_pipeline.py --detector-config output/detector_config_recalibrated.json ...\n")
 
     print(f"Processed {len(eval_df)} labelled interviews")
     print(f"Best threshold: {optimal_threshold:.2f}")
@@ -136,6 +153,7 @@ def main() -> int:
     print(f"ROC AUC: {roc_auc:.4f}")
     print(f"Saved threshold curve to: {threshold_path}")
     print(f"Saved ROC curve to: {roc_path}")
+    print(f"Saved reusable detector config to: {detector_config_path}")
     print(f"Saved summary to: {summary_path}")
 
     return 0

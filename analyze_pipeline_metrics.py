@@ -6,6 +6,7 @@ from pathlib import Path
 import pandas as pd
 
 from src.pipeline.controller import PipelineController
+from src.validation.detector_config import load_detector_config
 from src.validation.reporting import compute_binary_metrics, compute_detection_by_type, load_ground_truth, merge_ground_truth
 
 
@@ -18,6 +19,7 @@ def evaluate_dataset(
     dataset_dir: Path,
     formats: list[str],
     parser_type: str,
+    detector_config: dict | None = None,
     output_dir: Path | None = None,
 ) -> tuple[list[dict], list[dict]]:
     ground_truth = load_ground_truth(dataset_dir / "ground_truth_labels.csv")
@@ -29,7 +31,7 @@ def evaluate_dataset(
         if not file_path.exists():
             continue
 
-        controller = PipelineController(parser_type=parser_type)
+        controller = PipelineController(parser_type=parser_type, detector_config=detector_config)
         started = time.time()
         predictions = controller.process_batch([file_path])
         runtime = time.time() - started
@@ -127,6 +129,7 @@ def main() -> int:
         choices=["auto", "surveycto", "odk"],
         help="Parser routing mode for PipelineController.",
     )
+    parser.add_argument("--detector-config", help="Optional JSON config file for anomaly detector thresholds/settings.")
     parser.add_argument(
         "--output-dir",
         default="output",
@@ -139,10 +142,17 @@ def main() -> int:
     if not dataset_dirs:
         raise FileNotFoundError(f"No dataset directories found under {root}")
 
+    detector_config = load_detector_config(args.detector_config) if args.detector_config else None
     metric_rows = []
     type_rows = []
     for dataset_dir in dataset_dirs:
-        rows, by_type = evaluate_dataset(dataset_dir, args.formats, args.parser, Path(args.output_dir))
+        rows, by_type = evaluate_dataset(
+            dataset_dir,
+            args.formats,
+            args.parser,
+            detector_config=detector_config,
+            output_dir=Path(args.output_dir),
+        )
         metric_rows.extend(rows)
         type_rows.extend(by_type)
 

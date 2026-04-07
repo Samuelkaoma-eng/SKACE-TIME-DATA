@@ -10,6 +10,7 @@ from src.features.section_features import SectionFeatureExtractor
 from src.features.survey_features import SurveyFeatureExtractor
 from src.features.statistical_features import StatisticalFeatureExtractor
 from src.validation.anomaly_detector import AnomalyDetector
+from src.validation.detector_config import validate_detector_config
 
 class PipelineController:
     """
@@ -17,7 +18,7 @@ class PipelineController:
     Ensures low coupling by passing only DataFrames between components.
     """
     
-    def __init__(self, parser_type: str = 'auto'):
+    def __init__(self, parser_type: str = 'auto', detector_config: dict | None = None):
         self.parser_type = parser_type.lower()
         if self.parser_type not in ['auto', 'surveycto', 'odk']:
             raise ValueError(f"Unknown parser type: {parser_type}")
@@ -26,7 +27,8 @@ class PipelineController:
         self.s_extractor = SectionFeatureExtractor()
         self.v_extractor = SurveyFeatureExtractor()
         self.t_extractor = StatisticalFeatureExtractor()
-        self.anomaly_detector = AnomalyDetector()
+        self.detector_config = validate_detector_config(detector_config or {})
+        self.anomaly_detector = AnomalyDetector(**self.detector_config)
 
     @staticmethod
     def _looks_like_iso_timestamp(df_raw: pd.DataFrame) -> bool:
