@@ -28,6 +28,8 @@ Current verified result:
 - F1-score: `1.0000`
 
 The run writes:
+- `output/question_features_canonical_validation.csv`
+- `output/section_features_canonical_validation.csv`
 - `output/feature_dataset_canonical_validation.csv`
 - `output/anomaly_report_canonical_validation.csv`
 - `output/pipeline_output_canonical_validation.csv`

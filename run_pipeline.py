@@ -121,7 +121,10 @@ def main():
     controller = PipelineController(parser_type=args.parser)
     
     print(f"Beginning Batch Processing for {len(csv_files)} files...")
-    final_df = controller.process_batch(csv_files)
+    detailed_results = controller.process_batch_detailed(csv_files)
+    final_df = detailed_results["interview_features"]
+    question_features = detailed_results["question_features"]
+    section_features = detailed_results["section_features"]
     
     if final_df.empty:
         print("No features extracted. Pipeline failed or data was invalid.")
@@ -133,10 +136,14 @@ def main():
     feature_dataset = feature_dataset_view(final_df)
     anomaly_report = anomaly_report_view(final_df)
 
+    question_features_file = output_dir / f"question_features_{run_label}.csv"
+    section_features_file = output_dir / f"section_features_{run_label}.csv"
     feature_dataset_file = output_dir / f"feature_dataset_{run_label}.csv"
     anomaly_report_file = output_dir / f"anomaly_report_{run_label}.csv"
     combined_output_file = output_dir / f"pipeline_output_{run_label}.csv"
 
+    question_features.to_csv(question_features_file, index=False, na_rep="NaN")
+    section_features.to_csv(section_features_file, index=False, na_rep="NaN")
     feature_dataset.to_csv(feature_dataset_file, index=False, na_rep="NaN")
     anomaly_report.to_csv(anomaly_report_file, index=False, na_rep="NaN")
     final_df.to_csv(combined_output_file, index=False, na_rep="NaN")
@@ -149,6 +156,8 @@ def main():
 
     print(f"\nFeatures engineered for {len(final_df)} extracted interviews.")
     print("Anomaly Detection Rules (IQR + Entropy + Speed) successfully applied.")
+    print(f"Question-level features written to: {question_features_file.absolute()}")
+    print(f"Section-level features written to: {section_features_file.absolute()}")
     print(f"Feature dataset written to: {feature_dataset_file.absolute()}")
     print(f"Anomaly report written to: {anomaly_report_file.absolute()}")
     print(f"Combined pipeline dataset written to: {combined_output_file.absolute()}")
