@@ -22,6 +22,7 @@ __src_fix.zip
 __tests_fix.zip
 jupyter_runtime_test/
 ipython_test_profile/
+notebooks/*.executed.ipynb
 
 # Office and Windows temp files
 ~$*.docx
