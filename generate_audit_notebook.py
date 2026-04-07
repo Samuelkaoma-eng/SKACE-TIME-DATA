@@ -45,7 +45,8 @@ Includes:
 Import dependencies, resolve the project root directory, and load the live
 detector/reporting helpers used by the production pipeline.""")
 
-    add_code("""import os, sys, glob, subprocess
+    add_code("""import os, sys, glob, subprocess, warnings
+from datetime import datetime
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -53,6 +54,7 @@ import seaborn as sns
 from IPython.display import display
 
 sns.set_theme(style='whitegrid')
+warnings.filterwarnings('ignore', category=FutureWarning, module='seaborn')
 
 def resolve_root():
     current = os.getcwd()
@@ -193,6 +195,18 @@ def derive_run_label(path):
             return basename[len(prefix):]
     return None
 
+def resolve_input_paths_from_loaded_df(source_df):
+    if 'file_name' not in source_df.columns:
+        return []
+
+    resolved = []
+    for file_name in source_df['file_name'].dropna().astype(str).unique():
+        matches = glob.glob(os.path.join(PROJECT_ROOT, 'data', '**', file_name), recursive=True)
+        if not matches:
+            return []
+        resolved.append(matches[0])
+    return resolved
+
 def load_granular_outputs(source_path):
     run_label = derive_run_label(source_path)
     question_path = None
@@ -214,16 +228,49 @@ def load_granular_outputs(source_path):
 
     return question_path, question_df, section_path, section_df
 
+def ensure_granular_outputs(source_path, source_df):
+    question_path, question_df, section_path, section_df = load_granular_outputs(source_path)
+    if not question_df.empty and not section_df.empty:
+        return question_path, question_df, section_path, section_df
+
+    run_label = derive_run_label(source_path)
+    input_paths = resolve_input_paths_from_loaded_df(source_df)
+    if not run_label or not input_paths:
+        return question_path, question_df, section_path, section_df
+
+    cmd = [
+        sys.executable,
+        'run_pipeline.py',
+        '--parser', 'auto',
+        '--output-dir', 'output',
+        '--label', run_label,
+        '--inputs',
+        *input_paths,
+    ]
+    ground_truth = os.path.join(PROJECT_ROOT, 'data', 'ground_truth_labels.csv')
+    if os.path.exists(ground_truth) and run_label in ['canonical_validation', 'notebook_bootstrap']:
+        cmd.extend(['--ground-truth', ground_truth])
+
+    print("Granular outputs missing for selected run. Rebuilding them from raw inputs...")
+    result = subprocess.run(cmd, cwd=PROJECT_ROOT)
+    if result.returncode != 0:
+        print("Granular output rebuild failed; continuing without them.")
+        return question_path, question_df, section_path, section_df
+
+    return load_granular_outputs(source_path)
+
 available_outputs = list_pipeline_outputs()
 print("Available pipeline outputs (newest first):")
 for path in available_outputs[:10]:
     print(" -", os.path.basename(path))
 
 loaded_path, df = load_selected_dataset()
-question_path, question_df, section_path, section_df = load_granular_outputs(loaded_path)
+question_path, question_df, section_path, section_df = ensure_granular_outputs(loaded_path, df)
+CURRENT_RUN_LABEL = derive_run_label(loaded_path) or 'manual'
 print("Data source:", os.path.abspath(loaded_path))
 print("Shape:", df.shape)
 print("Columns:", len(df.columns))
+print("Resolved run label:", CURRENT_RUN_LABEL)
 print("Question feature file:", question_path if question_path else "not found for this run")
 print("Section feature file:", section_path if section_path else "not found for this run")""")
 
@@ -369,7 +416,15 @@ plt.title('Anomaly Score Distribution')
 plt.show()
 
 plt.figure()
-sns.countplot(x='computed_category', data=df, order=['normal', 'suspicious', 'anomalous', 'dq_issue'])
+sns.countplot(
+    data=df,
+    x='computed_category',
+    hue='computed_category',
+    order=['normal', 'suspicious', 'anomalous', 'dq_issue'],
+    hue_order=['normal', 'suspicious', 'anomalous', 'dq_issue'],
+    palette={'normal':'#2ca02c', 'suspicious':'#ff7f0e', 'anomalous':'#d62728', 'dq_issue':'#9467bd'},
+    legend=False
+)
 plt.title('Category Distribution')
 plt.show()""")
 
@@ -393,7 +448,8 @@ display(edge_cases.head() if not edge_cases.empty else "No edge cases matched.")
     add_md("""# 11. Final Output
 Export the audit-enriched dataset with all recomputed flags, scores, and categories.""")
 
-    add_code("""output_path = os.path.join(PROJECT_ROOT, 'output', 'audit_results.csv')
+    add_code("""timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+output_path = os.path.join(PROJECT_ROOT, 'output', f'audit_results_{CURRENT_RUN_LABEL}_{timestamp}.csv')
 os.makedirs(os.path.dirname(output_path), exist_ok=True)
 df.to_csv(output_path, index=False)
 print("Audit results saved to:", output_path)""")
@@ -464,12 +520,16 @@ if available_s and 'computed_category' in df.columns:
             data=df, 
             x='computed_category', 
             y=feat, 
+            hue='computed_category',
             ax=ax, 
             order=['normal', 'suspicious', 'anomalous', 'dq_issue'],
-            palette={'normal':'#2ca02c', 'suspicious':'#ff7f0e', 'anomalous':'#d62728', 'dq_issue':'#9467bd'}
+            hue_order=['normal', 'suspicious', 'anomalous', 'dq_issue'],
+            palette={'normal':'#2ca02c', 'suspicious':'#ff7f0e', 'anomalous':'#d62728', 'dq_issue':'#9467bd'},
+            dodge=False,
+            legend=False
         )
         ax.set_title(f'{feat} by Category')
-        ax.set_xticklabels(ax.get_xticklabels(), rotation=45)
+        ax.tick_params(axis='x', rotation=45)
     
     plt.tight_layout()
     plt.show()
