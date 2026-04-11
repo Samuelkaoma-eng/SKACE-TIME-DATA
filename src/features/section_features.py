@@ -41,8 +41,9 @@ class SectionFeatureExtractor:
             return pd.DataFrame()
             
         # Infer sections from either XPath-like field paths or flat synthetic names.
-        cir_df = cir_df.copy()
-        cir_df['section_name'] = cir_df['field_name'].apply(self._infer_section_name)
+        cir_df = cir_df.copy().assign(
+            section_name=cir_df['field_name'].apply(self._infer_section_name)
+        )
         
         # Pre-compute the max fields in any single section for S-10 denominator
         section_field_counts = {}
@@ -126,6 +127,8 @@ class SectionFeatureExtractor:
         if not df_sec.empty:
             global_pace = q_features_df['Q-01_response_time_ms'].mean() if not q_features_df.empty else 1.0
             global_pace = global_pace if global_pace > 0 else 1.0
-            df_sec['S-04_section_to_section_pace_ratio'] = df_sec['S-01_mean_section_pace'] / global_pace
+            df_sec = df_sec.assign(
+                **{'S-04_section_to_section_pace_ratio': df_sec['S-01_mean_section_pace'] / global_pace}
+            )
             
         return df_sec

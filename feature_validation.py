@@ -8,21 +8,14 @@ from statsmodels.stats.multitest import multipletests
 
 from src.pipeline.controller import PipelineController
 from src.validation.detector_config import load_detector_config
-from src.validation.reporting import load_ground_truth
+from src.validation.reporting import ANOMALY_FLAG_COLUMNS, ANOMALY_OUTPUT_COLUMNS, load_ground_truth
 
 
 EXCLUDE_COLUMNS = {
     "file_name",
     "interview_id",
-    "anomaly_category",
-    "anomaly_score",
-    "status",
-    "flagged_features",
     "ground_truth_is_anomalous",
-    "is_anomalous",
-    "is_anomalous_behavior",
-    "is_data_quality_issue",
-}
+} | set(ANOMALY_FLAG_COLUMNS) | set(ANOMALY_OUTPUT_COLUMNS)
 
 
 def run_pipeline(data_paths: list[str], parser_type: str, detector_config: dict | None = None) -> pd.DataFrame:
@@ -52,9 +45,8 @@ def cohens_d(normal_values: pd.Series, anomalous_values: pd.Series) -> float:
 
 def prepare_eval_frame(results_df: pd.DataFrame, ground_truth_path: str) -> pd.DataFrame:
     gt = load_ground_truth(ground_truth_path)
-    df = results_df.copy()
-    df["interview_id"] = df["interview_id"].astype(str)
-    gt["interview_id"] = gt["interview_id"].astype(str)
+    df = results_df.copy().assign(interview_id=results_df["interview_id"].astype(str))
+    gt = gt.copy().assign(interview_id=gt["interview_id"].astype(str))
     gt = gt.rename(columns={"is_anomalous": "ground_truth_is_anomalous"})
     merged = gt.merge(df, on="interview_id", how="inner", validate="one_to_one")
     if merged.empty:
@@ -107,8 +99,9 @@ def compute_feature_stats(eval_df: pd.DataFrame, alpha: float) -> pd.DataFrame:
         return stats_df
 
     rejected, adjusted, _, _ = multipletests(stats_df["p_value"], alpha=alpha, method="bonferroni")
-    stats_df["p_adjusted"] = adjusted
-    stats_df["significant"] = rejected
+    stats_df = stats_df.copy()
+    stats_df.loc[:, "p_adjusted"] = adjusted
+    stats_df.loc[:, "significant"] = rejected
     stats_df = stats_df.sort_values(["significant", "abs_cohens_d", "p_value"], ascending=[False, False, True])
     return stats_df
 

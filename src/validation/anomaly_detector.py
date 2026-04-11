@@ -139,7 +139,7 @@ class AnomalyDetector:
         df.loc[pause_flag, 'flag_rule_pause'] = 1
 
         # --- DATA QUALITY TRIGGER ---
-        df['is_data_quality_issue'] = (
+        df.loc[:, 'is_data_quality_issue'] = (
             df['flag_missing_data'] | 
             df['flag_invalid_ratio'] | 
             df['flag_inconsistent_metrics'] |
@@ -148,7 +148,7 @@ class AnomalyDetector:
 
         # --- EXPLAINABLE ANOMALY SCORING (User Weights) ---
         # Formula prioritizes clear behavioral risk, plus robust outlier signals.
-        df['anomaly_score'] = (
+        df.loc[:, 'anomaly_score'] = (
             3 * df['flag_too_fast'].fillna(0) +
             2 * df['flag_too_slow'].fillna(0) +
             2 * df['flag_low_entropy'].fillna(0) +
@@ -172,19 +172,19 @@ class AnomalyDetector:
             else:
                 return "normal"
 
-        df['anomaly_category'] = df.apply(get_category, axis=1)
-        df['is_anomalous_behavior'] = (df['anomaly_score'] >= self.behavior_score_threshold).astype(int)
-        df['is_anomalous'] = (df['is_anomalous_behavior'] | df['is_data_quality_issue']).astype(int)
+        df.loc[:, 'anomaly_category'] = df.apply(get_category, axis=1)
+        df.loc[:, 'is_anomalous_behavior'] = (df['anomaly_score'] >= self.behavior_score_threshold).astype(int)
+        df.loc[:, 'is_anomalous'] = (df['is_anomalous_behavior'] | df['is_data_quality_issue']).astype(int)
 
         # Report-friendly summary fields
-        df['iqr_flags'] = (
+        df.loc[:, 'iqr_flags'] = (
             df['flag_iqr_duration'].fillna(0) +
             df['flag_iqr_rt_mean'].fillna(0) +
             df['flag_iqr_entropy'].fillna(0) +
             df['flag_iqr_variance'].fillna(0)
         ).astype('Int64')
 
-        df['rule_flags'] = (
+        df.loc[:, 'rule_flags'] = (
             df['flag_too_fast'].fillna(0) +
             df['flag_too_slow'].fillna(0) +
             df['flag_zero_back_nav'].fillna(0) +
@@ -199,7 +199,7 @@ class AnomalyDetector:
             active = [c for c in flag_cols if row[c] == 1]
             return ','.join(active)
 
-        df['flagged_features'] = df.apply(join_flags, axis=1)
+        df.loc[:, 'flagged_features'] = df.apply(join_flags, axis=1)
 
         def get_status(row):
             if row['is_data_quality_issue'] == 1 or row['anomaly_score'] >= self.anomalous_score_threshold:
@@ -208,17 +208,17 @@ class AnomalyDetector:
                 return 'REVIEW'
             return 'CLEAN'
 
-        df['status'] = df.apply(get_status, axis=1)
+        df.loc[:, 'status'] = df.apply(get_status, axis=1)
         
         # Cleanup: Standardize Flag Types to Int64 (Nullable Integer) to prevent 1.0/0.0
         for f in diag_flags:
             if f in df.columns:
-                df[f] = df[f].astype('Int64')
-        df['is_data_quality_issue'] = df['is_data_quality_issue'].astype('Int64')
-        df['is_anomalous_behavior'] = df['is_anomalous_behavior'].astype('Int64')
-        df['is_anomalous'] = df['is_anomalous'].astype('Int64')
-        df['anomaly_score'] = df['anomaly_score'].astype('Int64')
-        df['iqr_flags'] = df['iqr_flags'].astype('Int64')
-        df['rule_flags'] = df['rule_flags'].astype('Int64')
+                df.loc[:, f] = df[f].astype('Int64')
+        df.loc[:, 'is_data_quality_issue'] = df['is_data_quality_issue'].astype('Int64')
+        df.loc[:, 'is_anomalous_behavior'] = df['is_anomalous_behavior'].astype('Int64')
+        df.loc[:, 'is_anomalous'] = df['is_anomalous'].astype('Int64')
+        df.loc[:, 'anomaly_score'] = df['anomaly_score'].astype('Int64')
+        df.loc[:, 'iqr_flags'] = df['iqr_flags'].astype('Int64')
+        df.loc[:, 'rule_flags'] = df['rule_flags'].astype('Int64')
         
         return df

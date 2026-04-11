@@ -4,6 +4,25 @@ from pathlib import Path
 from typing import Union
 from .base_parser import BaseParser
 
+
+def _datetime_series_to_epoch_ms(values: pd.Series, *, mixed: bool = False) -> pd.Series:
+    """
+    Convert datetime-like strings to epoch milliseconds.
+
+    pandas stores parsed datetimes internally as nanoseconds, so dividing by
+    ``10**6`` yields milliseconds. Invalid timestamps remain NaN.
+    """
+    parse_kwargs = {"errors": "coerce", "utc": True}
+    if mixed:
+        parse_kwargs["format"] = "mixed"
+
+    parsed = pd.to_datetime(values, **parse_kwargs)
+    epoch_ms = pd.Series(np.nan, index=values.index, dtype="float64")
+    valid_mask = parsed.notna()
+    if valid_mask.any():
+        epoch_ms.loc[valid_mask] = parsed.loc[valid_mask].astype("int64") // 10**6
+    return epoch_ms
+
 class SurveyCTOParser(BaseParser):
     """
     Parser for SurveyCTO audit logs.
@@ -59,9 +78,8 @@ class SurveyCTOParser(BaseParser):
             if pt in df.columns:
                 s_col = pd.to_numeric(df[pt], errors='coerce')
                 if s_col.isna().all() and not df[pt].isna().all():
-                    # Fallback: parse as ISO datetime. On pandas >= 2.0, this yields datetime64[us], so div 10**3 -> ms.
-                    s_col = pd.to_datetime(df[pt], errors='coerce', format='mixed', utc=True).astype('int64') // 10**3
-                    s_col.loc[s_col < 0] = np.nan
+                    s_col = _datetime_series_to_epoch_ms(df[pt], mixed=True)
+                    s_col = s_col.where(s_col > 0, np.nan)
                 else:
                     # Epoch-seconds guard: SurveyCTO canonical format is epoch-ms.
                     # Values < 2e10 are epoch-seconds (before year 2603); multiply by 1000.
@@ -76,9 +94,8 @@ class SurveyCTOParser(BaseParser):
             if pt in df.columns:
                 e_col = pd.to_numeric(df[pt], errors='coerce')
                 if e_col.isna().all() and not df[pt].isna().all():
-                    # Fallback: parse as ISO datetime. On pandas >= 2.0, this yields datetime64[us], so div 10**3 -> ms.
-                    e_col = pd.to_datetime(df[pt], errors='coerce', format='mixed', utc=True).astype('int64') // 10**3
-                    e_col.loc[e_col < 0] = np.nan
+                    e_col = _datetime_series_to_epoch_ms(df[pt], mixed=True)
+                    e_col = e_col.where(e_col > 0, np.nan)
                 else:
                     # Epoch-seconds guard
                     valid = e_col.dropna()
@@ -91,7 +108,7 @@ class SurveyCTOParser(BaseParser):
         if 'duration_ms' in df.columns:
             std_df['duration_ms'] = pd.to_numeric(df['duration_ms'], errors='coerce')
         else:
-            std_df['duration_ms'] = std_df['end_ms'] - std_df['start_ms']
+            std_df.loc[:, 'duration_ms'] = std_df['end_ms'] - std_df['start_ms']
             
         # Clean up invalid durations
         std_df.loc[std_df['duration_ms'] < 0, 'duration_ms'] = np.nan

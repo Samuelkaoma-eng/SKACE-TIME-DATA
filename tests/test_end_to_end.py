@@ -160,9 +160,10 @@ class TestEndToEnd:
 
     def test_precision_meets_thesis_threshold(self, pipeline_results):
         """Precision must be >= 0.80 as specified in thesis §5."""
-        merged = pipeline_results.copy()
-        merged['interview_id'] = merged['interview_id'].astype(str)
-        merged['gt'] = merged['interview_id'].map(GROUND_TRUTH)
+        merged = pipeline_results.copy().assign(
+            interview_id=pipeline_results['interview_id'].astype(str)
+        )
+        merged = merged.assign(gt=merged['interview_id'].map(GROUND_TRUTH))
         merged = merged.dropna(subset=['gt'])
 
         y_true = merged['gt'].values
@@ -179,9 +180,10 @@ class TestEndToEnd:
 
     def test_recall_meets_thesis_threshold(self, pipeline_results):
         """Recall must be >= 0.75 as specified in thesis §5."""
-        merged = pipeline_results.copy()
-        merged['interview_id'] = merged['interview_id'].astype(str)
-        merged['gt'] = merged['interview_id'].map(GROUND_TRUTH)
+        merged = pipeline_results.copy().assign(
+            interview_id=pipeline_results['interview_id'].astype(str)
+        )
+        merged = merged.assign(gt=merged['interview_id'].map(GROUND_TRUTH))
         merged = merged.dropna(subset=['gt'])
 
         y_true = merged['gt'].values

@@ -81,8 +81,10 @@ def load_ground_truth(ground_truth_path: str | Path) -> pd.DataFrame:
         raise ValueError(f"Ground truth file is missing columns {sorted(missing)}: {path}")
 
     ground_truth = ground_truth.copy()
-    ground_truth["interview_id"] = ground_truth["interview_id"].astype(str)
-    ground_truth["is_anomalous"] = ground_truth["is_anomalous"].astype(int)
+    ground_truth = ground_truth.assign(
+        interview_id=ground_truth["interview_id"].astype(str),
+        is_anomalous=ground_truth["is_anomalous"].astype(int),
+    )
     return ground_truth
 
 
@@ -104,7 +106,7 @@ def merge_ground_truth(ground_truth: pd.DataFrame, predictions: pd.DataFrame) ->
     if "interview_id" not in pred.columns:
         raise ValueError("Predictions are missing interview_id")
 
-    pred["interview_id"] = pred["interview_id"].astype(str)
+    pred = pred.assign(interview_id=pred["interview_id"].astype(str))
     rename_map = {}
     if "is_anomalous" in pred.columns:
         rename_map["is_anomalous"] = "predicted_is_anomalous"
