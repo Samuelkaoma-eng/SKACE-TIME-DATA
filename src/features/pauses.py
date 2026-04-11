@@ -25,9 +25,10 @@ def calculate_pauses(df: pd.DataFrame, pause_threshold_ms: float = 60000) -> dic
     }
     
     df_sorted = df.sort_values(by='start_time').copy()
-    
-    df_sorted['next_start'] = df_sorted['start_time'].shift(-1)
-    df_sorted['gap_ms'] = (df_sorted['next_start'] - df_sorted['end_time']).dt.total_seconds() * 1000
+    df_sorted = df_sorted.assign(next_start=df_sorted['start_time'].shift(-1))
+    df_sorted = df_sorted.assign(
+        gap_ms=(df_sorted['next_start'] - df_sorted['end_time']).dt.total_seconds() * 1000
+    )
     
     pauses = df_sorted[df_sorted['gap_ms'] >= pause_threshold_ms]['gap_ms']
     

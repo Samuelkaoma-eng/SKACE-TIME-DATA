@@ -4,6 +4,18 @@ from pathlib import Path
 from typing import Union
 from .base_parser import BaseParser
 
+
+def _datetime_series_to_epoch_ms(values: pd.Series) -> pd.Series:
+    """
+    Convert ODK ISO timestamps into epoch milliseconds with NaN preservation.
+    """
+    parsed = pd.to_datetime(values, errors='coerce', utc=True)
+    epoch_ms = pd.Series(np.nan, index=values.index, dtype='float64')
+    valid_mask = parsed.notna()
+    if valid_mask.any():
+        epoch_ms.loc[valid_mask] = parsed.loc[valid_mask].astype('int64') // 10**6
+    return epoch_ms
+
 class ODKParser(BaseParser):
     """
     Parser for ODK Collect audit logs.
@@ -57,11 +69,7 @@ class ODKParser(BaseParser):
             if pt in df.columns:
                 s_col = pd.to_numeric(df[pt], errors='coerce')
                 if s_col.isna().all() and not df[pt].isna().all():
-                    # Parse ISO 8601 including ms-precision (e.g. 2023-01-02T09:00:00.180+00:00).
-                    # pandas >= 2.0 returns datetime64[us]; astype int64 = microseconds since epoch.
-                    # // 10**3 converts microseconds -> milliseconds (correct).
-                    # Do NOT use // 10**6 (gives epoch-seconds, loses sub-second precision).
-                    s_col = pd.to_datetime(df[pt], errors='coerce', utc=True).astype('int64') // 10**3
+                    s_col = _datetime_series_to_epoch_ms(df[pt])
                     s_col = s_col.where(s_col > 0, np.nan)
                 else:
                     # Numeric epoch data: apply epoch-seconds guard.
@@ -76,7 +84,7 @@ class ODKParser(BaseParser):
             if pt in df.columns:
                 e_col = pd.to_numeric(df[pt], errors='coerce')
                 if e_col.isna().all() and not df[pt].isna().all():
-                    e_col = pd.to_datetime(df[pt], errors='coerce', utc=True).astype('int64') // 10**3
+                    e_col = _datetime_series_to_epoch_ms(df[pt])
                     e_col = e_col.where(e_col > 0, np.nan)
                 else:
                     valid = e_col.dropna()
@@ -86,7 +94,7 @@ class ODKParser(BaseParser):
                 break
             
         # Calculate or map duration_ms
-        std_df['duration_ms'] = std_df['end_ms'] - std_df['start_ms']
+        std_df.loc[:, 'duration_ms'] = std_df['end_ms'] - std_df['start_ms']
             
         # Clean up invalid durations
         std_df.loc[std_df['duration_ms'] < 0, 'duration_ms'] = np.nan

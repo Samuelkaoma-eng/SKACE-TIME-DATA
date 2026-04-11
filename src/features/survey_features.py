@@ -6,6 +6,32 @@ class SurveyFeatureExtractor:
     Extracts Survey-Level (V) timing features from the structured CIR dataframe.
     Calculates features V-01 to V-10 for the entire interview session.
     """
+
+    @staticmethod
+    def _timestamp_from_ms(value) -> pd.Timestamp | None:
+        """
+        Safely convert an epoch-millisecond scalar into a pandas Timestamp.
+
+        pandas 2.x / Python 3.14 can be stricter about raw scalar conversion via
+        ``pd.to_datetime(..., unit="ms")`` for some numeric inputs. Using
+        ``pd.Timestamp`` on an explicitly rounded integer keeps the conversion
+        predictable across environments.
+        """
+        if pd.isna(value):
+            return None
+
+        try:
+            numeric = float(value)
+        except (TypeError, ValueError):
+            return None
+
+        if not np.isfinite(numeric):
+            return None
+
+        try:
+            return pd.Timestamp(int(round(numeric)), unit='ms', tz='UTC')
+        except (TypeError, ValueError, OverflowError):
+            return None
     
     def extract(self, cir_df: pd.DataFrame) -> dict:
         if cir_df.empty:
@@ -58,8 +84,8 @@ class SurveyFeatureExtractor:
 
         # V-07 time_of_day_hour
         first_ms = df['start_ms'].min()
-        if pd.notna(first_ms):
-            dt = pd.to_datetime(first_ms, unit='ms')
+        dt = self._timestamp_from_ms(first_ms)
+        if dt is not None:
             features['V-07_time_of_day_hour'] = dt.hour
             features['V-08_day_of_week'] = dt.dayofweek
         else:

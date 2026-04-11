@@ -290,9 +290,11 @@ class PipelineController:
         if 'V-01_total_interview_duration_ms' in interview_df.columns:
             median_dur = interview_df['V-01_total_interview_duration_ms'].median()
             if np.isnan(median_dur) or median_dur == 0:
-                interview_df['V-09_session_length_vs_median'] = 1.0
+                interview_df.loc[:, 'V-09_session_length_vs_median'] = 1.0
             else:
-                interview_df['V-09_session_length_vs_median'] = interview_df['V-01_total_interview_duration_ms'] / median_dur
+                interview_df.loc[:, 'V-09_session_length_vs_median'] = (
+                    interview_df['V-01_total_interview_duration_ms'] / median_dur
+                )
 
         # Apply Anomaly Detection
         interview_df = self.anomaly_detector.detect(interview_df)
