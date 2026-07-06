@@ -1,4 +1,4 @@
-# AI Usage Log — Appendix
+# AI Usage Log, Appendix
 
 Project: Automated Extraction and Analysis of Timing-Based Paradata Features for Survey Quality Assurance
 Student: Samuel Kaoma (2022016530) · CSC 4004
