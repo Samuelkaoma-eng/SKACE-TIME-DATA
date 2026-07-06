@@ -46,7 +46,11 @@ ANOMALY_OUTPUT_COLUMNS = [
     "status",
 ]
 
-FEATURE_DATASET_EXCLUDE_COLUMNS = ANOMALY_FLAG_COLUMNS + ANOMALY_OUTPUT_COLUMNS
+# The feature dataset drops detector columns but keeps the identifiers,
+# otherwise the exported matrix cannot be joined back to interviews.
+FEATURE_DATASET_EXCLUDE_COLUMNS = ANOMALY_FLAG_COLUMNS + [
+    col for col in ANOMALY_OUTPUT_COLUMNS if col not in ("file_name", "interview_id")
+]
 
 DEFAULT_PRECISION_THRESHOLD = 0.80
 DEFAULT_RECALL_THRESHOLD = 0.75
