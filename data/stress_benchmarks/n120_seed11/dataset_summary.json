@@ -1,0 +1,12 @@
+{
+  "dataset_size": 120,
+  "anomaly_ratio": 0.2,
+  "seed": 11,
+  "difficulty": "stress",
+  "n_normal": 96,
+  "n_fabricated": 8,
+  "n_speeding": 8,
+  "n_disengaged": 8,
+  "surveycto_rows": 2558,
+  "odk_rows": 2570
+}

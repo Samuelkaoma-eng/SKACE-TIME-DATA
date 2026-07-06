@@ -95,7 +95,7 @@ def build_run_label(csv_files: List[Path], explicit_label: str | None, timestamp
     return sanitize_label(f"batch_{timestamp}")
 
 def main():
-    parser = argparse.ArgumentParser(description="Run the academic paradata pipeline.")
+    parser = argparse.ArgumentParser(description="Run the paradata feature extraction pipeline.")
     parser.add_argument("--data-dir", default="data", help="Raw audit log directory")
     parser.add_argument("--output-dir", default="output", help="Features output directory")
     parser.add_argument("--parser", default="auto", choices=["auto", "surveycto", "odk"], help="Parser type")

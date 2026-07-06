@@ -7,7 +7,12 @@ Sample size: 500
 ROC AUC: 1.0000
 
 Best threshold by F1 score
-  Threshold: 0.50
+  Threshold: 2.10
   Precision: 1.0000
   Recall: 1.0000
   F1 score: 1.0000
+
+Reusable detector configuration
+  Config path: output\detector_config_recalibrated.json
+  Applies recalibrated behavior_score_threshold directly; anomalous_score_threshold is kept at least as high to preserve category ordering.
+  Use with: python run_pipeline.py --detector-config output/detector_config_recalibrated.json ...

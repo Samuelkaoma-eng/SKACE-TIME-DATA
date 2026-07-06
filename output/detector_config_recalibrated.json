@@ -1,23 +1,30 @@
 {
   "config_type": "anomaly_detector",
   "generated_by": "threshold_recalibration.py",
-  "generated_at_utc": "2026-04-27T16:29:40.408133+00:00",
+  "generated_at_utc": "2026-07-06T14:31:16.817361+00:00",
   "calibration_target": "behavior_score_threshold",
   "notes": "This config applies the recalibrated behavior_score_threshold directly. The anomalous_score_threshold is kept at least as high as the behavior threshold to preserve category ordering.",
   "data_paths": [
-    "data\\synthetic_datasets\\n500\\audit_logs_surveycto.csv"
+    "data/synthetic_datasets/n500/audit_logs_surveycto.csv"
   ],
-  "ground_truth": "data\\synthetic_datasets\\n500\\ground_truth_labels.csv",
+  "ground_truth": "data/synthetic_datasets/n500/ground_truth_labels.csv",
   "anomaly_detector": {
     "uniform_timing_cv": 0.1,
-    "behavior_score_threshold": 1.0999999999999999,
+    "behavior_score_threshold": 2.0999999999999996,
     "anomalous_score_threshold": 5.0,
     "too_fast_ms": 6000,
     "too_slow_ms": 3600000,
     "low_entropy_threshold": 0.5,
     "low_variance_threshold": 10,
+    "short_session_median_ratio": 0.5,
+    "low_mean_rt_median_ratio": 0.5,
     "low_rt_iqr_median_ratio": 0.5,
     "low_section_variance_median_ratio": 0.25,
-    "high_back_nav_rate_threshold": 0.5
+    "moderate_back_nav_rate_threshold": 0.25,
+    "long_pause_median_ratio": 2.0,
+    "high_back_nav_rate_threshold": 0.5,
+    "rule_pause_count_min": 2,
+    "rule_pause_min_ms": 280000,
+    "elevated_pause_median_ratio": 2.5
   }
 }

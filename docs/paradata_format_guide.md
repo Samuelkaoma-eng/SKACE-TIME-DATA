@@ -117,7 +117,7 @@ The CIR contract is enforced in `src/parsers/base_parser.py`.
 - The most reliable way to verify parser behavior is:
 
 ```bash
-python strict_examiner_audit.py
+python scripts/strict_examiner_audit.py
 ```
 
 That script checks raw-format consistency, CIR normalization, feature math,
