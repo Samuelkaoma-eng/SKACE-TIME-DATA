@@ -3,17 +3,16 @@ tests/test_adversarial.py
 =========================
 Adversarial data generator for SKACE-Time-Data academic validation.
 
-Generates the full 400-series synthetic paradata suite (12 interviews per format)
-covering four anomaly profiles mandated by thesis §5.1:
+Generates synthetic paradata covering four anomaly profiles defined in
+thesis Section 5.1:
 
-  - Normal      : log-normal RT (μ=ln(8000), σ=0.5), Poisson back-nav [Wenz et al. 6]
-  - Fabricated  : constant RT (zero variance/IQR), zero back-nav       [Wenz et al. 6]
-  - Speeding    : RT scaled below 500ms threshold
-  - Disengaged  : uniform slow RT, high pause frequency                [Conrad et al. 3]
-  + DQ Issue    : sparse / zero-duration rows → T-06_rt_mean = 0
+  - Normal      : log-normal RT (mu=ln(8000), sigma=0.5), Poisson back-nav
+  - Fabricated  : compressed RT distributions, near-zero back-nav  [Wenz et al. 6]
+  - Speeding    : RT scaled below realistic thresholds
+  - Disengaged  : uniform slow RT, high pause frequency            [Conrad et al. 3]
+  + DQ Issue    : sparse / zero-duration rows -> degenerate features
 
-Interview IDs are fixed to match the ground-truth table in
-calculate_academic_metrics.py  (INT400–INT411 / ODK400–ODK411).
+Interview IDs use a fixed mapping for reproducible ground-truth evaluation.
 """
 
 import pandas as pd
@@ -23,8 +22,8 @@ from datetime import datetime, timezone, timedelta
 
 class AdversarialDataGenerator:
     """
-    Generates synthetic SurveyCTO and ODK audit log DataFrames for the
-    400-series adversarial validation suite.
+    Generates synthetic SurveyCTO and ODK audit log DataFrames for
+    validation of the anomaly detection pipeline.
 
     Usage
     -----
@@ -33,16 +32,12 @@ class AdversarialDataGenerator:
     >>> odk_df  = gen.generate_adversarial_suite(is_odk=True)
     """
 
-    # 2023-01-02 08:00:00 UTC in epoch-ms (SurveyCTO format base timestamp)
+    # 2023-01-02 08:00:00 UTC in epoch-ms
     BASE_EPOCH_MS: int = 1672646400000
     N_QUESTIONS: int = 20
-    # 1 hour between interview start times so they don't overlap
+    # 1 hour between interview start times
     INTERVIEW_GAP_MS: int = 3_600_000
 
-    # BUG-C4 FIX: Use multi-section field names so section_features.py splits
-    # questions across 5 real sections (4 questions each) instead of lumping
-    # all 20 into a single 'section' section (from split('section_q01')[0]).
-    # Section-level features (S-01 to S-10) are meaningless with one section.
     SECTION_NAMES: list = [
         'demographics',  # q01-q04
         'household',     # q05-q08
@@ -50,7 +45,22 @@ class AdversarialDataGenerator:
         'economic',      # q13-q16
         'nutrition',     # q17-q20
     ]
-    QUESTIONS_PER_SECTION: int = 4  # N_QUESTIONS / len(SECTION_NAMES)
+    QUESTIONS_PER_SECTION: int = 4
+
+    # Fixed per-question complexity multipliers for the 20-question instrument.
+    # Real questionnaires mix short factual items (demographics) with longer
+    # recall or calculation items (health, economic), so genuine respondents
+    # produce complexity-correlated response times [Yan & Tourangeau 5].
+    # Fabricated and speeding profiles deliberately ignore these weights:
+    # complexity-blind uniform pacing is the fabrication signature [Wenz 6].
+    COMPLEXITY_WEIGHTS: list = [
+        0.50, 0.60, 0.55, 0.70,   # demographics: short factual items
+        0.90, 1.00, 0.95, 1.10,   # household: roster-style items
+        1.30, 1.40, 1.25, 1.35,   # health: recall-heavy items
+        1.00, 1.15, 0.90, 1.05,   # economic: estimation items
+        0.80, 0.85, 0.75, 0.90,   # nutrition: frequency items
+    ]
+
     PROFILE_TO_EXPECTED_CATEGORY = {
         'normal': 'normal',
         'fabricated': 'anomalous',
@@ -58,13 +68,17 @@ class AdversarialDataGenerator:
         'disengaged': 'suspicious',
         'dq_issue': 'dq_issue',
     }
+
     BENCHMARK_INTERVIEW_GAP_MS: int = 600_000
 
-    def __init__(self, seed: int = 42):
+    def __init__(self, seed: int = 42, difficulty: str = "canonical"):
+        if difficulty not in {"canonical", "stress"}:
+            raise ValueError("difficulty must be either 'canonical' or 'stress'")
         self.rng = np.random.default_rng(seed)
+        self.difficulty = difficulty
 
     def _profile_plan(self, is_odk: bool = False) -> list:
-        """Return the fixed interview-to-profile mapping for the canonical adversarial suite."""
+        """Return the fixed interview-to-profile mapping for the canonical suite."""
         prefix = 'ODK' if is_odk else 'INT'
         base = self.BASE_EPOCH_MS
         step = self.INTERVIEW_GAP_MS
@@ -84,25 +98,27 @@ class AdversarialDataGenerator:
         ]
 
     def build_ground_truth_labels(self, is_odk: bool = False) -> pd.DataFrame:
-        """Build the ground-truth label table for one export format of the canonical suite."""
+        """Build the ground-truth label table for one format."""
         records = []
         for interview_id, profile, _ in self._profile_plan(is_odk=is_odk):
             records.append({
                 'interview_id': interview_id,
+                'anomaly_type': profile,
                 'expected_category': self.PROFILE_TO_EXPECTED_CATEGORY[profile],
                 'is_anomalous_ground_truth': 0 if profile == 'normal' else 1,
             })
         return pd.DataFrame(records)
 
     def build_combined_ground_truth_labels(self) -> pd.DataFrame:
-        """Build the combined SurveyCTO + ODK ground-truth table for canonical validation."""
+        """Build the combined SurveyCTO + ODK ground-truth table."""
         return pd.concat(
-            [self.build_ground_truth_labels(is_odk=False), self.build_ground_truth_labels(is_odk=True)],
+            [self.build_ground_truth_labels(is_odk=False),
+             self.build_ground_truth_labels(is_odk=True)],
             ignore_index=True,
         )
 
     def build_benchmark_plan(self, dataset_size: int, anomaly_ratio: float = 0.2) -> list:
-        """Build a randomized interview plan for a larger labelled benchmark dataset."""
+        """Build a randomized interview plan for a larger benchmark dataset."""
         if dataset_size <= 0:
             raise ValueError("dataset_size must be positive")
         if not 0 <= anomaly_ratio < 1:
@@ -146,13 +162,7 @@ class AdversarialDataGenerator:
     # ------------------------------------------------------------------
 
     def _ms_to_iso(self, ms: int) -> str:
-        """Convert epoch-milliseconds → ISO 8601 string with millisecond precision (ODK format).
-
-        IMPORTANT: Must use millisecond precision. SurveyCTO fabricated (180ms) and
-        speeding (60-380ms) profiles have sub-second durations. Truncating to second
-        precision collapses start==end → duration=0 → misclassified as dq_issue.
-        Thesis §5.1 requires fabricated and speeding to be anomalous, not dq_issue.
-        """
+        """Convert epoch-milliseconds to ISO 8601 string (ODK format)."""
         dt = datetime(1970, 1, 1, tzinfo=timezone.utc) + timedelta(milliseconds=int(ms))
         ms_part = int(ms) % 1000
         return dt.strftime('%Y-%m-%dT%H:%M:%S.') + f"{ms_part:03d}+00:00"
@@ -169,25 +179,42 @@ class AdversarialDataGenerator:
         pause_after_ms: list,
         start_epoch: int,
         is_odk: bool,
+        constraint_indices: list | None = None,
     ) -> list:
         """
         Construct a list of raw audit-log rows for one interview.
 
-        Parameters
-        ----------
-        interview_id    : Value to place in instance_id (ODK) or interview_id (SurveyCTO)
-        rts_ms          : Response time per question (ms)
-        back_nav_indices: Question indices (0-based) after which a 'jump' event is inserted
-        pause_after_ms  : Extra inter-question gap injected after each question (ms list)
-        start_epoch     : UNIX epoch-ms of the first question start
-        is_odk          : True → ODK column schema, False → SurveyCTO column schema
+        Emits the structural events present in real audit logs: a form-start
+        row before the first question, question rows, optional constraint
+        and navigation rows, and a form-end row after the last question.
         """
         rows = []
-        t = start_epoch
+        constraint_indices = constraint_indices or []
+
+        # Form-start row: real logs open with a form-level event whose node
+        # is blank. A short load delay precedes the first question.
+        load_ms = int(self.rng.integers(400, 2500))
+        if is_odk:
+            rows.append({
+                'instance_id': interview_id,
+                'name': None,
+                'event': 'form start',
+                'start_time': self._ms_to_iso(start_epoch),
+                'end_time':   self._ms_to_iso(start_epoch + load_ms),
+            })
+        else:
+            rows.append({
+                'interview_id': interview_id,
+                'node': None,
+                'event': 'form-start',
+                'start': start_epoch,
+                'end': start_epoch + load_ms,
+                'duration_ms': load_ms,
+            })
+
+        t = start_epoch + load_ms + int(self.rng.integers(50, 300))
 
         for i, rt in enumerate(rts_ms):
-            # BUG-C4 FIX: encode section in field name so section_features.py
-            # correctly assigns questions to one of 5 sections.
             section_idx = i // self.QUESTIONS_PER_SECTION
             section_name = self.SECTION_NAMES[min(section_idx, len(self.SECTION_NAMES) - 1)]
             q_within_section = (i % self.QUESTIONS_PER_SECTION) + 1
@@ -213,13 +240,35 @@ class AdversarialDataGenerator:
                     'duration_ms': max(1, int(rt)),
                 })
 
-            # Advance clock by rt + small natural inter-question gap
+            # Constraint violation: respondent input rejected by a validation
+            # rule, then corrected. Logged against the same node.
+            if i in constraint_indices:
+                c_start = q_end + int(self.rng.integers(100, 400))
+                c_dur = int(self.rng.integers(800, 4000))
+                if is_odk:
+                    rows.append({
+                        'instance_id': interview_id,
+                        'name': q_name,
+                        'event': 'constraint error',
+                        'start_time': self._ms_to_iso(c_start),
+                        'end_time':   self._ms_to_iso(c_start + c_dur),
+                    })
+                else:
+                    rows.append({
+                        'interview_id': interview_id,
+                        'node': q_name,
+                        'event': 'constraint',
+                        'start': c_start,
+                        'end': c_start + c_dur,
+                        'duration_ms': c_dur,
+                    })
+                q_end = c_start + c_dur
+
             inter_gap = int(pause_after_ms[i]) if pause_after_ms else int(
                 self.rng.integers(100, 500)
             )
             t = q_end + inter_gap
 
-            # Insert a backward navigation event if requested
             if i in back_nav_indices:
                 nav_end = t + 300
                 if is_odk:
@@ -241,64 +290,148 @@ class AdversarialDataGenerator:
                     })
                 t = nav_end + 100
 
+        # Form-end row: closes the session, blank node like the opening event.
+        close_ms = int(self.rng.integers(200, 1500))
+        if is_odk:
+            rows.append({
+                'instance_id': interview_id,
+                'name': None,
+                'event': 'end screen',
+                'start_time': self._ms_to_iso(t),
+                'end_time':   self._ms_to_iso(t + close_ms),
+            })
+        else:
+            rows.append({
+                'interview_id': interview_id,
+                'node': None,
+                'event': 'end',
+                'start': t,
+                'end': t + close_ms,
+                'duration_ms': close_ms,
+            })
+
         return rows
 
     # ------------------------------------------------------------------
-    # Anomaly profile builders  (thesis §5.1)
+    # Anomaly profile builders  (thesis Section 5.1)
     # ------------------------------------------------------------------
 
     def _normal_interview(self, iid: str, t0: int, is_odk: bool) -> list:
         """
         Normal profile: log-normal RT distribution, Poisson back-nav.
-        Thesis §5.1 — Wenz et al. [6] baseline.
+        Thesis Section 5.1: models realistic interviewer behavior with
+        natural variation in response times and occasional back-navigation.
         """
         n = self.N_QUESTIONS
-        rts = self.rng.lognormal(mean=np.log(8000), sigma=0.5, size=n).tolist()
-        n_back = max(0, int(self.rng.poisson(lam=2)))
+        if self.difficulty == "stress":
+            profile = self.rng.choice(["typical", "fast_valid", "low_nav", "variable"])
+            if profile == "fast_valid":
+                rts = self.rng.lognormal(mean=np.log(4500), sigma=0.35, size=n)
+                n_back = max(0, int(self.rng.poisson(lam=1)))
+            elif profile == "low_nav":
+                rts = self.rng.lognormal(mean=np.log(7500), sigma=0.45, size=n)
+                n_back = 0
+            elif profile == "variable":
+                rts = self.rng.lognormal(mean=np.log(8500), sigma=0.75, size=n)
+                n_back = max(0, int(self.rng.poisson(lam=2)))
+            else:
+                rts = self.rng.lognormal(mean=np.log(8000), sigma=0.5, size=n)
+                n_back = max(0, int(self.rng.poisson(lam=2)))
+            pauses = self.rng.integers(100, 900, size=n).tolist()
+        else:
+            rts = self.rng.lognormal(mean=np.log(8000), sigma=0.5, size=n)
+            n_back = max(0, int(self.rng.poisson(lam=2)))
+            pauses = self.rng.integers(150, 600, size=n).tolist()
+
+        # Genuine respondents take longer on complex items [Yan & Tourangeau 5].
+        rts = (rts * np.asarray(self.COMPLEXITY_WEIGHTS[:n])).tolist()
+
         backs = sorted(
             self.rng.choice(n, size=min(n_back, n), replace=False).tolist()
         )
-        pauses = self.rng.integers(150, 600, size=n).tolist()
-        return self._build_interview(iid, rts, backs, pauses, t0, is_odk)
+        # Real interviews occasionally trip validation constraints.
+        n_constraints = int(self.rng.poisson(lam=0.6))
+        constraints = sorted(
+            self.rng.choice(n, size=min(n_constraints, n), replace=False).tolist()
+        )
+        return self._build_interview(
+            iid, rts, backs, pauses, t0, is_odk, constraint_indices=constraints
+        )
 
     def _fabricated_interview(self, iid: str, t0: int, is_odk: bool) -> list:
         """
-        Fabricated profile: constant RT (zero variance/IQR), zero back-nav.
-        Compresses total duration below 5 000 ms → triggers flag_too_fast.
-        Thesis §5.1 — Wenz et al. [6]: 'compressed timing distributions'.
+        Fabricated profile: compressed RT distribution with very low variance,
+        near-zero back-navigation.
+
+        Thesis Section 5.1: Wenz et al. [6] notes that fabricated interviews show
+        'compressed timing distributions' with reduced IQR and low variance.
+
+        Uses slightly varied RTs (not constant) so the profile is detectable
+        through statistical properties rather than trivial exact-match.
         """
         n = self.N_QUESTIONS
-        rts = [180] * n              # constant → T-01_rt_variance = 0
-        pauses = [10] * n            # minimal gaps
-        return self._build_interview(iid, rts, [], pauses, t0, is_odk)
+        if self.difficulty == "stress":
+            if self.rng.random() < 0.45:
+                rts = self.rng.normal(loc=1800, scale=180, size=n).clip(min=700).tolist()
+                backs = []
+            else:
+                rts = self.rng.normal(loc=3800, scale=650, size=n).clip(min=1200).tolist()
+                n_back = int(self.rng.integers(0, 2))
+                backs = sorted(self.rng.choice(n, size=n_back, replace=False).tolist()) if n_back else []
+            pauses = self.rng.integers(60, 350, size=n).tolist()
+        else:
+            rts = self.rng.normal(loc=1200, scale=80, size=n).clip(min=500).tolist()
+            pauses = self.rng.integers(50, 200, size=n).tolist()
+            backs = []
+        return self._build_interview(iid, rts, backs, pauses, t0, is_odk)
 
     def _speeding_interview(self, iid: str, t0: int, is_odk: bool) -> list:
         """
-        Speeding profile: all RTs below 400 ms realistic threshold.
-        Total < 5 000 ms → flag_too_fast; low entropy → flag_low_entropy.
+        Speeding profile: RTs below realistic completion thresholds.
+
+        The total interview completes unrealistically quickly, and response
+        times are uniformly fast regardless of question complexity.
         """
         n = self.N_QUESTIONS
-        rts = self.rng.integers(60, 380, size=n).tolist()
-        pauses = [10] * n
-        return self._build_interview(iid, rts, [], pauses, t0, is_odk)
+        if self.difficulty == "stress":
+            rts = self.rng.integers(1200, 3600, size=n).tolist()
+            n_back = int(self.rng.integers(0, 2))
+            backs = sorted(self.rng.choice(n, size=n_back, replace=False).tolist()) if n_back else []
+            pauses = self.rng.integers(40, 250, size=n).tolist()
+        else:
+            rts = self.rng.integers(200, 800, size=n).tolist()
+            pauses = self.rng.integers(30, 150, size=n).tolist()
+            backs = []
+        return self._build_interview(iid, rts, backs, pauses, t0, is_odk)
 
     def _disengaged_interview(self, iid: str, t0: int, is_odk: bool) -> list:
         """
-        Disengaged profile: uniform slow RT, erratic back-navigation.
-        Uniform RT → T-01_rt_variance ≈ 0 → flag_uniform_timing;
-        entropy = 0 → flag_low_entropy.  (Conrad et al. [3])
+        Disengaged profile: uniform slow RT, erratic back-navigation,
+        extended pauses between questions.
+
+        Thesis Section 5.1: Conrad et al. [3] describes disengagement as characterized
+        by increased pause frequency and low timing variance.
         """
         n = self.N_QUESTIONS
-        rts = [6000] * n             # constant → zero variance, zero entropy
-        n_back = n // 2
-        backs = list(range(0, n, 2))[:n_back]
-        pauses = [500] * n           # consistent inter-question gaps
+        if self.difficulty == "stress":
+            rts = self.rng.lognormal(mean=np.log(6500), sigma=0.28, size=n).clip(min=3000).tolist()
+            n_back = int(self.rng.integers(4, 9))
+            backs = sorted(self.rng.choice(n, size=n_back, replace=False).tolist())
+            pauses = self.rng.integers(300, 2500, size=n).tolist()
+            if self.rng.random() < 0.35:
+                long_pause_idx = int(self.rng.integers(0, n))
+                pauses[long_pause_idx] = int(self.rng.integers(30000, 90000))
+        else:
+            rts = self.rng.normal(loc=6000, scale=200, size=n).clip(min=4000).tolist()
+            n_back = int(self.rng.integers(max(1, n // 3), n // 2 + 1))
+            backs = sorted(self.rng.choice(n, size=n_back, replace=False).tolist())
+            pauses = self.rng.integers(400, 1200, size=n).tolist()
         return self._build_interview(iid, rts, backs, pauses, t0, is_odk)
 
     def _dq_issue_interview(self, iid: str, t0: int, is_odk: bool) -> list:
         """
         Data quality issue: single row with zero duration.
-        Forces T-06_rt_mean = 0 → flag_missing_data = 1 → dq_issue category.
+        Forces T-06_rt_mean = 0 -> flag_missing_data = 1 -> dq_issue category.
         """
         if is_odk:
             return [{
@@ -306,7 +439,7 @@ class AdversarialDataGenerator:
                 'name': 'dq_field',
                 'event': 'question-end',
                 'start_time': self._ms_to_iso(t0),
-                'end_time':   self._ms_to_iso(t0),   # zero duration
+                'end_time':   self._ms_to_iso(t0),
             }]
         else:
             return [{
@@ -314,7 +447,7 @@ class AdversarialDataGenerator:
                 'node': 'dq_field',
                 'event': 'question-end',
                 'start': t0,
-                'end': t0,                            # zero duration
+                'end': t0,
                 'duration_ms': 0,
             }]
 
@@ -335,41 +468,10 @@ class AdversarialDataGenerator:
     # ------------------------------------------------------------------
 
     def generate_adversarial_suite(self, is_odk: bool = False) -> pd.DataFrame:
-        """
-        Generate the full 400-series adversarial suite (12 interviews).
-
-        Interview-to-profile mapping is fixed to match
-        ``tests/calculate_academic_metrics.py`` ground-truth labels:
-
-        +-----------+------------+---------------------+-----------------------+
-        | ID        | Profile    | Expected category   | Binary anomalous?     |
-        +===========+============+=====================+=======================+
-        | *400      | normal     | normal              | 0                     |
-        | *401      | fabricated | suspicious/anomalous| 1                     |
-        | *402      | dq_issue   | dq_issue            | 1                     |
-        | *403      | speeding   | suspicious          | 1                     |
-        | *404      | disengaged | suspicious          | 1                     |
-        | *405      | normal     | normal              | 0                     |
-        | *406      | normal     | normal              | 0                     |
-        | *407      | fabricated | suspicious/anomalous| 1                     |
-        | *408      | dq_issue   | dq_issue            | 1                     |
-        | *409      | dq_issue   | dq_issue            | 1                     |
-        | *410      | disengaged | suspicious          | 1                     |
-        | *411      | speeding   | suspicious          | 1                     |
-        +-----------+------------+---------------------+-----------------------+
-
-        Parameters
-        ----------
-        is_odk : bool
-            False → SurveyCTO column schema (interview_id, node, event, start, end, duration_ms)
-            True  → ODK column schema (instance_id, name, event, start_time, end_time)
-
-        Returns
-        -------
-        pd.DataFrame
-            All rows for all 12 interviews concatenated.
-        """
-        return self.generate_benchmark_suite(plan=self._profile_plan(is_odk=is_odk), is_odk=is_odk)
+        """Generate the canonical adversarial suite (12 interviews)."""
+        return self.generate_benchmark_suite(
+            plan=self._profile_plan(is_odk=is_odk), is_odk=is_odk
+        )
 
     def generate_benchmark_suite(self, plan: list, is_odk: bool = False) -> pd.DataFrame:
         """Generate a benchmark dataset from an explicit interview plan."""

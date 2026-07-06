@@ -1,12 +1,12 @@
 import os
 import sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from pathlib import Path
 
 import pandas as pd
 import pytest
-from pathlib import Path
 
-# BUG-3 FIX: process_interview() now exists in run_pipeline.py
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from run_pipeline import main as run_pipeline_main, process_interview
 from src.pipeline.controller import PipelineController
 from src.parsers.odk_parser import ODKParser
@@ -42,8 +42,7 @@ def test_process_interview_aggregation(tmp_path):
     int1 = next(f for f in features_list if f['interview_id'] == 'INT_1')
     int2 = next(f for f in features_list if f['interview_id'] == 'INT_2')
 
-    # BUG-6 FIX: Use actual pipeline key names from thesis Table 3
-    # V-01 = max(end_ms) - min(start_ms) for the whole interview
+    # V-01 = max(end_ms) - min(start_ms) for the whole interview.
     # INT_1: 08:00:20 - 08:00:00 = 20 000 ms
     assert int1['V-01_total_interview_duration_ms'] == pytest.approx(20000.0, abs=100), (
         f"INT_1 duration wrong: {int1.get('V-01_total_interview_duration_ms')}"
@@ -54,8 +53,7 @@ def test_process_interview_aggregation(tmp_path):
         f"INT_2 duration wrong: {int2.get('V-01_total_interview_duration_ms')}"
     )
 
-    # BUG-6 FIX: Correct key for back-navigation count (thesis Table 3: V-06)
-    # No backward/jump events in the test CSV → count = 0
+    # No backward/jump events in the test CSV, so the count should be 0.
     assert int1['V-06_back_navigation_total_count'] == 0, (
         f"INT_1 back-nav count wrong: {int1.get('V-06_back_navigation_total_count')}"
     )

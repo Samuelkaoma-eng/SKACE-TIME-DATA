@@ -1,77 +1,79 @@
 import os
 import sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 import pytest
-from hypothesis import given, strategies as st
 
-from src.features.response_time import calculate_basic_timing, calculate_speed_index
-from src.features.pauses import calculate_pauses
-from src.features.navigation import calculate_navigation_metrics
-from src.features.rhythm import calculate_rhythm_metrics
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+from src.features.question_features import QuestionFeatureExtractor
 from src.features.section_features import SectionFeatureExtractor
-
-def test_calculate_basic_timing_empty():
-    df = pd.DataFrame()
-    res = calculate_basic_timing(df)
-    assert np.isnan(res['mean_response_time'])
-
-def test_calculate_basic_timing_valid():
-    df = pd.DataFrame({'duration_ms': [1000, 2000, 3000]})
-    res = calculate_basic_timing(df)
-    assert res['mean_response_time'] == 2000.0
-    assert res['median_response_time'] == 2000.0
-    assert res['total_duration'] == 6000.0
-
-@given(st.floats(min_value=0.1, max_value=1e6), st.floats(min_value=0.1, max_value=1e6))
-def test_speed_index_properties(interview_dur, median_dur):
-    idx = calculate_speed_index(interview_dur, median_dur)
-    assert idx >= 0
-    if interview_dur < median_dur:
-        assert idx < 1.0
-    elif interview_dur > median_dur:
-        assert idx > 1.0
-
-def test_calculate_pauses():
-    # Construct a dataframe with a 2-second gap
-    df = pd.DataFrame({
-        'start_time': pd.to_datetime(['2023-01-01 10:00:00', '2023-01-01 10:00:05']),
-        'end_time': pd.to_datetime(['2023-01-01 10:00:01', '2023-01-01 10:00:06'])
-    })
-    
-    # Gap is 4 seconds (10:00:01 to 10:00:05), threshold is 3 seconds
-    res = calculate_pauses(df, pause_threshold_ms=3000)
-    assert res['pause_count'] == 1
-    assert res['total_pause_duration'] == 4000.0
-
-def test_calculate_navigation_metrics():
-    df = pd.DataFrame({
-        'event_type': ['Question', 'Question', 'backward', 'Question'],
-        'duration_ms': [5000, 1000, 2000, 800]
-    })
-    
-    res = calculate_navigation_metrics(df, straightline_threshold_ms=1500)
-    assert res['backtrack_count'] == 1
-    assert res['straightlining_count'] == 2  # 1000ms and 800ms are below 1500ms
-
-def test_calculate_rhythm_metrics():
-    df = pd.DataFrame({
-        'start_time': pd.to_datetime(['2023-01-01 10:00:00', '2023-01-01 10:00:10', '2023-01-01 10:00:20']),
-        'duration_ms': [5000, 5000, 5000]
-    })
-    
-    # Constant duration should yield 0 variance
-    res = calculate_rhythm_metrics(df, window_size=3)
-    assert res['rolling_variance_mean'] == 0.0
-    assert res['rolling_variance_max'] == 0.0
+from src.features.statistical_features import StatisticalFeatureExtractor
+from src.features.survey_features import SurveyFeatureExtractor
 
 
-def test_infer_section_name_handles_xpath_and_flat_names():
-    infer = SectionFeatureExtractor._infer_section_name
+def _cir_frame() -> pd.DataFrame:
+    rows = [
+        ("INT1", "demographics_q01", "question-end", 0, 1000),
+        ("INT1", "household_q01", "question-end", 1500, 3500),
+        ("INT1", "demographics_q01", "question-end", 5000, 6500),
+        ("INT1", "demographics_q02", "jump", 7000, 7300),
+        ("INT1", "demographics_q02", "question-end", 8000, 12000),
+    ]
+    df = pd.DataFrame(
+        rows,
+        columns=["interview_id", "field_name", "event_type", "start_ms", "end_ms"],
+    )
+    df.loc[:, "duration_ms"] = df["end_ms"] - df["start_ms"]
+    return df
 
-    assert infer('/data/household/q_name') == 'household'
-    assert infer('/data/q_name') == 'MainSection'
-    assert infer('demographics_q01') == 'demographics'
-    assert infer('plainfield') == 'MainSection'
+
+def test_question_features_preserve_field_level_behavior():
+    features = QuestionFeatureExtractor().extract(_cir_frame())
+
+    assert set(features.index) == {"demographics_q01", "household_q01", "demographics_q02"}
+    assert features.loc["demographics_q01", "Q-01_response_time_ms"] == pytest.approx(6500)
+    assert features.loc["demographics_q01", "Q-04_revisit_flag"] == 1
+    assert features.loc["demographics_q01", "Q-05_revisit_count"] == 1
+    assert features.loc["demographics_q02", "Q-01_response_time_ms"] == pytest.approx(4000)
+
+
+def test_section_features_infer_section_names_and_variance():
+    cir = _cir_frame()
+    q_features = QuestionFeatureExtractor().extract(cir)
+    section_features = SectionFeatureExtractor().extract(cir, q_features)
+
+    assert SectionFeatureExtractor._infer_section_name("/data/household/q_name") == "household"
+    assert SectionFeatureExtractor._infer_section_name("/data/q_name") == "MainSection"
+    assert SectionFeatureExtractor._infer_section_name("demographics_q01") == "demographics"
+    assert SectionFeatureExtractor._infer_section_name("plainfield") == "MainSection"
+    assert set(section_features.index) == {"demographics", "household"}
+    assert section_features.loc["demographics", "S-03_within_section_variance"] > 0
+
+
+def test_survey_features_convert_epoch_milliseconds_safely():
+    cir = _cir_frame()
+    cir.loc[:, "start_ms"] = cir["start_ms"] + 1672646400000
+    cir.loc[:, "end_ms"] = cir["end_ms"] + 1672646400000
+
+    features = SurveyFeatureExtractor().extract(cir)
+
+    assert features["V-01_total_interview_duration_ms"] == pytest.approx(12000)
+    assert features["V-07_time_of_day_hour"] == 8
+    assert features["V-08_day_of_week"] == 0
+
+
+def test_statistical_features_are_computed_from_question_times():
+    q_features = pd.DataFrame(
+        {"Q-01_response_time_ms": [1000.0, 2000.0, 4000.0]},
+        index=["q1", "q2", "q3"],
+    )
+
+    features = StatisticalFeatureExtractor().extract(q_features)
+
+    assert features["T-01_rt_variance"] == pytest.approx(np.var([1000, 2000, 4000], ddof=1))
+    assert features["T-02_rt_iqr"] == pytest.approx(1500)
+    assert features["T-06_rt_mean"] == pytest.approx(2333.3333333333335)
+    assert features["T-09_rt_min"] == pytest.approx(1000)
+    assert features["T-10_rt_max"] == pytest.approx(4000)

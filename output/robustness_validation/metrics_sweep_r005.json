@@ -1,0 +1,31 @@
+[
+  {
+    "total_samples": 500,
+    "true_positive": 25,
+    "true_negative": 474,
+    "false_positive": 1,
+    "false_negative": 0,
+    "precision": 0.9615384615384616,
+    "recall": 1.0,
+    "f1_score": 0.9803921568627451,
+    "accuracy": 0.998,
+    "specificity": 0.9978947368421053,
+    "anomalies_true": 25,
+    "anomalies_predicted": 26,
+    "normals_true": 475,
+    "normals_predicted": 474,
+    "precision_threshold": 0.8,
+    "recall_threshold": 0.75,
+    "fabricated_score_threshold": 5,
+    "normal_score_max": 1,
+    "passes_precision_threshold": true,
+    "passes_recall_threshold": true,
+    "fabricated_total": 8,
+    "fabricated_score_ge_threshold": 8,
+    "normal_total": 475,
+    "normal_score_le_threshold": 474,
+    "passes_fabricated_score_threshold": true,
+    "passes_normal_score_threshold": false,
+    "passes_overall_contract": false
+  }
+]
