@@ -9,8 +9,14 @@ sys.path.insert(0, os.path.abspath("."))
 from tests.test_adversarial import AdversarialDataGenerator
 
 
-def build_dataset(dataset_size: int, seed: int, anomaly_ratio: float, output_dir: Path) -> dict:
-    generator = AdversarialDataGenerator(seed=seed)
+def build_dataset(
+    dataset_size: int,
+    seed: int,
+    anomaly_ratio: float,
+    output_dir: Path,
+    difficulty: str = "canonical",
+) -> dict:
+    generator = AdversarialDataGenerator(seed=seed, difficulty=difficulty)
     plan = generator.build_benchmark_plan(dataset_size=dataset_size, anomaly_ratio=anomaly_ratio)
 
     surveycto_df = generator.generate_benchmark_suite(plan=plan, is_odk=False)
@@ -31,6 +37,7 @@ def build_dataset(dataset_size: int, seed: int, anomaly_ratio: float, output_dir
         "dataset_size": int(dataset_size),
         "anomaly_ratio": float(anomaly_ratio),
         "seed": int(seed),
+        "difficulty": difficulty,
         "n_normal": int((ground_truth_df["anomaly_type"] == "normal").sum()),
         "n_fabricated": int((ground_truth_df["anomaly_type"] == "fabricated").sum()),
         "n_speeding": int((ground_truth_df["anomaly_type"] == "speeding").sum()),
@@ -56,6 +63,12 @@ def main() -> int:
     parser.add_argument("--seed", type=int, default=42, help="Random seed for reproducibility.")
     parser.add_argument("--anomaly-ratio", type=float, default=0.2, help="Share of anomalous interviews.")
     parser.add_argument(
+        "--difficulty",
+        choices=["canonical", "stress"],
+        default="canonical",
+        help="canonical keeps proposal profiles clean; stress adds overlapping borderline behavior.",
+    )
+    parser.add_argument(
         "--output-dir",
         required=True,
         help="Directory where audit_logs_surveycto.csv, audit_logs_odk.csv, and ground_truth_labels.csv will be written.",
@@ -67,6 +80,7 @@ def main() -> int:
         seed=args.seed,
         anomaly_ratio=args.anomaly_ratio,
         output_dir=Path(args.output_dir),
+        difficulty=args.difficulty,
     )
 
     print("Synthetic benchmark dataset generated.")

@@ -44,7 +44,7 @@ class ODKParser(BaseParser):
         # 2. Field Name
         for col in ['node', 'name', 'field']:
             if col in df.columns:
-                std_df['field_name'] = df[col].astype(str).str.strip().fillna('unknown_field')
+                std_df['field_name'] = df[col].fillna('unknown_field').astype(str).str.strip()
                 break
         if 'field_name' not in std_df.columns:
             std_df['field_name'] = 'unknown_field'

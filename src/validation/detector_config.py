@@ -15,7 +15,16 @@ DETECTOR_CONFIG_KEYS = [
     "too_slow_ms",
     "low_entropy_threshold",
     "low_variance_threshold",
+    "short_session_median_ratio",
+    "low_mean_rt_median_ratio",
+    "low_rt_iqr_median_ratio",
+    "low_section_variance_median_ratio",
+    "moderate_back_nav_rate_threshold",
+    "long_pause_median_ratio",
     "high_back_nav_rate_threshold",
+    "rule_pause_count_min",
+    "rule_pause_min_ms",
+    "elevated_pause_median_ratio",
 ]
 
 
@@ -86,4 +95,3 @@ def build_recalibrated_detector_config(
         "ground_truth": str(ground_truth_path),
         "anomaly_detector": detector_config,
     }
-

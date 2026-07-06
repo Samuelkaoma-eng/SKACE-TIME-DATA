@@ -34,6 +34,7 @@ notebooks/*.executed.ipynb
 # Generated synthetic validation bundles
 data/synthetic/
 data/workflow_validation/
+data/robustness_checks/
 
 # Stale single-name notebook export
 output/audit_results.csv

@@ -53,15 +53,15 @@ class PipelineController:
         """
         if self.parser_type == 'auto':
             try:
-                # Content-based auto-detection and Hybrid Routing
+                # Content-based auto-detection.
                 df_raw = pd.read_csv(filepath, comment='#', low_memory=False)
                 cols = set(str(c).lower().strip() for c in df_raw.columns)
 
-                # Check if it's a Frankenstein file (contains both structural IDs)
+                # Mixed-format files can contain both structural identifiers.
                 if 'instance_id' in cols and ('interview_id' in cols or 'uuid' in cols):
                     print(f"  -> Hybrid format detected in {filepath.name}. Splitting dataset...")
 
-                    # BUG-5 FIX: Filter out errant header rows where instance_id == 'instance_id'
+                    # Drop repeated header rows that sometimes appear mid-file.
                     df_raw = df_raw[df_raw['instance_id'] != 'instance_id']
 
                     odk_raw = df_raw[df_raw['instance_id'].notna()].copy()
@@ -70,11 +70,9 @@ class PipelineController:
                     cir_dfs = []
                     import os, tempfile
 
-                    # BUG-4 FIX: Drop all-NaN columns before writing each temp file so each
-                    # parser only sees its own columns, preventing cross-format column pollution.
+                    # Drop empty columns so each parser sees only its relevant schema.
                     if not odk_raw.empty:
                         odk_clean = odk_raw.dropna(axis=1, how='all')
-                        # BUG-9 FIX: Use try/finally so temp files are always cleaned up
                         tmp_odk = tempfile.NamedTemporaryFile(
                             mode='w', suffix='.csv', delete=False, encoding='utf-8'
                         )
