@@ -38,7 +38,7 @@
     {
       "step": "surveycto: anomaly score reconstruction",
       "passed": true,
-      "details": "expected=5 actual=5"
+      "details": "expected=7 actual=7"
     },
     {
       "step": "surveycto: status mapping",
@@ -73,12 +73,12 @@
     {
       "step": "cross-format parity",
       "passed": true,
-      "details": "surveycto precision/recall=1.0000/1.0000, odk precision/recall=1.0000/1.0000"
+      "details": "surveycto precision/recall=0.9901/1.0000, odk precision/recall=0.9901/1.0000"
     },
     {
       "step": "scale stability (n500 vs n10000 surveycto)",
       "passed": true,
-      "details": "runtime_ratio=19.87, n500 precision/recall=1.0000/1.0000, n10000 precision/recall=1.0000/1.0000"
+      "details": "runtime_ratio=22.05, n500 precision/recall=0.9901/1.0000, n10000 precision/recall=0.9857/1.0000"
     }
   ],
   "summary": {
@@ -87,18 +87,18 @@
         "metrics": {
           "total_samples": 500,
           "true_positive": 100,
-          "true_negative": 400,
-          "false_positive": 0,
+          "true_negative": 399,
+          "false_positive": 1,
           "false_negative": 0,
-          "precision": 1.0,
+          "precision": 0.9900990099009901,
           "recall": 1.0,
-          "f1_score": 1.0,
-          "accuracy": 1.0,
-          "specificity": 1.0,
+          "f1_score": 0.9950248756218906,
+          "accuracy": 0.998,
+          "specificity": 0.9975,
           "anomalies_true": 100,
-          "anomalies_predicted": 100,
+          "anomalies_predicted": 101,
           "normals_true": 400,
-          "normals_predicted": 400,
+          "normals_predicted": 399,
           "precision_threshold": 0.8,
           "recall_threshold": 0.75,
           "fabricated_score_threshold": 5,
@@ -108,12 +108,12 @@
           "fabricated_total": 33,
           "fabricated_score_ge_threshold": 33,
           "normal_total": 400,
-          "normal_score_le_threshold": 400,
+          "normal_score_le_threshold": 399,
           "passes_fabricated_score_threshold": true,
-          "passes_normal_score_threshold": true,
-          "passes_overall_contract": true
+          "passes_normal_score_threshold": false,
+          "passes_overall_contract": false
         },
-        "runtime_seconds": 37.3,
+        "runtime_seconds": 27.33,
         "baseline_duration_iqr": {
           "total_samples": 500,
           "true_positive": 66,
@@ -177,18 +177,18 @@
         "metrics": {
           "total_samples": 500,
           "true_positive": 100,
-          "true_negative": 400,
-          "false_positive": 0,
+          "true_negative": 399,
+          "false_positive": 1,
           "false_negative": 0,
-          "precision": 1.0,
+          "precision": 0.9900990099009901,
           "recall": 1.0,
-          "f1_score": 1.0,
-          "accuracy": 1.0,
-          "specificity": 1.0,
+          "f1_score": 0.9950248756218906,
+          "accuracy": 0.998,
+          "specificity": 0.9975,
           "anomalies_true": 100,
-          "anomalies_predicted": 100,
+          "anomalies_predicted": 101,
           "normals_true": 400,
-          "normals_predicted": 400,
+          "normals_predicted": 399,
           "precision_threshold": 0.8,
           "recall_threshold": 0.75,
           "fabricated_score_threshold": 5,
@@ -198,33 +198,33 @@
           "fabricated_total": 33,
           "fabricated_score_ge_threshold": 33,
           "normal_total": 400,
-          "normal_score_le_threshold": 400,
+          "normal_score_le_threshold": 399,
           "passes_fabricated_score_threshold": true,
-          "passes_normal_score_threshold": true,
-          "passes_overall_contract": true
+          "passes_normal_score_threshold": false,
+          "passes_overall_contract": false
         },
-        "runtime_seconds": 36.83
+        "runtime_seconds": 27.65
       }
     },
     "scale": {
-      "n500_runtime_seconds": 37.59,
-      "n10000_runtime_seconds": 747.05,
-      "runtime_ratio": 19.87363660548018,
+      "n500_runtime_seconds": 27.24,
+      "n10000_runtime_seconds": 600.64,
+      "runtime_ratio": 22.04992657856094,
       "n500_metrics": {
         "total_samples": 500,
         "true_positive": 100,
-        "true_negative": 400,
-        "false_positive": 0,
+        "true_negative": 399,
+        "false_positive": 1,
         "false_negative": 0,
-        "precision": 1.0,
+        "precision": 0.9900990099009901,
         "recall": 1.0,
-        "f1_score": 1.0,
-        "accuracy": 1.0,
-        "specificity": 1.0,
+        "f1_score": 0.9950248756218906,
+        "accuracy": 0.998,
+        "specificity": 0.9975,
         "anomalies_true": 100,
-        "anomalies_predicted": 100,
+        "anomalies_predicted": 101,
         "normals_true": 400,
-        "normals_predicted": 400,
+        "normals_predicted": 399,
         "precision_threshold": 0.8,
         "recall_threshold": 0.75,
         "fabricated_score_threshold": 5,
@@ -234,26 +234,26 @@
         "fabricated_total": 33,
         "fabricated_score_ge_threshold": 33,
         "normal_total": 400,
-        "normal_score_le_threshold": 400,
+        "normal_score_le_threshold": 399,
         "passes_fabricated_score_threshold": true,
-        "passes_normal_score_threshold": true,
-        "passes_overall_contract": true
+        "passes_normal_score_threshold": false,
+        "passes_overall_contract": false
       },
       "n10000_metrics": {
         "total_samples": 10000,
         "true_positive": 2000,
-        "true_negative": 8000,
-        "false_positive": 0,
+        "true_negative": 7971,
+        "false_positive": 29,
         "false_negative": 0,
-        "precision": 1.0,
+        "precision": 0.9857072449482503,
         "recall": 1.0,
-        "f1_score": 1.0,
-        "accuracy": 1.0,
-        "specificity": 1.0,
+        "f1_score": 0.9928021841648051,
+        "accuracy": 0.9971,
+        "specificity": 0.996375,
         "anomalies_true": 2000,
-        "anomalies_predicted": 2000,
+        "anomalies_predicted": 2029,
         "normals_true": 8000,
-        "normals_predicted": 8000,
+        "normals_predicted": 7971,
         "precision_threshold": 0.8,
         "recall_threshold": 0.75,
         "fabricated_score_threshold": 5,
@@ -263,10 +263,10 @@
         "fabricated_total": 666,
         "fabricated_score_ge_threshold": 666,
         "normal_total": 8000,
-        "normal_score_le_threshold": 8000,
+        "normal_score_le_threshold": 7971,
         "passes_fabricated_score_threshold": true,
-        "passes_normal_score_threshold": true,
-        "passes_overall_contract": true
+        "passes_normal_score_threshold": false,
+        "passes_overall_contract": false
       }
     }
   }

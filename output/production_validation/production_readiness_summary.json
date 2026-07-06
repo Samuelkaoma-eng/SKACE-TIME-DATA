@@ -27,13 +27,14 @@
     "passes_fabricated_score_threshold": true,
     "passes_normal_score_threshold": true,
     "passes_overall_contract": true,
-    "runtime_seconds": 8.92,
+    "runtime_seconds": 6.69,
     "rows_returned": 120,
     "raw_file": "data\\generated_benchmarks\\n120_seed11\\audit_logs_odk.csv",
     "dataset": "n120_seed11",
     "format": "odk",
     "dataset_size": 120,
-    "seed": 11
+    "seed": 11,
+    "difficulty": "canonical"
   },
   {
     "total_samples": 120,
@@ -63,13 +64,14 @@
     "passes_fabricated_score_threshold": true,
     "passes_normal_score_threshold": true,
     "passes_overall_contract": true,
-    "runtime_seconds": 7.77,
+    "runtime_seconds": 6.84,
     "rows_returned": 120,
     "raw_file": "data\\generated_benchmarks\\n120_seed11\\audit_logs_surveycto.csv",
     "dataset": "n120_seed11",
     "format": "surveycto",
     "dataset_size": 120,
-    "seed": 11
+    "seed": 11,
+    "difficulty": "canonical"
   },
   {
     "total_samples": 120,
@@ -99,13 +101,14 @@
     "passes_fabricated_score_threshold": true,
     "passes_normal_score_threshold": true,
     "passes_overall_contract": true,
-    "runtime_seconds": 7.86,
+    "runtime_seconds": 6.54,
     "rows_returned": 120,
     "raw_file": "data\\generated_benchmarks\\n120_seed42\\audit_logs_odk.csv",
     "dataset": "n120_seed42",
     "format": "odk",
     "dataset_size": 120,
-    "seed": 42
+    "seed": 42,
+    "difficulty": "canonical"
   },
   {
     "total_samples": 120,
@@ -135,13 +138,14 @@
     "passes_fabricated_score_threshold": true,
     "passes_normal_score_threshold": true,
     "passes_overall_contract": true,
-    "runtime_seconds": 8.56,
+    "runtime_seconds": 6.9,
     "rows_returned": 120,
     "raw_file": "data\\generated_benchmarks\\n120_seed42\\audit_logs_surveycto.csv",
     "dataset": "n120_seed42",
     "format": "surveycto",
     "dataset_size": 120,
-    "seed": 42
+    "seed": 42,
+    "difficulty": "canonical"
   },
   {
     "total_samples": 500,
@@ -171,13 +175,14 @@
     "passes_fabricated_score_threshold": true,
     "passes_normal_score_threshold": true,
     "passes_overall_contract": true,
-    "runtime_seconds": 36.82,
+    "runtime_seconds": 28.42,
     "rows_returned": 500,
     "raw_file": "data\\generated_benchmarks\\n500_seed11\\audit_logs_odk.csv",
     "dataset": "n500_seed11",
     "format": "odk",
     "dataset_size": 500,
-    "seed": 11
+    "seed": 11,
+    "difficulty": "canonical"
   },
   {
     "total_samples": 500,
@@ -207,13 +212,14 @@
     "passes_fabricated_score_threshold": true,
     "passes_normal_score_threshold": true,
     "passes_overall_contract": true,
-    "runtime_seconds": 31.2,
+    "runtime_seconds": 28.74,
     "rows_returned": 500,
     "raw_file": "data\\generated_benchmarks\\n500_seed11\\audit_logs_surveycto.csv",
     "dataset": "n500_seed11",
     "format": "surveycto",
     "dataset_size": 500,
-    "seed": 11
+    "seed": 11,
+    "difficulty": "canonical"
   },
   {
     "total_samples": 500,
@@ -243,13 +249,14 @@
     "passes_fabricated_score_threshold": true,
     "passes_normal_score_threshold": true,
     "passes_overall_contract": true,
-    "runtime_seconds": 34.59,
+    "runtime_seconds": 27.88,
     "rows_returned": 500,
     "raw_file": "data\\generated_benchmarks\\n500_seed42\\audit_logs_odk.csv",
     "dataset": "n500_seed42",
     "format": "odk",
     "dataset_size": 500,
-    "seed": 42
+    "seed": 42,
+    "difficulty": "canonical"
   },
   {
     "total_samples": 500,
@@ -279,12 +286,13 @@
     "passes_fabricated_score_threshold": true,
     "passes_normal_score_threshold": true,
     "passes_overall_contract": true,
-    "runtime_seconds": 36.92,
+    "runtime_seconds": 28.32,
     "rows_returned": 500,
     "raw_file": "data\\generated_benchmarks\\n500_seed42\\audit_logs_surveycto.csv",
     "dataset": "n500_seed42",
     "format": "surveycto",
     "dataset_size": 500,
-    "seed": 42
+    "seed": 42,
+    "difficulty": "canonical"
   }
 ]
