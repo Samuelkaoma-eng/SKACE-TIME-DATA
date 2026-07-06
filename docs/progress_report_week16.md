@@ -1,4 +1,4 @@
-# Progress Report — Week 16 Review
+# Progress Report, Week 16 Review
 
 **Project:** Automated Extraction and Analysis of Timing-Based Paradata Features for Survey Quality Assurance
 **Student:** Samuel Kaoma (2022016530) · **Course:** CSC 4004 · **Supervisor:** Mr. Mofya Phiri

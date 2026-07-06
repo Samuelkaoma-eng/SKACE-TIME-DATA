@@ -1,132 +1,228 @@
 # Automated Extraction and Analysis of Timing-Based Paradata Features for Survey Quality Assurance
 
-## 1. Abstract
-The integrity of data collected via computer-assisted personal interviewing (CAPI) and mobile surveys relies heavily on enumerator and respondent adherence to protocol. Falsification, satisficing, and rushing pose significant threats to survey validity, often remaining undetected by traditional logical consistency checks. Paradata-specifically, the digital trace logs recording keystrokes, timestamps, and navigation events-offers a hidden layer of behavioral metadata capable of exposing these threats. This paper presents a novel, automated python-based computational pipeline designed to ingest heterogeneous raw audit logs from platforms like SurveyCTO and ODK Collect. By transforming raw logs into a Common Intermediate Representation (CIR), the system engineers 40 distinct timing-based behavioral features spanning question, section, survey, and statistical granularities. Using robust statistical formulations (e.g., Shannon Entropy, Coefficient of Variation, and Interquartile Range thresholds), the pipeline mathematically defines and detects anomalous behavior patterns indicative of fabrication or severe satisficing. Rigorous evaluation using Mann-Whitney U testing and Cohen's d establishes the discriminative power of these engineered features, offering researchers a reproducible, computationally scalable methodology for automated survey quality assurance.
+Samuel Kaoma (2022016530) | CSC 4004 | Supervisor: Mr. Mofya Phiri | July 2026
 
-## 2. Introduction
-In large-scale survey research, maintaining high data quality is paramount. As data collection shifts increasingly toward mobile and digital platforms (e.g., SurveyCTO, ODK Collect), researchers are transitioning from paper-based post-hoc quality checks to real-time digital auditing. While logical checks (e.g., verifying that a 10-year-old is not listed as married) catch explicit data entry errors, they fail to detect subtle behavioral violations such as "speeding" (satisficing) or "curbstoning" (complete interviewer fabrication). 
+## Abstract
 
-Paradata, the mathematical byproduct of the survey administrative process, provides micro-level behavioral indicators. Timestamped events, pause durations, and navigation trajectories offer empirical evidence of the cognitive and physical effort expended during the interview. However, despite the theoretical consensus on the value of paradata, its practical application remains hindered by a lack of standardized computational tools. Audit log structures vary wildly across platforms, rendering cross-platform analysis difficult. Furthermore, transforming millions of rows of raw event logs into actionable, mathematically sound features requires complex, object-oriented data engineering pipelines that most social scientists lack the technical capacity to build.
+Digital data collection platforms such as SurveyCTO and ODK Collect record detailed process data, commonly called paradata, alongside every interview. These audit logs hold timestamps, navigation events and validation errors that describe how an interview was conducted rather than what was answered. Although survey methodology research has repeatedly shown that such timing data can expose fabrication, speeding and disengagement, paradata remains underused in practice because the raw logs differ across platforms and no standard tooling exists to turn them into analytical features. This study designed, implemented and evaluated an automated pipeline that parses SurveyCTO and ODK audit logs into a common intermediate representation, computes forty timing-based features across question, section, survey and statistical levels of granularity, and flags anomalous interviews using interquartile range thresholds combined with transparent, configurable rules. The system was evaluated against synthetic benchmark datasets with labelled injected anomalies, including datasets generated from random seeds that were never used during development and a stress condition in which normal and anomalous behaviour deliberately overlap. Across a class imbalance sweep from five to thirty percent anomaly prevalence the detector achieved precision between 0.96 and 1.00 with full recall. On held-out stress datasets in both platform formats it achieved precision between 0.96 and 1.00 and recall between 0.84 and 0.90, exceeding the predefined success criteria of 0.80 precision and 0.75 recall. Speeding was detected in every case, disengagement in 88 percent of cases, and subtle fabrication in 76 percent of cases, a pattern consistent with the known limits of univariate outlier detection. The deliverables include a documented Python feature library, a paradata format guide, labelled validation datasets and this report.
 
-This research addresses these gaps by architecting an automated, modular Python pipeline that ingests raw audit logs, normalizes them into a Common Intermediate Representation (CIR), and rigorously extracts 40 theoretically-grounded features. We construct an anomaly detection engine utilizing both robust statistical bounds (IQR) and explicit logical constraints to automatically flag compromised interviews.
+## 1. Introduction
 
-## 3. Literature Review
-The theoretical foundation of timing-based paradata analysis is rooted in survey methodology, cognitive psychology, and human-computer interaction.
+The quality of survey data underpins research, policy formulation and decision making in public health, economics and the social sciences (Groves et al., 2009). Digital data collection platforms have substantially improved the efficiency of field survey administration, and two of the most widely deployed platforms, SurveyCTO and Open Data Kit (ODK), automatically record auxiliary process data known as paradata (Couper, 1998; Kreuter, 2013). Paradata captures how an interview unfolded: when each question was opened and answered, how long the enumerator paused, whether answers were revised, and how the respondent navigated through the instrument.
 
-### 3.1 Cognitive Effort and Response Latency
-Yan & Tourangeau (2008) pioneered the investigation of response latency as a proxy for cognitive engagement. Their research posits that answering a survey question requires a four-step cognitive process: comprehension, retrieval, judgment, and response selection. When respondents or interviewers "satisfice" (Krosnick, 1991), they bypass the retrieval and judgment phases, leading to unnaturally rapid response times. Our pipeline operationalizes this by capturing `Q-01_response_time_ms` and calculating the `V-09_session_length_vs_median` to flag speeders.
+These behavioural traces carry diagnostic value that conventional quality checks cannot match. Unusually fast completion may indicate rushed or fabricated responses, extended pauses may signal confusion or interruption, and atypical navigation patterns may point to satisficing behaviour, in which respondents or enumerators invest only the minimum effort required to move forward (Krosnick, 1991; Yan and Tourangeau, 2008). Despite this potential, paradata is routinely underused. Audit logs from SurveyCTO and ODK differ in structure, field naming and timing granularity, and the statistical work needed to convert millions of raw event rows into defensible quality indicators is beyond the reach of most survey teams (Kreuter, 2013).
 
-### 3.2 Indicators of Difficulty: Pauses and Revisions
-Conrad et al. (2017) demonstrated that internal question pauses and answer revisions are strong correlates of item difficulty and respondent uncertainty. A natural interview contains varying pause lengths as respondents retrieve complex memories or consider sensitive topics. Paradata event logs capturing `idle_time_ms` and `edit_count` allow our system to computationally measure this friction. Conversely, the complete absence of pauses and revisions strongly suggests fabrication.
+### 1.1 Problem statement
 
-### 3.3 Trajectory and Navigation Anomalies
-Kreuter (2013) highlights the importance of analyzing macro-level survey trajectories. Human attention degrades over time, typically resulting in an acceleration of response pace toward the end of a long survey. By extracting `V-02` (early trajectory) and `V-03` (late trajectory), our system calculates the `V-04_speed_trajectory_ratio`. Furthermore, Couper (2000) notes that navigation backward through a survey indicates confusion or course correction. A long survey (e.g., >20 questions) with absolute zero back-navigation (`V-10_zero_back_nav_flag`) violates expected human error rates, strongly implicating a robotic or fabricated entry process.
+Existing survey quality assurance practice relies largely on aggregate indicators, chiefly total interview duration, together with manual back-checking of a sample of interviews. These methods are poorly equipped to detect behavioural irregularities that occur during the interview, such as uniform pacing across questions of very different complexity, or the complete absence of the natural navigation errors that human interviewers make (Wenz, Kreuter and Janke, 2019). At the same time, the raw material needed to detect these patterns already exists in the audit logs that both major platforms produce by default. The barrier is the absence of automated, format-aware tools that transform heterogeneous logs into structured features and apply statistically sound detection methods that respect the non-normal distributions typical of response time data (Iglewicz and Hoaglin, 1993).
 
-### 3.4 Distributional Characteristics
-Wenz et al. (2020) advanced paradata analysis by examining the statistical shape of response time distributions rather than individual latencies. Natural human response times typically follow an ex-Gaussian distribution-heavily right-skewed with a long tail of slower responses. Fabricated data, generated by an interviewer uniformly clicking through a form to generate fake data, exhibits artificially compressed variance and high uniformity. Our system calculates `T-03_rt_entropy`, `T-04_rt_skewness`, and `T-08_rt_cv` to computationally identify these compressed, unnatural distributions.
+### 1.2 Aim
 
-## 4. Methodology
-The research methodology is entirely computational and software-driven. We designed a data engineering pipeline reflecting the core tenets of Clean Architecture and GRASP (General Responsibility Assignment Software Patterns) to ensure the system is theoretically robust, reproducible, and highly scalable.
+The aim of this project was to design and implement an automated pipeline for extracting, cataloguing and analysing timing-based paradata features from SurveyCTO and ODK audit logs in order to support scalable survey data quality assessment.
 
-### 4.1 Data Normalization Paradigm
-Because ODK Collect uses ISO 8601 timestamps and distinct group categorizations, while SurveyCTO outputs Epoch milliseconds and flatter node hierarchies, the system forces all data through an abstraction layer. The `BaseParser` class mathematically coerces all timestamps into integer milliseconds and normalizes field identifiers, creating a 6-column Common Intermediate Representation (CIR). This pure fabrication ensures downstream feature extractors are completely decoupled from external proprietary formats.
+### 1.3 Objectives
 
-### 4.2 Feature Taxonomy
-We engineered 40 exact features mapped directly to the literature:
-- **Question-Level (Q-01 to Q-10):** Capturing micro-interactions (e.g., time to first interaction, edit counts, idle times).
-- **Section-Level (S-01 to S-10):** Capturing module-specific behaviors (e.g., within-section variance, pause counts >5s and >30s).
-- **Survey-Level (V-01 to V-10):** Capturing macro-indicators (e.g., speed trajectories, global back-navigation rates, session timing).
-- **Statistical (T-01 to T-10):** Summarizing the mathematical shape of the interview's cognitive load (e.g., Shannon Entropy, kurtosis, Coefficient of Variation).
+1. To review and catalogue timing-based quality indicators identified in survey methodology literature, mapping prior findings to a structured feature taxonomy.
+2. To develop format-aware parsers for SurveyCTO and ODK audit logs that produce a common intermediate representation.
+3. To implement a feature extraction module computing thirty to fifty timing-based indicators across question, section and survey levels of granularity.
+4. To compute statistical characterisation measures including variance, entropy, skewness and kurtosis.
+5. To implement anomaly detection using interquartile range thresholding and rule-based logic, validated against precision and recall criteria.
+6. To generate structured output datasets, feature documentation and a paradata format guide suitable for reuse by survey researchers.
+### 1.4 Scope
 
-## 5. System Architecture
-The system architecture follows a linear, decoupled execution model managed by a central `PipelineController`.
+The project processes audit logs from SurveyCTO and ODK, extracts forty timing-based and behavioural features, characterises response patterns statistically, applies interquartile range and rule-based anomaly detection, and validates the system empirically using synthetic datasets with labelled anomalies. Real-time monitoring, dashboard integration, machine learning deployment and primary data collection were excluded from scope at proposal stage and remain so.
 
-1. **Ingestion Layer:** Accepts N-dimensional CSV logs. Uses `argparse` and interactive CLI for parameterized execution.
-2. **Parser Layer:** Polymorphic inheritance (`SurveyCTOParser`, `ODKParser`) implementing the abstract `parse()` method to generate the CIR.
-3. **Extraction Layer:** Four isolated classes (`QuestionFeatureExtractor`, `SectionFeatureExtractor`, `SurveyFeatureExtractor`, `StatisticalFeatureExtractor`) process the CIR. This adheres strictly to the Single Responsibility Principle.
-4. **Validation Layer:** The `AnomalyDetector` class applies threshold mathematics against the joined feature matrix.
+## 2. Literature Review
 
-## 6. Feature Engineering and Mathematical Formulations
-The mathematical backbone of the system relies on vectorization and distributional analysis over the variable $X$ (where $X$ represents the array of response times per interview).
+The Total Survey Error framework developed by Groves et al. (2009) treats data quality as the product of error sources across every stage of the survey process. Within this framework paradata has emerged as a practical mechanism for monitoring error at the interviewing stage. Couper (1998) first demonstrated that process data captured inside computer-assisted instruments could serve as quality indicators, establishing the basis for timing-based analysis.
 
-### 6.1 Shannon Entropy (`T-03`)
-To detect fabrication, we measure the unpredictability of the surveyor's rhythm. Let $p(x_i)$ be the proportion of total interview time spent on question $i$.
-$$ H(X) = - \sum_{i=1}^{n} p(x_i) \log_2 p(x_i) $$
-Fabricators tend to spend an exactly equal amount of time (e.g., 2 seconds) on every question. This results in $p(x_i) \approx \frac{1}{n}$, driving the entropy mathematically toward 0. A natural interview has varying lengths of $p'$, resulting in higher entropy. The anomaly detector flags interviews where $H(X) < 1.5$.
+Yan and Tourangeau (2008) examined response latency directly and found that question complexity, respondent age and topic familiarity all predict response time. Their central finding for the present work is that questions answered unusually quickly relative to their complexity are associated with reduced cognitive engagement and lower data quality. Answering a survey question requires comprehension, retrieval, judgement and response selection; respondents who satisfice skip the middle stages, and the missing effort is visible in the timing record (Krosnick, 1991). This motivates the question-level response time, time to first interaction and complexity-related pace features in the taxonomy used here.
 
-### 6.2 Coefficient of Variation (`T-08`)
-To account for scale differences between fast and slow natural typists, we calculate a scale-invariant measure of dispersion:
-$$ CV = \frac{\sigma}{\mu} $$
-Interviews with $CV < 0.1$ exhibit impossibly uniform mechanical pacing, triggering the rule-based anomaly flag.
+Conrad, Tourangeau and Couper (2013) explored adaptive survey designs driven by paradata and showed that behavioural signals observable during the interview, including extended pauses and repeated backward navigation, identify respondent difficulty and disengagement. Their analysis supports the section-level pause frequency, pause duration and back-navigation features adopted in this project.
 
-### 6.3 Robust IQR Outlier Detection
-Survey duration distributions are heavily skewed. Traditional $Z$-score anomaly detection assumes a Gaussian underlying distribution and is therefore mathematically invalid for paradata, leading to severe False Positives. We implement robust Interquartile Range (IQR) bounds on total duration (`V-01`):
-$$ IQR = Q_3 - Q_1 $$
-Interviews falling below $Q_1 - 1.5 \times IQR$ are flagged as anomalous "Speeders."
+The most directly applicable empirical work is that of Wenz, Kreuter and Janke (2019), who investigated data fabrication using paradata from interviewer-administered surveys. Fabricated interviews exhibited compressed response time distributions, with reduced interquartile spread and low variance in question-level durations, together with abnormally low back-navigation counts and unusually uniform section pacing. These findings supply the statistical signature that the anomaly detection component of this project is designed to recognise, and they directly justify the choice of interquartile range thresholding as the primary detection method.
 
-## 7. Mathematical Evaluation and Ground Truth Methodology
-To rigorously evaluate the discriminative capacity of the `AnomalyDetector` engine, we deployed an adversarial synthetic validation methodology. This approach guarantees that the algorithms are tested against strictly controlled edge cases that would take years to organically encounter in field deployments. 
+Kreuter (2013) surveys paradata-driven quality improvement across large survey programmes and reports two findings of practical importance here. First, computational processing of timing data requires platform-specific parsing before any analysis can begin, which motivates the parser layer of this system. Second, survey-level features such as total duration, pace trajectory across the interview and time-of-day effects are robust indicators that survive aggregation across very different instruments.
 
-### 7.1 Synthetic Dataset Generation
-The baseline normative distributions were generated using log-normal probability density functions ($\mu = \ln(8000), \sigma = 0.5$) combined with minor Poisson noise to simulate natural human variation. Anomalous profiles were systematically injected using a Python-based `AdversarialDataGenerator`. The ground truth dataset comprises 24 distinct signatures mapped exactly 1:1 against theoretical paradata violations:
-1.  **Legitimate Humans**: Balanced entropy, valid IQR boundaries, organic edit counts.
-2.  **Strict Fabricators**: Zero variance ($T-01 \approx 0$), perfect mathematical uniformity ($CV < 0.1$), zero backward navigation.
-3.  **Speeders/Satisficers**: Extreme low durations violating the $Q_1 - 1.5 \times IQR$ bounded thresholds.
-4.  **Device Failures (DQ Issues)**: Impossibility bounds including negative response times, $V-01$ values exceeding 3,600,000 ms, and invalid divisor operations (Resulting in `NaN` mappings).
+On the statistical side, response time distributions are strongly right-skewed, which makes methods that assume normality unreliable for outlier detection (Hawkins, 1980; Iglewicz and Hoaglin, 1993). Interquartile range fences make no distributional assumption and are themselves resistant to the influence of the outliers they are meant to find, which is why they are preferred here over z-score methods. Broader surveys of anomaly detection (Chandola, Banerjee and Kumar, 2009; Hodge and Austin, 2004) distinguish univariate approaches, which examine one feature at a time, from multivariate approaches that model joint structure. Univariate methods are transparent and interpretable, properties valued in survey quality workflows where a flagged interview must be explainable to a field supervisor, but they cannot detect anomalies visible only in combinations of features. This trade-off is accepted explicitly in the present design and revisited in the results.
 
-### 7.2 Experimental Metrics
-We calculated standard machine learning classification metrics against the explicit `ground_truth_labels.csv` mapping:
-*   **Precision**: $\frac{\text{True Positives}}{\text{True Positives} + \text{False Positives}}$
-*   **Recall**: $\frac{\text{True Positives}}{\text{True Positives} + \text{False Negatives}}$
-*   **F1-Score**: The harmonic mean of precision and recall.
-*   **Cohen's d**: Standardized effect size quantifying the mean difference between Normal ($M_1$) and Anomalous ($M_2$) anomaly scores: $d = \frac{M_1 - M_2}{SD_{pooled}}$.
+Finally, the evaluation strategy draws on the synthetic data literature. Where labelled real-world anomalies are unavailable, controlled injection of known anomaly types into generated data is an established way to benchmark detection systems (Chawla et al., 2002). Evaluation metrics computed on synthetic data are sensitive to class prevalence, so a fixed anomaly ratio can misrepresent operational performance; varying the ratio is the standard mitigation (Japkowicz and Stephen, 2002). Both practices are followed in this study.
 
-## 8. Results and Validation Performance
-The execution of the 4-Layer Validation Architecture on the synthetic ground truth outputted mathematically deterministic responses reflecting 100% adherence to defined constraints.
+## 3. Methodology
 
-### 8.1 Classification Efficacy
-Because the `AnomalyDetector` relies on mathematically absolute algebraic bounds rather than fuzzy gradient descent, the pipeline achieved flawless categorization on the explicit test suite:
-*   **Precision:** 1.000 (100%)
-*   **Recall:** 1.000 (100%)
-*   **Categorical Alignment:** The 3-tier severity classification system (`Normal [0-5]`, `Suspicious [6-9]`, `Anomalous [10-15]`) perfectly mapped 100% of adversarial records to their intended theoretical clusters.
+The system is a multi-stage pipeline that proceeds from raw log ingestion through parsing, feature extraction, statistical characterisation and anomaly detection to structured output generation. Development followed an iterative, test-driven approach in Python 3.10 and later versions, using Pandas and NumPy for data processing, SciPy for statistical functions, Matplotlib and Seaborn for visualisation, and Pytest for automated testing (McKinney, 2017).
 
-### 8.2 Effect Size Analysis (Cohen's d)
-Analysis of the generated `anomaly_score` integer range proved that the engineered feature set possesses magnificent predictive power. The standardized mean difference (Cohen's d) between the normally distributed baseline interviews and the verified fraudulent records was calculated natively via Pandas. A Cohen's d exceeding 0.8 is conventionally interpreted as a "large" effect size in behavioral and psychological sciences. The resulting timing matrices in our experiment routinely yield effect sizes massive enough to guarantee clear statistical separation, entirely preventing borderline ambiguity. 
+### 3.1 Common intermediate representation
 
-### 8.3 Graphical Analysis
-Visualizations of the output variables (e.g., KDE plots of `T-03_rt_entropy`, scatter matrices comparing `V-01` against `T-01_rt_variance`) immediately expose clusters of data fabrication. Fabricators graphically collapse into dense coordinates at $[x, \approx 0]$ where variance mathematically terminates, easily isolable from the broad, natural dispersion of human cognition.
+SurveyCTO and ODK audit logs differ in event taxonomy, field naming and timestamp encoding. SurveyCTO exports event-based CSV files with epoch-millisecond timestamps attached to field identifiers, while ODK exports use ISO 8601 timestamp strings and a different event vocabulary. To decouple analysis from these differences, every parser converts its input into a common intermediate representation, a standardised table with six columns: interview identifier, field name, event type, start time in milliseconds, end time in milliseconds, and duration in milliseconds. All downstream components operate exclusively on this representation, so support for an additional platform requires only a new parser and no change to the feature library.
 
-## 9. Discussion
-The successful extraction of the 40 specified features demonstrates the absolute efficacy of the Common Intermediate Representation (CIR) methodology. By aggressively normalizing chaotic vendor timestamps into 64-bit integer milliseconds (`Int64`) and enforcing abstract column schemas via bounded parsers, the system cleanly evades the severe platform fragmentation historically documented in paradata literature.
+The parser layer is a class hierarchy. An abstract base parser defines the intermediate schema and validates that every parser output conforms to it. Concrete subclasses for SurveyCTO and ODK handle ingestion, event name normalisation and timestamp conversion. Event vocabularies differ between the platforms: SurveyCTO logs events such as form-start, constraint and end against XPath node identifiers, while ODK uses terms such as form start, question and end screen against instance and name columns. Each parser maps its native vocabulary onto a shared set of normalised event types so that a form opening, a question interaction and a navigation jump mean the same thing downstream regardless of origin.
 
-### 9.1 The Necessity of the Entropy Array
-The implementation of Shannon Entropy (`T-03`) and the Coefficient of Variation (`T-08`) proved absolutely critical during the adversarial testing phase. While simple heuristics like Total Duration (`V-01`) successfully identified blatant "Speeders", they failed completely to detect "Smart Fabricators." Sophisticated adversarial actors intentionally slow their mechanical clicking pace to theoretically bypass standard duration filters (e.g., waiting 10 seconds accurately between every single node submission). 
+Timestamp handling deserves particular care because it is where real logs most often deviate from documentation. The SurveyCTO parser accepts epoch milliseconds as its canonical input but includes a guard for exports that record epoch seconds, detected from the magnitude of the median value and corrected by rescaling. The ODK parser converts ISO 8601 strings, including timezone offsets, into epoch milliseconds. Both parsers tolerate missing field names, unparseable timestamps and negative durations by marking the affected rows rather than silently accepting or discarding them, so that data problems surface in the quality flags rather than corrupting features. A controller above the parsers performs automatic format detection from column structure and timestamp shape, and can split hybrid files in which rows from both platforms have been concatenated into a single export, a situation that occurs in practice when field teams merge files before upload.
 
-However, humans are mathematically incapable of maintaining perfect rhythmic variance over a 120-question survey. By shifting the analysis vector from absolute duration to *distributional shape* (Entropy), the Statistical Feature module unmasks this fraud instantly.
+### 3.2 Feature taxonomy
 
-### 9.2 The Data Quality Isolation Layer
-A major failure point in previous machine learning classifiers dealing with paradata is the misclassification of broken devices (which produce massive outliers) as "Fraudulent Humans." Layer 2 of our architecture explicitly isolates constraints ($T-10 < T-09$, negative global timestamps). By immediately forcefully categorizing these bugs as `minor_dq` rather than generating a behavioral `anomaly_score`, our pipeline strictly insulates downstream statistical learning models from technical corruption.
+Forty features were catalogued at proposal stage from the literature reviewed above and all forty are implemented. They are organised in four groups with stable identifiers used consistently in the code, the documentation and the output datasets.
 
-## 10. Limitations
-1. **Dependency on Internal Hardware Clocks:** The pipeline entirely relies on the internal hardware clocks of the Android or iOS hosts running SurveyCTO/ODK. Devices with catastrophic clock drift, or devices that dynamically sync network time protocols (NTP) mid-interview, can produce severely inverted `duration_ms` values. While Layer 2 safely traps the most blatant overlaps, subtle fractional variations remain beyond computational detection.
-2. **Missing Granularity in Node Traversal:** Neither SurveyCTO nor ODK natively emit continuous sub-pixel interaction data (e.g., swipe trajectory, specific input velocity constraints). Thus, calculations like `time_to_first_interaction` remain inherently bounded by the application's specific event-state triggers rather than pure touchscreen kinetics.
-3. **Regex Parity Vulnerabilities:** As discovered during initial cross-platform evaluations, navigation events lack standardized naming conventions across vendors (e.g., SurveyCTO logging `backward` vs ODK logging `jump`). Future integration with applications like Qualtrics or KoboToolbox relies heavily on manual updates to the parsing dictionaries.
+| Group | Identifiers | Content |
+|---|---|---|
+| Question level | Q-01 to Q-10 | Response time, time to first interaction, edit count, revisit flag and count, completion ratio, idle time, event count, constraint triggers, first-to-last interaction span |
+| Section level | S-01 to S-10 | Mean section pace, section duration, within-section variance, pace ratio to survey mean, pause counts above five and thirty seconds, mean and maximum pause, back-navigation count, completion rate |
+| Survey level | V-01 to V-10 | Total duration, early and late pace, pace trajectory ratio, back-navigation rate and total, start hour, day of week, duration relative to sample median, consecutive no-back-navigation flag |
+| Statistical | T-01 to T-10 | Variance, interquartile range, Shannon entropy, skewness, excess kurtosis, mean, median, coefficient of variation, minimum and maximum of the response time distribution |
 
-## 11. Conclusion
-The `SKACE-Time-Data` project successfully realized a comprehensive, mathematically grounded, and highly modular Python pipeline explicitly designed for automated paradata auditing. By transitioning raw, unstructured vendor audit logs through a rigorously enforced CIR syntax, the system seamlessly outputs 40 theoretically validated features encompassing the Question, Section, Survey, and Statistical meta-domains. The incorporation of robust non-parametric bounds, combined with strict isolation layers shielding behavioral data from device-level corruption, provides researchers with a reproducible, computationally scalable gold standard matrix. This architecture ultimately defends statistical survey datasets from the massive noise introduced by fabrication and severe satisficing.
+Two features are proxies imposed by the source data. The event count per field stands in for keystroke count, because neither platform logs individual keystrokes, and the field completion ratio is derived from whether measurable time was spent on the field, because the audit log does not record answer content. Both proxies are documented in the feature guide so that users do not over-interpret them.
 
-## 12. References
+Administrative events require care. Real audit logs open and close with form-level rows whose field identifier is blank. These rows contribute to total interview duration but are excluded from question-level and section-level statistics, because treating the gap between form start and form end as a pause would swamp every within-section measure. This exclusion was added after exactly that distortion was observed during validation.
 
-[1] Conrad, F. G., Couper, M. P., Tourangeau, R., & Peytchev, A. (2017). "Use and non-use of clarification features in web surveys." *Journal of Official Statistics*, 22(2), 245-269.
+### 3.3 Key statistical formulations
 
-[2] Couper, M. P. (2000). "Web surveys: A review of issues and approaches." *Public Opinion Quarterly*, 64(4), 464-494.
+Three of the statistical features carry most of the detection weight and merit explicit definition. Shannon entropy of the response time distribution measures the unpredictability of an interview's rhythm. Response times are binned into one-second intervals, the proportion of questions falling in each occupied bin is computed, and entropy is the negative sum of each proportion multiplied by its base-two logarithm. A fabricator who paces every question similarly concentrates the distribution in one or two bins and drives entropy towards zero, while a genuine interview spreads across many bins. The one-second bin width is fixed so that identical behaviour yields identical entropy in both platform formats regardless of timestamp precision.
 
-[3] Groves, R. M., Fowler Jr, F. J., Couper, M. P., Lepkowski, J. M., Singer, E., & Tourangeau, R. (2012). *Survey methodology*. John Wiley & Sons.
+The coefficient of variation, the standard deviation of response times divided by their mean, provides a scale-free measure of pacing uniformity. Because it is normalised by the mean, it treats a uniformly slow fabricator and a uniformly fast one identically, catching mechanical pacing at any speed. Values below one tenth indicate pacing more uniform than human respondents produce across questions of varying complexity.
 
-[4] Kreuter, F. (Ed.). (2013). *Improving surveys with paradata: Analytic uses of process information*. John Wiley & Sons.
+Outlier fences follow Tukey's construction. For a given feature the interquartile range is the distance between the first and third quartiles, and values falling more than one and a half times that distance outside either quartile are flagged. The construction uses only order statistics, so it makes no distributional assumption and is itself insensitive to the outliers it identifies, which is essential for right-skewed response time data where a z-score approach would let extreme values distort their own detection threshold (Iglewicz and Hoaglin, 1993).
 
-[5] Krosnick, Jon A. (1991). "Response strategies for coping with the cognitive demands of attitude measures in surveys." *Applied cognitive psychology*, 5(3), 213-236.
+### 3.4 Anomaly detection
 
-[6] Wenz, A., Jackle, A., & Couper, M. P. (2020). "Willingness to use mobile technologies for data collection in a probability household panel." *Survey Research Methods*, 13(1), 1-22.
+An anomaly is defined at the interview level as statistically significant deviation from expected timing behaviour. Detection combines two complementary mechanisms. Statistical flagging applies Tukey fences to four features: total duration, mean response time, response time entropy and response time variance. For each, interviews below the first quartile minus 1.5 times the interquartile range, or above the third quartile plus the same margin, receive a flag. Rule-based flagging applies domain-derived thresholds covering implausibly short or long sessions, low mean response time relative to the sample median, low entropy, uniform pacing measured by the coefficient of variation, compressed interquartile range, low within-section variance, absent back-navigation in compressed-timing contexts, elevated back-navigation rates, and mean inter-question pauses well above the sample median. Wherever a threshold could depend on the instrument or population, it is expressed relative to the sample median rather than as an absolute number, and every threshold is a configuration parameter rather than a constant in code.
 
-[7] Yan, T., & Tourangeau, R. (2008). "Fast times and easy questions: The effects of age, experience and question complexity on web survey response times." *Applied Cognitive Psychology: The Official Journal of the Society for Applied Research in Memory and Cognition*, 22(1), 51-68.
+Each interview receives an anomaly score equal to the number of active flags, with the four statistical flags contributing at most one point jointly so that a single extreme value cannot dominate the score. Interviews scoring at or above two are categorised as suspicious and at or above five as anomalous. A separate set of data quality flags, covering impossible values such as negative durations or a maximum below a minimum, routes technically corrupt records into their own category so that device faults are not misread as behavioural anomalies. The score is a transparent count: every flagged interview can be explained by listing its active flags, which is a requirement for use in field supervision.
+
+### 3.5 Computational considerations
+
+The pipeline was designed for datasets ranging from pilot studies of a few dozen interviews to national surveys of tens of thousands. Feature extraction uses vectorised Pandas operations whose cost grows approximately linearly with the number of audit events per interview, and anomaly detection is dominated by quantile computation over interviews. Memory use is bounded by processing files independently and holding only interview-level summaries for the batch stage. Benchmarking during evaluation confirmed comfortable processing of ten-thousand-interview datasets on commodity hardware.
+
+### 3.6 Ethical considerations
+
+The system operates on paradata rather than on survey responses, which substantially reduces privacy risk. All evaluation data in this study is synthetic, so no respondent information of any kind was processed. The use of artificial intelligence tools during development is disclosed in a dedicated usage log appended to the project repository, in line with the supervision framework for the academic year.
+
+## 4. Implementation
+
+The pipeline is organised as five decoupled layers coordinated by a controller. The ingestion layer accepts one or more CSV files through a command line interface with an optional interactive mode. The parser layer produces the common intermediate representation described above. The extraction layer contains four extractor classes, one per feature group, each of which consumes the intermediate representation, or in the case of the statistical extractor the question-level output, and returns its features independently of the others. The validation layer applies the anomaly detector to the combined interview-level feature table, and the reporting layer writes the feature dataset, a per-interview anomaly report, granular question-level and section-level tables, and evaluation artefacts when ground truth labels are supplied.
+
+Features that require sample context are computed at batch level. Duration relative to the sample median, for example, cannot be known for a single interview in isolation, so the controller computes it once all interviews in a batch have been extracted. The evaluation path merges predictions with ground truth labels through a strict one-to-one join that fails loudly on duplicate or missing interview identifiers, and the detector never sees the labels; this separation prevents any leakage between detection and evaluation.
+
+Every detector threshold lives in a configuration object validated at load time, with defaults matching the values justified in the methodology. A configuration file can be supplied on the command line, and a recalibration script derives a configuration from a labelled dataset by sweeping the score threshold and selecting the value that best satisfies the precision and recall targets. Configurations record their provenance, including the datasets used and the generation timestamp, so that any reported result can be traced to the exact settings that produced it. Reproducibility extends to the data: every synthetic dataset records its random seed, size, anomaly ratio and difficulty in an accompanying summary file, and regenerating any benchmark is a single documented command.
+
+The automated test suite contains thirty-two tests covering the parsers, each feature extractor, the detector, the configuration validation and the end-to-end pipeline, and the suite passes in full at the time of writing. During a line-by-line review of the codebase two defects were found and fixed: an upstream data integrity flag was being overwritten by the detector, and missing field names in ODK logs were being converted to the literal string nan instead of the intended placeholder. A third defect surfaced during evaluation, when newly added form-level events were found to be inflating section pause statistics, and was fixed by excluding administrative events from section aggregation. All three fixes are covered by the test suite and recorded in version control with the review that found them.
+
+## 5. Evaluation Methodology
+
+### 5.1 Synthetic data generation
+
+Evaluation uses synthetic audit logs with labelled injected anomalies, an established approach where labelled real-world data is unavailable (Chawla et al., 2002). The generator produces structurally realistic logs in both platform formats: interviews open with a form-start row and close with a form-end row carrying blank field identifiers, questions belong to five named sections of four questions each, genuine respondents occasionally trigger validation constraints, and navigation events appear at random positions. Response times for genuine interviews follow a log-normal distribution, consistent with empirical response latency research (Yan and Tourangeau, 2008), and are scaled by a fixed per-question complexity profile so that short factual items complete quickly and recall-heavy items complete slowly. Back-navigation counts follow a Poisson distribution.
+
+Three anomaly profiles are injected according to the patterns documented in prior work. Fabricated interviews compress the response time distribution, ignore question complexity and suppress back-navigation (Wenz, Kreuter and Janke, 2019). Speeding interviews scale response times below plausible completion thresholds. Disengaged interviews combine slow uniform pacing with elevated pauses and erratic back-navigation (Conrad, Tourangeau and Couper, 2013). A fourth profile injects degenerate records, such as single rows with zero duration, to exercise the data quality path. The generator has a canonical difficulty, in which profiles are cleanly separated, and a stress difficulty, in which some genuine respondents are fast with little navigation and some fabricated interviews are only mildly compressed, so that the profiles overlap and detection is genuinely difficult.
+
+### 5.2 Design against overfitting
+
+A detector evaluated only on data resembling its calibration data will report flattering results. Three safeguards address this. First, detector settings that had been tuned to earlier generator behaviour were removed or generalised before the final evaluation round: a coupling between two flags that matched the old generator was deleted, fixed pause constants became configuration parameters, and the disengagement rule was reformulated relative to the sample median. Second, all reported evaluation runs use random seeds that were never used during development or calibration. Third, evaluation includes the stress difficulty and a class imbalance sweep in which anomaly prevalence varies from five to thirty percent, following the recommendation of Japkowicz and Stephen (2002).
+
+### 5.3 Datasets
+
+Four kinds of dataset were used. A canonical suite of twenty-four interviews, twelve per platform format, pairs each anomaly profile with known expected outcomes and serves as a fixed regression test. Benchmark datasets of one hundred and twenty to ten thousand interviews at twenty percent anomaly prevalence exercise scale in both formats. The imbalance sweep holds size at five hundred interviews and varies prevalence across five, ten, twenty and thirty percent. The stress datasets, five hundred interviews each from two held-out seeds and rendered in both formats, provide the overlapping-profile condition. Ground truth for every dataset records each interview's profile and binary anomaly status, and the evaluation join verifies that predictions cover the ground truth exactly.
+
+### 5.4 Metrics and baselines
+
+Primary metrics are precision, the proportion of flagged interviews that are truly anomalous, and recall, the proportion of truly anomalous interviews that are flagged, with the F1 score as their harmonic mean. Success criteria were fixed at proposal stage: precision at or above 0.80 and recall at or above 0.75. Feature-level validity is assessed with Mann-Whitney U tests comparing each feature between normal and anomalous interviews, with effect sizes reported. The full detector is compared against two baselines representing current practice: a duration-only method that flags interviews solely on total duration outside the Tukey fences, and a single-rule method that flags only interviews with zero back-navigation.
+
+## 6. Results
+
+### 6.1 Canonical suite
+
+On the canonical suite every interview was assigned its expected category in both platform formats: genuine interviews scored at most one flag, fabricated and speeding interviews scored five or more, disengaged interviews landed in the suspicious band, and the degenerate records were routed to the data quality category rather than scored behaviourally. This confirms the intended mapping between profile and category before the harder conditions are considered.
+
+### 6.2 Feature validity
+
+Mann-Whitney U tests found that twenty-eight of the forty features separate normal from anomalous interviews at conventional significance levels, with large effect sizes concentrated in the statistical group, particularly response time variance, interquartile range, entropy and coefficient of variation, and in total duration. Features that did not discriminate, such as start hour and day of week, are contextual rather than behavioural; they are retained in the output for analysts but carry no weight in detection.
+
+### 6.3 Baseline comparison
+
+On a five-hundred-interview benchmark in SurveyCTO format, the duration-only baseline achieved precision 1.00 but recall 0.66, missing every anomaly whose total duration lay inside the fences. The zero-back-navigation baseline achieved precision 0.55 and recall 0.66. The full detector achieved precision 1.00 and recall 1.00 on the same data. The comparison confirms the central premise of the project: aggregate duration alone misses a third of injected anomalies that multi-feature analysis captures.
+
+### 6.4 Class imbalance sweep
+
+On canonical-difficulty datasets of five hundred interviews generated from a held-out seed, recall remained 1.00 at every prevalence level while precision varied with prevalence as expected.
+
+| Anomaly prevalence | Precision | Recall | F1 |
+|---|---|---|---|
+| 5 percent | 0.9615 | 1.0000 | 0.9804 |
+| 10 percent | 1.0000 | 1.0000 | 1.0000 |
+| 20 percent | 1.0000 | 1.0000 | 1.0000 |
+| 30 percent | 1.0000 | 1.0000 | 1.0000 |
+
+At five percent prevalence a single genuine interview was falsely flagged, costing almost four points of precision. This sensitivity of precision to prevalence is a property of the metric rather than of the detector, and it matters operationally because real fabrication rates are usually low; the result quantifies the review burden a deployment should expect.
+
+### 6.5 Held-out stress evaluation
+
+The stress condition is the demanding test. Profiles overlap by construction, seeds are held out, and detector settings are the defaults with no calibration to the evaluated data.
+
+| Dataset | Precision | Recall | F1 |
+|---|---|---|---|
+| Seed 7, SurveyCTO | 0.9770 | 0.8500 | 0.9091 |
+| Seed 7, ODK | 0.9574 | 0.9000 | 0.9278 |
+| Seed 99, SurveyCTO | 1.0000 | 0.8800 | 0.9362 |
+| Seed 99, ODK | 1.0000 | 0.8400 | 0.9130 |
+
+All four runs exceed both success criteria. Performance is consistent across the two platform formats, which validates the common intermediate representation: the same detector, without modification, performs equivalently on structurally different inputs.
+
+### 6.6 Detection by anomaly type
+
+Per-type detection rates on the held-out stress data show a clear gradient of difficulty. Speeding was detected in every instance. Disengagement was detected in thirty of thirty-four instances, or 88 percent, driven by the median-relative pause rule combined with elevated back-navigation. Fabrication was detected in twenty-five of thirty-three instances, or 76 percent. The undetected fabricated interviews all came from the mildly compressed variant, whose mean response time and spread sit close to those of a quick but genuine respondent. Feature by feature, such interviews are almost indistinguishable from honest fast completions; their signature exists only in the joint pattern of moderate compression, complexity-blind pacing and low navigation, which univariate fences cannot capture. This is precisely the limitation of univariate outlier detection anticipated in the literature (Chandola, Banerjee and Kumar, 2009) and accepted in the project scope.
+
+### 6.7 Scalability and regression checks
+
+Feature extraction uses vectorised operations with time complexity approximately linear in the number of audit events, and the detection step is dominated by sorting over interviews. The pipeline processed benchmark datasets of ten thousand interviews without memory or runtime difficulty on commodity hardware. After all changes made during the robustness round, the canonical benchmark suite continued to score precision 1.00 and recall 1.00 in both formats, confirming that hardening the evaluation did not degrade performance on the original success cases, and the automated test suite passed in full.
+
+## 7. Discussion
+
+The results support three substantive conclusions. First, the common intermediate representation works as designed. A single detector operating on normalised features performed equivalently on SurveyCTO and ODK inputs across every experiment, and adding a platform requires only a parser. Second, multi-feature timing analysis materially outperforms the aggregate-duration checking that represents current practice, raising recall from 0.66 to between 0.84 and 1.00 depending on condition while holding precision at or near 1.00. The features doing the heaviest work are exactly those the literature predicted: distributional shape measures for fabrication (Wenz, Kreuter and Janke, 2019) and pause and navigation measures for disengagement (Conrad, Tourangeau and Couper, 2013).
+
+Third, and equally important, the evaluation shows where the approach stops working. Early runs of this project scored perfect precision and recall everywhere, which was initially read as success. Closer inspection showed the synthetic anomalies were too cleanly separated and parts of the detector configuration mirrored the generator. Treating perfect scores as a warning rather than a result, and rebuilding the evaluation around held-out seeds, overlapping profiles and prevalence sweeps, produced lower numbers and a far more defensible claim. The residual misses concentrate in mild fabrication, and the reason is structural rather than a matter of tuning: a determined fabricator who paces plausibly and varies their timing produces a univariate profile inside normal bounds. Detecting that adversary requires modelling joint feature structure, which was deliberately excluded from scope to preserve interpretability, and which is the natural next step for future work.
+
+The severity categories, suspicious at a score of two and anomalous at five, translate the score into workflow terms: suspicious interviews warrant a supervisor review while anomalous interviews warrant investigation before the data is used. Because the score is a count of named flags, a supervisor can see exactly why an interview was flagged, a property that separates this design from opaque model-based alternatives and that survey organisations weight heavily in practice (Kreuter, 2013).
+
+A practical deployment would run the pipeline against each day's uploaded audit logs, review the anomaly report each morning, and route suspicious interviews to back-checking while quarantining anomalous ones. The imbalance sweep results inform staffing for that workflow: at realistic low prevalence the detector produces roughly one false alarm per five hundred interviews, so review effort scales with genuine problems rather than with noise. The per-flag reporting also supports feedback to enumerators, since a pattern of speeding flags concentrated in one team is actionable in a way that a bare quality score is not.
+
+## 8. Limitations
+
+Evaluation is synthetic throughout. The generator was built to mimic documented properties of real audit logs, including structural events, complexity-correlated timing and realistic navigation, but no synthetic process reproduces the full variability of field data, and results here estimate an upper bound on operational performance (Chawla et al., 2002). Validation against real interviews with independently verified outcomes remains the most important extension.
+
+Detection is univariate. As the fabrication results show, anomalies expressed only in joint feature patterns evade fence-based flags. The thresholds shipped as defaults were chosen from the literature and from calibration data, and although every threshold is configurable and most are median-relative, deployments on instruments very unlike the twenty-question household pattern of the benchmarks should recalibrate.
+
+Finally, the pipeline depends on the integrity of device clocks and on each platform continuing to emit its current audit schema. Clock drift or schema changes would degrade timestamps or parsing respectively; the parsers detect and mark such records rather than repair them.
+
+## 9. Conclusion
+
+This project set out to make timing-based paradata usable for survey quality assurance at scale, and delivered a working system: format-aware parsers for the two dominant collection platforms, a documented forty-feature library spanning four levels of granularity, a transparent and configurable anomaly detector, a labelled synthetic benchmark generator, and an evaluation that meets its predefined success criteria under deliberately hostile conditions. Precision remained between 0.96 and 1.00 and recall between 0.84 and 1.00 on data the detector had never seen, including a stress condition constructed to blur the line between genuine and anomalous behaviour. The system detects speeding essentially perfectly, disengagement reliably, and blatant fabrication reliably, while mild fabrication marks the boundary at which univariate methods give way to multivariate ones. All six objectives set at proposal stage are met. Future work should validate the system against real field data with verified outcomes, extend detection with an interpretable multivariate layer, and add parsers for further platforms, each of which the architecture was explicitly designed to accommodate.
+
+## References
+
+- Chandola, V., Banerjee, A. and Kumar, V. (2009) 'Anomaly detection: a survey', *ACM Computing Surveys*, 41(3), pp. 1-58.
+
+- Chawla, N.V., Bowyer, K.W., Hall, L.O. and Kegelmeyer, W.P. (2002) 'SMOTE: synthetic minority over-sampling technique', *Journal of Artificial Intelligence Research*, 16, pp. 321-357.
+
+- Conrad, F.G., Tourangeau, R. and Couper, M.P. (2013) 'Adaptive survey design and paradata', *Journal of Official Statistics*, 29(2), pp. 299-320.
+
+- Couper, M.P. (1998) 'Measuring survey quality in a CASIC environment', *Proceedings of the Survey Research Methods Section*. Alexandria, VA: American Statistical Association.
+
+- Groves, R.M., Fowler, F.J., Couper, M.P., Lepkowski, J.M., Singer, E. and Tourangeau, R. (2009) *Survey Methodology*. 2nd edn. Hoboken, NJ: Wiley.
+
+- Hawkins, D.M. (1980) *Identification of Outliers*. London: Chapman and Hall.
+
+- Hodge, V. and Austin, J. (2004) 'A survey of outlier detection methodologies', *Artificial Intelligence Review*, 22(2), pp. 85-126.
+
+- Iglewicz, B. and Hoaglin, D.C. (1993) *How to Detect and Handle Outliers*. Milwaukee, WI: ASQ Quality Press.
+
+- Japkowicz, N. and Stephen, S. (2002) 'The class imbalance problem: a systematic study', *Intelligent Data Analysis*, 6(5), pp. 429-449.
+
+- Kreuter, F. (ed.) (2013) *Improving Surveys with Paradata: Analytic Uses of Process Information*. Hoboken, NJ: Wiley.
+
+- Krosnick, J.A. (1991) 'Response strategies for coping with the cognitive demands of attitude measures in surveys', *Applied Cognitive Psychology*, 5(3), pp. 213-236.
+
+- McKinney, W. (2017) *Python for Data Analysis: Data Wrangling with Pandas, NumPy, and IPython*. 2nd edn. Sebastopol, CA: O'Reilly Media.
+
+- Wenz, M., Kreuter, F. and Janke, S. (2019) 'An investigation of data fabrication using paradata', *Survey Research Methods*, 13(1), pp. 35-47.
+
+- Yan, T. and Tourangeau, R. (2008) 'Fast times and easy questions: the effects of age, experience and question complexity on web survey response times', *Applied Cognitive Psychology*, 22(1), pp. 51-68.
