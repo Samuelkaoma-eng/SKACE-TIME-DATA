@@ -30,3 +30,11 @@ notebooks/*.executed.ipynb
 
 # Local backups
 *.local_backup
+
+# Generated synthetic validation bundles
+data/synthetic/
+data/workflow_validation/
+
+# Stale single-name notebook export
+output/audit_results.csv
+output/audit_results_*.csv

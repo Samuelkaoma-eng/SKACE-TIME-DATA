@@ -1,5 +1,6 @@
 import argparse
 import json
+import sys
 from pathlib import Path
 
 import matplotlib
@@ -7,6 +8,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from sklearn.metrics import auc, f1_score, precision_score, recall_score, roc_curve
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.pipeline.controller import PipelineController
 from src.validation.detector_config import build_recalibrated_detector_config, load_detector_config
@@ -27,13 +32,16 @@ def load_ground_truth(path: str) -> dict[str, int]:
 
 def prepare_eval_frame(results_df: pd.DataFrame, ground_truth_dict: dict[str, int]) -> pd.DataFrame:
     eval_df = results_df.copy()
-    eval_df["interview_id"] = eval_df["interview_id"].astype(str)
-    eval_df["is_anomalous_gt"] = eval_df["interview_id"].map(ground_truth_dict)
-    eval_df = eval_df.dropna(subset=["is_anomalous_gt", "anomaly_score"])
+    eval_df = eval_df.assign(interview_id=eval_df["interview_id"].astype(str))
+    eval_df = eval_df.assign(is_anomalous_gt=eval_df["interview_id"].map(ground_truth_dict))
+    eval_df = eval_df.dropna(subset=["is_anomalous_gt", "anomaly_score"]).copy()
     if eval_df.empty:
         raise ValueError("No matching interview IDs were found between predictions and ground truth")
-    eval_df["is_anomalous_gt"] = eval_df["is_anomalous_gt"].astype(int)
-    eval_df["is_data_quality_issue"] = eval_df.get("is_data_quality_issue", 0).fillna(0).astype(int)
+    dq_series = eval_df["is_data_quality_issue"] if "is_data_quality_issue" in eval_df.columns else pd.Series(0, index=eval_df.index)
+    eval_df = eval_df.assign(
+        is_anomalous_gt=eval_df["is_anomalous_gt"].astype(int),
+        is_data_quality_issue=dq_series.fillna(0).astype(int),
+    )
     return eval_df
 
 
