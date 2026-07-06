@@ -54,6 +54,7 @@ import seaborn as sns
 from IPython.display import display
 
 sns.set_theme(style='whitegrid')
+warnings.filterwarnings('ignore', category=FutureWarning)
 warnings.filterwarnings('ignore', category=FutureWarning, module='seaborn')
 
 def resolve_root():
@@ -301,20 +302,20 @@ for exploratory auditing and are separate from the production detector.""")
 for col in df.select_dtypes(include='object').columns:
     converted = pd.to_numeric(df[col], errors='coerce')
     if converted.notna().any():
-        df[col] = converted
+        df.loc[:, col] = converted
 
 # Missing + invalid checks
-df['audit_missing_data'] = df.isna().any(axis=1)
+df.loc[:, 'audit_missing_data'] = df.isna().any(axis=1)
 
 if 'V-01_total_interview_duration_ms' in df.columns:
-    df['audit_negative_duration'] = df['V-01_total_interview_duration_ms'] < 0
+    df.loc[:, 'audit_negative_duration'] = df['V-01_total_interview_duration_ms'] < 0
 
 if 'V-04_speed_trajectory_ratio' in df.columns:
-    df['audit_invalid_ratio'] = df['V-04_speed_trajectory_ratio'].isna() | (df['V-04_speed_trajectory_ratio'] < 0)
+    df.loc[:, 'audit_invalid_ratio'] = df['V-04_speed_trajectory_ratio'].isna() | (df['V-04_speed_trajectory_ratio'] < 0)
 
 # Logical inconsistencies
 if all(c in df.columns for c in ['T-06_rt_mean', 'T-09_rt_min', 'T-10_rt_max']):
-    df['audit_inconsistent_metrics'] = (
+    df.loc[:, 'audit_inconsistent_metrics'] = (
         (df['T-06_rt_mean'] < df['T-09_rt_min']) |
         (df['T-06_rt_mean'] > df['T-10_rt_max'])
     )
@@ -329,14 +330,14 @@ Some raw-log metrics, such as back-navigation rate, cannot be recomputed exactly
 final one-row-per-interview dataset because the event sequence is no longer present.""")
 
     add_code("""if all(c in df.columns for c in ['T-06_rt_mean', 'T-07_rt_median', 'T-09_rt_min', 'T-10_rt_max']):
-    df['flag_stat_order_issue'] = (
+    df.loc[:, 'flag_stat_order_issue'] = (
         (df['T-09_rt_min'] > df['T-06_rt_mean']) |
         (df['T-06_rt_mean'] > df['T-10_rt_max']) |
         (df['T-09_rt_min'] > df['T-07_rt_median']) |
         (df['T-07_rt_median'] > df['T-10_rt_max'])
     )
 else:
-    df['flag_stat_order_issue'] = False""")
+    df.loc[:, 'flag_stat_order_issue'] = False""")
 
     # 6. Live Detector Reproduction
     add_md("""# 6. Live Detector Reproduction
@@ -353,15 +354,15 @@ for col in [
     'iqr_flags', 'rule_flags', 'is_data_quality_issue', 'is_anomalous_behavior', 'is_anomalous'
 ]:
     if col in recomputed.columns:
-        df[f'recomputed_{col}'] = recomputed[col]
+        df.loc[:, f'recomputed_{col}'] = recomputed[col]
 
-df['computed_anomaly_score'] = df.get('recomputed_anomaly_score', pd.Series(0, index=df.index))
-df['computed_category'] = df.get('recomputed_anomaly_category', pd.Series('unknown', index=df.index))
+df.loc[:, 'computed_anomaly_score'] = df.get('recomputed_anomaly_score', pd.Series(0, index=df.index))
+df.loc[:, 'computed_category'] = df.get('recomputed_anomaly_category', pd.Series('unknown', index=df.index))
 
 if pd.to_numeric(df['computed_anomaly_score'], errors='coerce').max() > 0:
-    df['normalized_score'] = pd.to_numeric(df['computed_anomaly_score'], errors='coerce') / pd.to_numeric(df['computed_anomaly_score'], errors='coerce').max()
+    df.loc[:, 'normalized_score'] = pd.to_numeric(df['computed_anomaly_score'], errors='coerce') / pd.to_numeric(df['computed_anomaly_score'], errors='coerce').max()
 else:
-    df['normalized_score'] = 0.0
+    df.loc[:, 'normalized_score'] = 0.0
 
 print("Production detector reapplied to", len(recomputed), "rows")""")
 

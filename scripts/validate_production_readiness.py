@@ -1,9 +1,14 @@
 import argparse
 import json
+import sys
 import time
 from pathlib import Path
 
 import pandas as pd
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.pipeline.controller import PipelineController
 from src.validation.detector_config import load_detector_config
@@ -77,9 +82,37 @@ def write_summary(summary_df: pd.DataFrame, output_dir: Path) -> None:
         json.dump(summary_df.to_dict(orient="records"), handle, indent=2)
 
     overall_ready = bool(summary_df["passes_overall_contract"].all()) if not summary_df.empty else False
+    metric_ready = (
+        bool((summary_df["passes_precision_threshold"] & summary_df["passes_recall_threshold"]).all())
+        if not summary_df.empty
+        else False
+    )
+    score_contract_ready = (
+        bool(
+            (
+                summary_df["passes_fabricated_score_threshold"]
+                & summary_df["passes_normal_score_threshold"]
+            ).all()
+        )
+        if not summary_df.empty
+        else False
+    )
+    difficulty_values = set(summary_df.get("difficulty", pd.Series(dtype=str)).dropna().astype(str))
+    is_stress_run = difficulty_values == {"stress"}
+
     with md_path.open("w", encoding="utf-8") as handle:
-        handle.write("# Production Readiness Validation\n\n")
-        handle.write(f"Overall readiness: {'PASS' if overall_ready else 'FAIL'}\n\n")
+        title = "Stress Robustness Validation" if is_stress_run else "Production Readiness Validation"
+        handle.write(f"# {title}\n\n")
+        if is_stress_run:
+            handle.write(f"Precision/recall thresholds: {'PASS' if metric_ready else 'FAIL'}\n\n")
+            handle.write(f"Strict score contract: {'PASS' if score_contract_ready else 'FAIL'}\n\n")
+            handle.write(f"Overall strict contract: {'PASS' if overall_ready else 'FAIL'}\n\n")
+            handle.write(
+                "Stress mode intentionally overlaps normal and anomalous behavior. "
+                "Use it as a robustness check, not as the canonical acceptance dataset.\n\n"
+            )
+        else:
+            handle.write(f"Overall readiness: {'PASS' if overall_ready else 'FAIL'}\n\n")
         handle.write("```text\n")
         handle.write(summary_df.to_string(index=False))
         handle.write("\n```\n")
@@ -97,6 +130,12 @@ def main() -> int:
         help="Export formats to validate.",
     )
     parser.add_argument("--anomaly-ratio", type=float, default=0.2, help="Share of anomalous interviews.")
+    parser.add_argument(
+        "--difficulty",
+        choices=["canonical", "stress"],
+        default="canonical",
+        help="Synthetic profile difficulty. Use stress to test overlapping normal/anomalous behavior.",
+    )
     parser.add_argument("--parser", default="auto", choices=["auto", "surveycto", "odk"], help="Pipeline parser mode.")
     parser.add_argument("--detector-config", help="Optional JSON config file for anomaly detector thresholds/settings.")
     parser.add_argument("--data-root", default="data/generated_benchmarks", help="Where fresh synthetic datasets should be written.")
@@ -117,6 +156,7 @@ def main() -> int:
                 seed=seed,
                 anomaly_ratio=args.anomaly_ratio,
                 output_dir=dataset_dir,
+                difficulty=args.difficulty,
             )
             ground_truth_path = Path(generated["ground_truth_path"])
 
@@ -138,6 +178,7 @@ def main() -> int:
                         "format": fmt,
                         "dataset_size": int(size),
                         "seed": int(seed),
+                        "difficulty": args.difficulty,
                     }
                 )
                 summary_rows.append(metrics)

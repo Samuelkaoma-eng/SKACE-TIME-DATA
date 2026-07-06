@@ -11,7 +11,9 @@ from datetime import datetime
 from pathlib import Path
 
 
-PROJECT_ROOT = Path(__file__).parent.resolve()
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+SCRIPT_DIR = PROJECT_ROOT / "scripts"
+WORKFLOW_DATA_DIR = PROJECT_ROOT / "data" / "workflow_validation" / "canonical_validation"
 os.chdir(PROJECT_ROOT)
 
 
@@ -35,6 +37,9 @@ def run_command(cmd: list[str], description: str) -> bool:
 
 def main() -> int:
     python_exe = sys.executable
+    workflow_surveycto = WORKFLOW_DATA_DIR / "surveycto.csv"
+    workflow_odk = WORKFLOW_DATA_DIR / "odk.csv"
+    workflow_ground_truth = WORKFLOW_DATA_DIR / "ground_truth_labels.csv"
 
     print("\n" + "=" * 90)
     print("SKACE TIME-DATA PIPELINE - COMPLETE WORKFLOW")
@@ -43,28 +48,35 @@ def main() -> int:
     print(f"Project root: {PROJECT_ROOT}")
     print(f"Using Python: {python_exe}")
     print("Note: evaluating n10000 may take several minutes.")
+    print(f"Validation data directory: {WORKFLOW_DATA_DIR}")
+    print("The workflow keeps data/ inputs intact and generates its own labelled validation bundle.")
 
     steps = [
         (
-            [python_exe, "tests/generate_synthetic_final.py", "--overwrite"],
-            "1. Generate canonical synthetic logs and ground truth",
+            [
+                python_exe,
+                str(PROJECT_ROOT / "tests" / "generate_synthetic_final.py"),
+                "--output-dir",
+                str(WORKFLOW_DATA_DIR),
+            ],
+            "1. Generate isolated synthetic validation logs and ground truth",
             True,
         ),
         (
             [
                 python_exe,
-                "run_pipeline.py",
+                str(PROJECT_ROOT / "run_pipeline.py"),
                 "--parser",
                 "auto",
                 "--output-dir",
                 "output",
                 "--ground-truth",
-                "data/ground_truth_labels.csv",
+                str(workflow_ground_truth),
                 "--label",
                 "canonical_validation",
                 "--inputs",
-                "data/odk.csv",
-                "data/surveycto.csv",
+                str(workflow_odk),
+                str(workflow_surveycto),
             ],
             "2. Run pipeline on the canonical 24-interview validation set",
             True,
@@ -72,7 +84,7 @@ def main() -> int:
         (
             [
                 python_exe,
-                "analyze_pipeline_metrics.py",
+                str(SCRIPT_DIR / "analyze_pipeline_metrics.py"),
                 "--datasets",
                 "n500",
                 "n2000",
@@ -90,7 +102,7 @@ def main() -> int:
         (
             [
                 python_exe,
-                "analyze_pipeline_metrics.py",
+                str(SCRIPT_DIR / "analyze_pipeline_metrics.py"),
                 "--datasets",
                 "n500",
                 "--formats",
@@ -106,7 +118,7 @@ def main() -> int:
         (
             [
                 python_exe,
-                "validate_production_readiness.py",
+                str(SCRIPT_DIR / "validate_production_readiness.py"),
                 "--sizes",
                 "120",
                 "500",
@@ -129,7 +141,7 @@ def main() -> int:
         (
             [
                 python_exe,
-                "threshold_recalibration.py",
+                str(SCRIPT_DIR / "threshold_recalibration.py"),
                 "--data-paths",
                 "data/synthetic_datasets/n500/audit_logs_surveycto.csv",
                 "--ground-truth",
@@ -145,7 +157,7 @@ def main() -> int:
         (
             [
                 python_exe,
-                "feature_validation.py",
+                str(SCRIPT_DIR / "feature_validation.py"),
                 "--data-paths",
                 "data/synthetic_datasets/n500/audit_logs_surveycto.csv",
                 "--ground-truth",
@@ -159,14 +171,19 @@ def main() -> int:
             True,
         ),
         (
-            [python_exe, "create_visualizations.py"],
+            [python_exe, str(SCRIPT_DIR / "create_visualizations.py")],
             "8. Generate synthetic evaluation plots",
             False,
         ),
         (
-            [python_exe, "generate_audit_notebook.py"],
+            [python_exe, str(SCRIPT_DIR / "generate_audit_notebook.py")],
             "9. Regenerate the primary audit notebook",
             False,
+        ),
+        (
+            [python_exe, str(SCRIPT_DIR / "strict_examiner_audit.py")],
+            "10. Run the strict examiner audit, including baseline comparisons",
+            True,
         ),
     ]
 
@@ -181,7 +198,9 @@ def main() -> int:
     print(f"{'=' * 90}")
     print(f"Completed at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print("\nKey outputs:")
-    print("  - data/ground_truth_labels.csv")
+    print("  - data/workflow_validation/canonical_validation/surveycto.csv")
+    print("  - data/workflow_validation/canonical_validation/odk.csv")
+    print("  - data/workflow_validation/canonical_validation/ground_truth_labels.csv")
     print("  - output/question_features_*.csv")
     print("  - output/section_features_*.csv")
     print("  - output/feature_dataset_*.csv")
@@ -197,6 +216,7 @@ def main() -> int:
     print("  - output/synthetic_metrics_overview.png")
     print("  - output/synthetic_detection_by_type.png")
     print("  - notebooks/System_Audit_Report.ipynb")
+    print("  - output/examiner_audit/strict_examiner_audit_report.{md,json}")
 
     return 0
 

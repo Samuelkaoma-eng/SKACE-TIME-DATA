@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -10,10 +11,15 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
 from src.features.section_features import SectionFeatureExtractor
 from src.parsers.odk_parser import ODKParser
 from src.parsers.surveycto_parser import SurveyCTOParser
 from src.pipeline.controller import PipelineController
+from src.validation.anomaly_detector import AnomalyDetector
 from src.validation.reporting import (
     anomaly_report_view,
     compute_binary_metrics,
@@ -45,20 +51,6 @@ FORMAT_CONFIG = {
         "parser": ODKParser(),
     },
 }
-
-WEIGHTS = {
-    "flag_too_fast": 3,
-    "flag_too_slow": 2,
-    "flag_low_entropy": 2,
-    "flag_uniform_timing": 2,
-    "flag_high_back_nav": 1,
-    "flag_iqr_duration": 2,
-    "flag_iqr_rt_mean": 2,
-    "flag_iqr_entropy": 1,
-    "flag_rule_pause": 1,
-    "flag_invalid_ratio": 3,
-}
-
 
 @dataclass
 class CheckResult:
@@ -143,13 +135,13 @@ def manual_t02_iqr(q_response_times: dict[str, float]) -> float:
 
 
 def reconstruct_anomaly_score(row: pd.Series) -> int:
-    return int(sum(int(row.get(flag, 0)) * weight for flag, weight in WEIGHTS.items()))
+    return AnomalyDetector.reconstruct_score(row)
 
 
 def expected_status(row: pd.Series) -> str:
     if int(row.get("is_data_quality_issue", 0)) == 1 or int(row.get("anomaly_score", 0)) >= 5:
         return "FLAGGED"
-    if int(row.get("anomaly_score", 0)) >= 3:
+    if int(row.get("anomaly_score", 0)) >= 2:
         return "REVIEW"
     return "CLEAN"
 
@@ -161,11 +153,13 @@ def duration_iqr_baseline_metrics(predictions: pd.DataFrame, ground_truth: pd.Da
     iqr = q3 - q1
     lower = q1 - 1.5 * iqr
     upper = q3 + 1.5 * iqr
-    baseline["is_anomalous_behavior"] = (
-        (durations < lower) | (durations > upper)
-    ).astype(int)
-    baseline["anomaly_category"] = np.where(
-        baseline["is_anomalous_behavior"].astype(bool), "anomalous", "normal"
+    baseline = baseline.assign(
+        is_anomalous_behavior=((durations < lower) | (durations > upper)).astype(int)
+    )
+    baseline = baseline.assign(
+        anomaly_category=np.where(
+            baseline["is_anomalous_behavior"].astype(bool), "anomalous", "normal"
+        )
     )
     merged = merge_ground_truth(ground_truth, baseline)
     return compute_binary_metrics(merged)
@@ -173,9 +167,13 @@ def duration_iqr_baseline_metrics(predictions: pd.DataFrame, ground_truth: pd.Da
 
 def zero_back_nav_baseline_metrics(predictions: pd.DataFrame, ground_truth: pd.DataFrame) -> dict:
     baseline = predictions[["interview_id", "V-10_zero_back_nav_flag"]].copy()
-    baseline["is_anomalous_behavior"] = baseline["V-10_zero_back_nav_flag"].fillna(0).astype(int)
-    baseline["anomaly_category"] = np.where(
-        baseline["is_anomalous_behavior"].astype(bool), "anomalous", "normal"
+    baseline = baseline.assign(
+        is_anomalous_behavior=baseline["V-10_zero_back_nav_flag"].fillna(0).astype(int)
+    )
+    baseline = baseline.assign(
+        anomaly_category=np.where(
+            baseline["is_anomalous_behavior"].astype(bool), "anomalous", "normal"
+        )
     )
     merged = merge_ground_truth(ground_truth, baseline)
     return compute_binary_metrics(merged)
