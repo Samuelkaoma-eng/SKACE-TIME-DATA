@@ -19,7 +19,7 @@ surveycto: fabricated vs normal signature separation    True anomaly_type  count
                                      odk: CIR schema    True                                                                                                                                                                                                                                                       CIR columns: ['interview_id', 'field_name', 'event_type', 'start_ms', 'end_ms', 'duration_ms']
                        odk: CIR duration consistency    True                                                                                                                                                                                                                                                                                     interview_id=INT-00001 field=demographics_q01 duration_ms=6000.0
                                  cross-format parity    True                                                                                                                                                                                                                                                                         surveycto precision/recall=0.9901/1.0000, odk precision/recall=0.9901/1.0000
-          scale stability (n500 vs n10000 surveycto)    True                                                                                                                                                                                                                                                      runtime_ratio=22.05, n500 precision/recall=0.9901/1.0000, n10000 precision/recall=0.9857/1.0000
+          scale stability (n500 vs n10000 surveycto)    True                                                                                                                                                                                                                                                      runtime_ratio=19.86, n500 precision/recall=0.9901/1.0000, n10000 precision/recall=0.9857/1.0000
 ```
 
 ## Metrics Summary
@@ -57,7 +57,7 @@ surveycto: fabricated vs normal signature separation    True anomaly_type  count
         "passes_normal_score_threshold": false,
         "passes_overall_contract": false
       },
-      "runtime_seconds": 27.33,
+      "runtime_seconds": 32.76,
       "baseline_duration_iqr": {
         "total_samples": 500,
         "true_positive": 66,
@@ -147,13 +147,13 @@ surveycto: fabricated vs normal signature separation    True anomaly_type  count
         "passes_normal_score_threshold": false,
         "passes_overall_contract": false
       },
-      "runtime_seconds": 27.65
+      "runtime_seconds": 30.95
     }
   },
   "scale": {
-    "n500_runtime_seconds": 27.24,
-    "n10000_runtime_seconds": 600.64,
-    "runtime_ratio": 22.04992657856094,
+    "n500_runtime_seconds": 33.04,
+    "n10000_runtime_seconds": 656.33,
+    "runtime_ratio": 19.864709443099276,
     "n500_metrics": {
       "total_samples": 500,
       "true_positive": 100,
