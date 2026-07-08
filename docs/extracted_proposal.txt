@@ -771,10 +771,10 @@ Definition of an Anomaly
 For the purposes of this project, an anomaly is defined as an interview exhibiting statistically
 significant deviation from expected timing behavior, including one or more of the following
 criteria:
-
-
-
-
+-
+-
+-
+-
 
 Extremely low or high total duration relative to the sample IQR (below Q1 minus 1.5
 times IQR or above Q3 plus 1.5 times IQR)
@@ -843,12 +843,12 @@ will be given to all external sources, libraries, and prior work.
 4. Expected Outcomes
 The project will produce the following specific deliverables, aligned with seed project
 requirements:
-
-
-
-
-
-
+-
+-
+-
+-
+-
+-
 
 A Python feature library implementing 30 to 50 timing-based features, documented
 with docstrings and usage examples.
