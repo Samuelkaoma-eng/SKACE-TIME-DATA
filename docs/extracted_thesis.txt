@@ -86,18 +86,18 @@ validated against precision and recall criteria.
 format guide suitable for reuse by survey researchers.
 1.4 Scope of the Project
 In Scope:
- Processing of audit logs from SurveyCTO and ODK platforms
- Extraction of 30 to 50 timing
- based and behavioral features - Statistical characterization of response patterns
- IQR-based and rule-based anomaly detection
- Empirical validation using synthetic datasets with labelled anomalies
- Generation of structured output datasets, a Python feature library, and a paradata
+- Processing of audit logs from SurveyCTO and ODK platforms
+- Extraction of 30 to 50 timing
+- based and behavioral features - Statistical characterization of response patterns
+- IQR-based and rule-based anomaly detection
+- Empirical validation using synthetic datasets with labelled anomalies
+- Generation of structured output datasets, a Python feature library, and a paradata
 format guide
 Out of Scope:
- Real-time survey monitoring systems
- Integration with external dashboards or enterprise platforms
- Machine learning model deployment for predictive inference
- Primary survey data collection
+- Real-time survey monitoring systems
+- Integration with external dashboards or enterprise platforms
+- Machine learning model deployment for predictive inference
+- Primary survey data collection
 2. Literature Review
 The Total Survey Error (TSE) framework, as developed by Groves et al. [1], provides the
 theoretical foundation for understanding data quality as the product of error sources spanning
@@ -385,13 +385,13 @@ Definition of an Anomaly
 For the purposes of this project, an anomaly is defined as an interview exhibiting statistically
 significant deviation from expected timing behavior, including one or more of the following
 criteria:
- Extremely low or high total duration relative to the sample IQR (below Q1 minus 1.5
+- Extremely low or high total duration relative to the sample IQR (below Q1 minus 1.5
 times IQR or above Q3 plus 1.5 times IQR)
- Abnormally low variance in response times, indicating suspiciously uniform pacing
+- Abnormally low variance in response times, indicating suspiciously uniform pacing
 across questions of differing complexity
- Absence of natural pauses or back-navigation across more than twenty consecutive
+- Absence of natural pauses or back-navigation across more than twenty consecutive
 questions
- Inconsistent timing patterns relative to question complexity, specifically uniformly fast
+- Inconsistent timing patterns relative to question complexity, specifically uniformly fast
 responses irrespective of question length or type
 Anomaly detection is performed at the interview level using two complementary approaches.
 Statistical flagging applies IQR-based thresholding: for each timing feature, interviews with
@@ -448,17 +448,17 @@ will be given to all external sources, libraries, and prior work.
 4. Expected Outcomes
 The project will produce the following specific deliverables, aligned with seed project
 requirements:
- A Python feature library implementing 30 to 50 timing-based features, documented
+- A Python feature library implementing 30 to 50 timing-based features, documented
 with docstrings and usage examples.
- A paradata format guide documenting SurveyCTO and ODK audit log structures, field
+- A paradata format guide documenting SurveyCTO and ODK audit log structures, field
 naming conventions, and parsing strategies.
- A synthetic validation dataset with injected anomalies and corresponding ground-truth
+- A synthetic validation dataset with injected anomalies and corresponding ground-truth
 labels.
- A validation report presenting precision, recall, and effect-size results for the anomaly
+- A validation report presenting precision, recall, and effect-size results for the anomaly
 detection component against labelled anomalies.
- A 5,000 to 7,000 word final paper covering methodology, implementation, results, and
+- A 5,000 to 7,000 word final paper covering methodology, implementation, results, and
 discussion.
- A structured output dataset of extracted features with accompanying statistical
+- A structured output dataset of extracted features with accompanying statistical
 summaries and visualizations.
 5. Evaluation Methodology
 Evaluation will proceed at two levels: feature validation and anomaly detection performance.
