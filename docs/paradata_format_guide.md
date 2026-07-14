@@ -1,5 +1,9 @@
 # SKACE-Time-Data Paradata Format Guide
 
+**Project:** Automated Extraction and Analysis of Timing-Based Paradata Features for Survey Quality Assurance  
+**Student:** Samuel Kaoma (2022016530) · **Course:** CSC 4004 · **Supervisor:** Mr. Mofya Phiri  
+**Repository:** https://github.com/Samuelkaoma-eng/SKACE-TIME-DATA  
+
 This guide documents the raw audit-log formats currently handled by the live
 pipeline, the normalization rules applied by the parsers, and the resulting
 Common Intermediate Representation (CIR).

@@ -1,5 +1,9 @@
 # SKACE-Time-Data: Feature Library Documentation
 
+**Project:** Automated Extraction and Analysis of Timing-Based Paradata Features for Survey Quality Assurance  
+**Student:** Samuel Kaoma (2022016530) · **Course:** CSC 4004 · **Supervisor:** Mr. Mofya Phiri  
+**Repository:** https://github.com/Samuelkaoma-eng/SKACE-TIME-DATA  
+
 This document serves as the formal guide for the Python feature extraction library built for the seed project. The library converts Common Intermediate Representation (CIR) parsed logs into 40 distinct paradata features aligned with the theories of Groves, Conrad, and Kreuter.
 
 ---
@@ -20,8 +24,8 @@ Below are the 40 explicitly tracked parameters outputted by the pipeline:
 
 ### V-Series (Global/Survey)
 1.  `V-01_total_interview_duration_ms`: Total gross time from first to final interaction.
-2.  `V-02_speed_trajectory_early`: Mean speed of the first tertiary segment.
-3.  `V-03_speed_trajectory_late`: Mean speed of the final tertiary segment.
+2.  `V-02_speed_trajectory_early`: Mean pace across the first third of events.
+3.  `V-03_speed_trajectory_late`: Mean pace across the final third of events.
 4.  `V-04_speed_trajectory_ratio`: `V-03 / V-02` (fatigue or speeding indicator).
 5.  `V-05_back_navigation_rate`: `%` of interactions that were backwards movement.
 6.  `V-06_back_navigation_total_count`: Absolute back-navigations.
@@ -55,16 +59,16 @@ Below are the 40 explicitly tracked parameters outputted by the pipeline:
 30. `S-10_section_completion_rate`: Progress vector representing early abandonment.
 
 ### Q-Series (Question Level)
-31. `Q-01_response_time_ms`: Absolute discrete ms spent interacting with the specific input field.
+31. `Q-01_response_time_ms`: Sum of event durations on the field (active interaction time, excluding navigation events and gaps between visits).
 32. `Q-02_time_to_first_interaction`: Latency from node load to initial user tap.
-33. `Q-03_edit_count`: Count of times the node state value changes (`new_value` != `old_value`).
+33. `Q-03_edit_count`: Number of recorded events on the field beyond the first, treated as edits within the visit.
 34. `Q-04_revisit_flag`: Boolean identifying returning to a previously submitted question.
 35. `Q-05_revisit_count`: Count of discrete return events.
-36. `Q-06_field_completion_ratio`: % of total schema fields actively interacted with.
+36. `Q-06_field_completion_ratio`: Binary per field: 1.0 when the field recorded active time, 0.0 otherwise (a timing-based proxy, since answer content is not logged).
 37. `Q-07_idle_time_ms`: Explicit math for periods with no input mutation.
-38. `Q-08_keystroke_count`: Keystroke proxy for text string lengths.
+38. `Q-08_keystroke_count`: Number of paradata events recorded on the field, used as a proxy because neither platform logs individual keystrokes.
 39. `Q-09_constraint_trigger_count`: Invalid inputs logged prior to completion.
-40. `Q-10_first_to_last_interaction_duration`: Total time spent inside node.
+40. `Q-10_first_to_last_interaction_duration`: Span from the first to the last event on the field, including internal gaps.
 
 ---
 
