@@ -1,7 +1,7 @@
 {
   "config_type": "anomaly_detector",
   "generated_by": "threshold_recalibration.py",
-  "generated_at_utc": "2026-07-06T15:51:32.908945+00:00",
+  "generated_at_utc": "2026-07-14T18:30:51.653526+00:00",
   "calibration_target": "behavior_score_threshold",
   "notes": "This config applies the recalibrated behavior_score_threshold directly. The anomalous_score_threshold is kept at least as high as the behavior threshold to preserve category ordering.",
   "data_paths": [
@@ -10,7 +10,7 @@
   "ground_truth": "data/synthetic_datasets/n500/ground_truth_labels.csv",
   "anomaly_detector": {
     "uniform_timing_cv": 0.1,
-    "behavior_score_threshold": 2.0999999999999996,
+    "behavior_score_threshold": 1.0999999999999999,
     "anomalous_score_threshold": 5.0,
     "too_fast_ms": 6000,
     "too_slow_ms": 3600000,

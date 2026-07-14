@@ -100,7 +100,7 @@ audit_logs_odk.csv,INT-00098,3,suspicious,0,1,1,1,2,"flag_short_relative_duratio
 audit_logs_odk.csv,INT-00099,0,normal,0,0,0,0,0,,CLEAN
 audit_logs_odk.csv,INT-00100,0,normal,0,0,0,0,0,,CLEAN
 audit_logs_odk.csv,INT-00101,1,normal,0,0,0,1,0,flag_iqr_variance,CLEAN
-audit_logs_odk.csv,INT-00102,3,suspicious,0,1,1,1,2,"flag_short_relative_duration,flag_low_mean_rt,flag_iqr_entropy",REVIEW
+audit_logs_odk.csv,INT-00102,2,suspicious,0,1,1,0,2,"flag_short_relative_duration,flag_low_mean_rt",REVIEW
 audit_logs_odk.csv,INT-00103,0,normal,0,0,0,0,0,,CLEAN
 audit_logs_odk.csv,INT-00104,0,normal,0,0,0,0,0,,CLEAN
 audit_logs_odk.csv,INT-00105,0,normal,0,0,0,0,0,,CLEAN
@@ -296,7 +296,7 @@ audit_logs_odk.csv,INT-00294,0,normal,0,0,0,0,0,,CLEAN
 audit_logs_odk.csv,INT-00295,2,suspicious,0,1,1,0,2,"flag_short_relative_duration,flag_low_mean_rt",REVIEW
 audit_logs_odk.csv,INT-00296,1,normal,0,0,0,1,0,flag_iqr_variance,CLEAN
 audit_logs_odk.csv,INT-00297,8,anomalous,0,1,1,1,7,"flag_short_relative_duration,flag_low_mean_rt,flag_zero_back_nav,flag_low_entropy,flag_uniform_timing,flag_low_rt_iqr,flag_low_section_variance,flag_iqr_entropy",FLAGGED
-audit_logs_odk.csv,INT-00298,2,suspicious,0,1,1,0,2,"flag_short_relative_duration,flag_low_mean_rt",REVIEW
+audit_logs_odk.csv,INT-00298,1,normal,0,0,0,0,1,flag_short_relative_duration,CLEAN
 audit_logs_odk.csv,INT-00299,0,normal,0,0,0,0,0,,CLEAN
 audit_logs_odk.csv,INT-00300,0,normal,0,0,0,0,0,,CLEAN
 audit_logs_odk.csv,INT-00301,0,normal,0,0,0,0,0,,CLEAN

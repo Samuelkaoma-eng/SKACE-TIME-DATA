@@ -100,7 +100,7 @@ INT-00098,speeding,anomalous,1,suspicious,3,0,1,1,1,2,"flag_short_relative_durat
 INT-00099,normal,normal,0,normal,0,0,0,0,0,0,,CLEAN
 INT-00100,normal,normal,0,normal,0,0,0,0,0,0,,CLEAN
 INT-00101,normal,normal,0,normal,1,0,0,0,1,0,flag_iqr_variance,CLEAN
-INT-00102,speeding,anomalous,1,suspicious,3,0,1,1,1,2,"flag_short_relative_duration,flag_low_mean_rt,flag_iqr_entropy",REVIEW
+INT-00102,speeding,anomalous,1,suspicious,2,0,1,1,0,2,"flag_short_relative_duration,flag_low_mean_rt",REVIEW
 INT-00103,normal,normal,0,normal,0,0,0,0,0,0,,CLEAN
 INT-00104,normal,normal,0,normal,0,0,0,0,0,0,,CLEAN
 INT-00105,normal,normal,0,normal,0,0,0,0,0,0,,CLEAN
@@ -296,7 +296,7 @@ INT-00294,normal,normal,0,normal,0,0,0,0,0,0,,CLEAN
 INT-00295,fabricated,anomalous,1,suspicious,2,0,1,1,0,2,"flag_short_relative_duration,flag_low_mean_rt",REVIEW
 INT-00296,normal,normal,0,normal,1,0,0,0,1,0,flag_iqr_variance,CLEAN
 INT-00297,fabricated,anomalous,1,anomalous,8,0,1,1,1,7,"flag_short_relative_duration,flag_low_mean_rt,flag_zero_back_nav,flag_low_entropy,flag_uniform_timing,flag_low_rt_iqr,flag_low_section_variance,flag_iqr_entropy",FLAGGED
-INT-00298,fabricated,anomalous,1,suspicious,2,0,1,1,0,2,"flag_short_relative_duration,flag_low_mean_rt",REVIEW
+INT-00298,fabricated,anomalous,1,normal,1,0,0,0,0,1,flag_short_relative_duration,CLEAN
 INT-00299,normal,normal,0,normal,0,0,0,0,0,0,,CLEAN
 INT-00300,normal,normal,0,normal,0,0,0,0,0,0,,CLEAN
 INT-00301,normal,normal,0,normal,0,0,0,0,0,0,,CLEAN
