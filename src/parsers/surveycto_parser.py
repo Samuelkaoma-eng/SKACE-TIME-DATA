@@ -9,8 +9,9 @@ def _datetime_series_to_epoch_ms(values: pd.Series, *, mixed: bool = False) -> p
     """
     Convert datetime-like strings to epoch milliseconds.
 
-    pandas stores parsed datetimes internally as nanoseconds, so dividing by
-    ``10**6`` yields milliseconds. Invalid timestamps remain NaN.
+    The conversion divides by an explicit one-millisecond Timedelta rather than
+    casting to int64, so it is correct at any internal datetime resolution.
+    Invalid timestamps remain NaN.
     """
     parse_kwargs = {"errors": "coerce", "utc": True}
     if mixed:
@@ -20,7 +21,10 @@ def _datetime_series_to_epoch_ms(values: pd.Series, *, mixed: bool = False) -> p
     epoch_ms = pd.Series(np.nan, index=values.index, dtype="float64")
     valid_mask = parsed.notna()
     if valid_mask.any():
-        epoch_ms.loc[valid_mask] = parsed.loc[valid_mask].astype("int64") // 10**6
+        epoch = pd.Timestamp(0, tz="UTC")
+        epoch_ms.loc[valid_mask] = (
+            (parsed.loc[valid_mask] - epoch) // pd.Timedelta(milliseconds=1)
+        ).astype("float64")
     return epoch_ms
 
 class SurveyCTOParser(BaseParser):

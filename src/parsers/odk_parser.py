@@ -13,7 +13,12 @@ def _datetime_series_to_epoch_ms(values: pd.Series) -> pd.Series:
     epoch_ms = pd.Series(np.nan, index=values.index, dtype='float64')
     valid_mask = parsed.notna()
     if valid_mask.any():
-        epoch_ms.loc[valid_mask] = parsed.loc[valid_mask].astype('int64') // 10**6
+        # Divide by an explicit one-millisecond Timedelta rather than casting to
+        # int64, so the result is epoch milliseconds at any datetime resolution.
+        epoch = pd.Timestamp(0, tz='UTC')
+        epoch_ms.loc[valid_mask] = (
+            (parsed.loc[valid_mask] - epoch) // pd.Timedelta(milliseconds=1)
+        ).astype('float64')
     return epoch_ms
 
 class ODKParser(BaseParser):

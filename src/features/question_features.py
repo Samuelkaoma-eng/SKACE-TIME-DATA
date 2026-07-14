@@ -67,7 +67,15 @@ class QuestionFeatureExtractor:
             else:
                 f2l = 0
 
-            rt_ms = f2l
+            # Q-01 is the total time actively spent on the field: the sum of
+            # event durations, excluding navigation markers. Q-10 is the
+            # first-to-last window, which additionally spans internal gaps.
+            if not question_events.empty:
+                rt_ms = question_events["duration_ms"].fillna(0).clip(lower=0).sum()
+            elif len(group) >= 1:
+                rt_ms = group["duration_ms"].fillna(0).clip(lower=0).sum()
+            else:
+                rt_ms = 0
 
             # Q-02 time_to_first_interaction
             # Use field/question start and end markers when available, otherwise

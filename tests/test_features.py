@@ -33,7 +33,10 @@ def test_question_features_preserve_field_level_behavior():
     features = QuestionFeatureExtractor().extract(_cir_frame())
 
     assert set(features.index) == {"demographics_q01", "household_q01", "demographics_q02"}
-    assert features.loc["demographics_q01", "Q-01_response_time_ms"] == pytest.approx(6500)
+    # Q-01 sums the two active visits (1000 ms + 1500 ms); the gap between
+    # them is excluded from active response time but included in Q-10.
+    assert features.loc["demographics_q01", "Q-01_response_time_ms"] == pytest.approx(2500)
+    assert features.loc["demographics_q01", "Q-10_first_to_last_interaction_duration"] == pytest.approx(6500)
     assert features.loc["demographics_q01", "Q-04_revisit_flag"] == 1
     assert features.loc["demographics_q01", "Q-05_revisit_count"] == 1
     assert features.loc["demographics_q02", "Q-01_response_time_ms"] == pytest.approx(4000)
