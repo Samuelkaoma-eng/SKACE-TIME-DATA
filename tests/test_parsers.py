@@ -30,6 +30,20 @@ def test_surveycto_parser_valid_data(tmp_path):
     assert 'duration_ms' in df.columns
     assert df.iloc[0]['duration_ms'] == 1000.0
 
+def test_odk_parser_iso_timestamps_convert_to_epoch_ms(tmp_path):
+    # ISO 8601 timestamps must convert to epoch milliseconds regardless of the
+    # internal datetime resolution used by the installed pandas version.
+    p = tmp_path / "iso_audit.csv"
+    p.write_text(
+        "event,node,start,end\n"
+        "question,q1,2026-03-01T09:00:00.000Z,2026-03-01T09:00:01.500Z\n"
+    )
+
+    df = parse_odk_audit(p)
+    assert df.iloc[0]['start_ms'] == 1772355600000.0
+    assert df.iloc[0]['end_ms'] == 1772355601500.0
+    assert df.iloc[0]['duration_ms'] == 1500.0
+
 def test_odk_parser_negative_duration(tmp_path):
     p = tmp_path / "neg_audit.csv"
     # End time is before start time

@@ -122,7 +122,7 @@ def manual_question_response_times(interview_cir: pd.DataFrame) -> dict[str, flo
         if window.empty:
             response_times[field_name] = 0.0
             continue
-        response_times[field_name] = float(window["end_ms"].max() - window["start_ms"].min())
+        response_times[field_name] = float(window["duration_ms"].fillna(0).clip(lower=0).sum())
     return response_times
 
 
