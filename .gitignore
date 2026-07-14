@@ -46,3 +46,6 @@ data/stress_benchmarks/
 
 # Editor configuration
 .vscode/
+
+# Timestamped quickstart outputs (regenerated on every unlabelled run)
+output/*_batch_*.csv
