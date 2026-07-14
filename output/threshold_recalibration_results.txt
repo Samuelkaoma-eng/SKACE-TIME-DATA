@@ -7,7 +7,7 @@ Sample size: 500
 ROC AUC: 1.0000
 
 Best threshold by F1 score
-  Threshold: 2.10
+  Threshold: 1.10
   Precision: 1.0000
   Recall: 1.0000
   F1 score: 1.0000

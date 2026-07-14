@@ -8,7 +8,7 @@
     {
       "step": "surveycto: timestamp format",
       "passed": true,
-      "details": "Sample timestamps: ['1672646400000', '1672646406500', '1672646406900']"
+      "details": "Sample timestamps: ['1672646400000', '1672646401312', '1672646408353']"
     },
     {
       "step": "surveycto: CIR schema",
@@ -18,7 +18,7 @@
     {
       "step": "surveycto: CIR duration consistency",
       "passed": true,
-      "details": "interview_id=INT-00001 field=demographics_q01 duration_ms=6000.0"
+      "details": "interview_id=INT-00001 field=unknown_field duration_ms=1020.0"
     },
     {
       "step": "surveycto: manual Q-01 aggregate check",
@@ -28,17 +28,17 @@
     {
       "step": "surveycto: manual V-01 check",
       "passed": true,
-      "details": "manual=133500.0 pipeline=133500"
+      "details": "manual=141418.0 pipeline=141418"
     },
     {
       "step": "surveycto: manual T-02 check",
       "passed": true,
-      "details": "manual=0.0 pipeline=0.0"
+      "details": "manual=215.75 pipeline=215.75"
     },
     {
       "step": "surveycto: anomaly score reconstruction",
       "passed": true,
-      "details": "expected=7 actual=7"
+      "details": "expected=6 actual=6"
     },
     {
       "step": "surveycto: status mapping",
@@ -48,7 +48,7 @@
     {
       "step": "surveycto: fabricated vs normal signature separation",
       "passed": true,
-      "details": "anomaly_type  count  mean_rt_variance  mean_rt_iqr  mean_rt_entropy  mean_back_nav_count  mean_total_duration_ms\n      normal    400      2.332537e+07  5040.055625         3.245894                 2.08             187789.3675\n  fabricated     33      0.000000e+00     0.000000         0.000000                 0.00               3790.0000"
+      "details": "anomaly_type  count  mean_rt_variance  mean_rt_iqr  mean_rt_entropy  mean_back_nav_count  mean_total_duration_ms\n      normal    400      2.658835e+07  5567.766250         3.299218               1.9275           184106.052500\n  fabricated     33      6.744830e+03   103.909091         0.052072               0.0000            28762.090909"
     },
     {
       "step": "odk: raw required columns",
@@ -58,7 +58,7 @@
     {
       "step": "odk: timestamp format",
       "passed": true,
-      "details": "Sample timestamps: ['2023-01-02T08:00:00.000+00:00', '2023-01-02T08:00:06.500+00:00', '2023-01-02T08:00:06.900+00:00']"
+      "details": "Sample timestamps: ['2023-01-02T08:00:00.000+00:00', '2023-01-02T08:00:02.569+00:00', '2023-01-02T08:00:09.831+00:00']"
     },
     {
       "step": "odk: CIR schema",
@@ -68,17 +68,17 @@
     {
       "step": "odk: CIR duration consistency",
       "passed": true,
-      "details": "interview_id=INT-00001 field=demographics_q01 duration_ms=6000.0"
+      "details": "interview_id=INT-00001 field=unknown_field duration_ms=2449.0"
     },
     {
       "step": "cross-format parity",
       "passed": true,
-      "details": "surveycto precision/recall=0.9901/1.0000, odk precision/recall=0.9901/1.0000"
+      "details": "surveycto precision/recall=1.0000/1.0000, odk precision/recall=1.0000/1.0000"
     },
     {
       "step": "scale stability (n500 vs n10000 surveycto)",
       "passed": true,
-      "details": "runtime_ratio=19.86, n500 precision/recall=0.9901/1.0000, n10000 precision/recall=0.9857/1.0000"
+      "details": "runtime_ratio=19.05, n500 precision/recall=1.0000/1.0000, n10000 precision/recall=0.9945/1.0000"
     }
   ],
   "summary": {
@@ -87,18 +87,18 @@
         "metrics": {
           "total_samples": 500,
           "true_positive": 100,
-          "true_negative": 399,
-          "false_positive": 1,
+          "true_negative": 400,
+          "false_positive": 0,
           "false_negative": 0,
-          "precision": 0.9900990099009901,
+          "precision": 1.0,
           "recall": 1.0,
-          "f1_score": 0.9950248756218906,
-          "accuracy": 0.998,
-          "specificity": 0.9975,
+          "f1_score": 1.0,
+          "accuracy": 1.0,
+          "specificity": 1.0,
           "anomalies_true": 100,
-          "anomalies_predicted": 101,
+          "anomalies_predicted": 100,
           "normals_true": 400,
-          "normals_predicted": 399,
+          "normals_predicted": 400,
           "precision_threshold": 0.8,
           "recall_threshold": 0.75,
           "fabricated_score_threshold": 5,
@@ -108,27 +108,27 @@
           "fabricated_total": 33,
           "fabricated_score_ge_threshold": 33,
           "normal_total": 400,
-          "normal_score_le_threshold": 399,
+          "normal_score_le_threshold": 400,
           "passes_fabricated_score_threshold": true,
-          "passes_normal_score_threshold": false,
-          "passes_overall_contract": false
+          "passes_normal_score_threshold": true,
+          "passes_overall_contract": true
         },
-        "runtime_seconds": 32.76,
+        "runtime_seconds": 50.17,
         "baseline_duration_iqr": {
           "total_samples": 500,
           "true_positive": 66,
-          "true_negative": 400,
-          "false_positive": 0,
+          "true_negative": 397,
+          "false_positive": 3,
           "false_negative": 34,
-          "precision": 1.0,
+          "precision": 0.9565217391304348,
           "recall": 0.66,
-          "f1_score": 0.7951807228915663,
-          "accuracy": 0.932,
-          "specificity": 1.0,
+          "f1_score": 0.7810650887573964,
+          "accuracy": 0.926,
+          "specificity": 0.9925,
           "anomalies_true": 100,
-          "anomalies_predicted": 66,
+          "anomalies_predicted": 69,
           "normals_true": 400,
-          "normals_predicted": 434,
+          "normals_predicted": 431,
           "precision_threshold": 0.8,
           "recall_threshold": 0.75,
           "fabricated_score_threshold": 5,
@@ -146,18 +146,18 @@
         "baseline_zero_back_nav": {
           "total_samples": 500,
           "true_positive": 66,
-          "true_negative": 345,
-          "false_positive": 55,
+          "true_negative": 324,
+          "false_positive": 76,
           "false_negative": 34,
-          "precision": 0.5454545454545454,
+          "precision": 0.4647887323943662,
           "recall": 0.66,
-          "f1_score": 0.5972850678733032,
-          "accuracy": 0.822,
-          "specificity": 0.8625,
+          "f1_score": 0.5454545454545454,
+          "accuracy": 0.78,
+          "specificity": 0.81,
           "anomalies_true": 100,
-          "anomalies_predicted": 121,
+          "anomalies_predicted": 142,
           "normals_true": 400,
-          "normals_predicted": 379,
+          "normals_predicted": 358,
           "precision_threshold": 0.8,
           "recall_threshold": 0.75,
           "fabricated_score_threshold": 5,
@@ -177,18 +177,18 @@
         "metrics": {
           "total_samples": 500,
           "true_positive": 100,
-          "true_negative": 399,
-          "false_positive": 1,
+          "true_negative": 400,
+          "false_positive": 0,
           "false_negative": 0,
-          "precision": 0.9900990099009901,
+          "precision": 1.0,
           "recall": 1.0,
-          "f1_score": 0.9950248756218906,
-          "accuracy": 0.998,
-          "specificity": 0.9975,
+          "f1_score": 1.0,
+          "accuracy": 1.0,
+          "specificity": 1.0,
           "anomalies_true": 100,
-          "anomalies_predicted": 101,
+          "anomalies_predicted": 100,
           "normals_true": 400,
-          "normals_predicted": 399,
+          "normals_predicted": 400,
           "precision_threshold": 0.8,
           "recall_threshold": 0.75,
           "fabricated_score_threshold": 5,
@@ -198,33 +198,33 @@
           "fabricated_total": 33,
           "fabricated_score_ge_threshold": 33,
           "normal_total": 400,
-          "normal_score_le_threshold": 399,
+          "normal_score_le_threshold": 400,
           "passes_fabricated_score_threshold": true,
-          "passes_normal_score_threshold": false,
-          "passes_overall_contract": false
+          "passes_normal_score_threshold": true,
+          "passes_overall_contract": true
         },
-        "runtime_seconds": 30.95
+        "runtime_seconds": 57.46
       }
     },
     "scale": {
-      "n500_runtime_seconds": 33.04,
-      "n10000_runtime_seconds": 656.33,
-      "runtime_ratio": 19.864709443099276,
+      "n500_runtime_seconds": 56.12,
+      "n10000_runtime_seconds": 1068.87,
+      "runtime_ratio": 19.04615110477548,
       "n500_metrics": {
         "total_samples": 500,
         "true_positive": 100,
-        "true_negative": 399,
-        "false_positive": 1,
+        "true_negative": 400,
+        "false_positive": 0,
         "false_negative": 0,
-        "precision": 0.9900990099009901,
+        "precision": 1.0,
         "recall": 1.0,
-        "f1_score": 0.9950248756218906,
-        "accuracy": 0.998,
-        "specificity": 0.9975,
+        "f1_score": 1.0,
+        "accuracy": 1.0,
+        "specificity": 1.0,
         "anomalies_true": 100,
-        "anomalies_predicted": 101,
+        "anomalies_predicted": 100,
         "normals_true": 400,
-        "normals_predicted": 399,
+        "normals_predicted": 400,
         "precision_threshold": 0.8,
         "recall_threshold": 0.75,
         "fabricated_score_threshold": 5,
@@ -234,26 +234,26 @@
         "fabricated_total": 33,
         "fabricated_score_ge_threshold": 33,
         "normal_total": 400,
-        "normal_score_le_threshold": 399,
+        "normal_score_le_threshold": 400,
         "passes_fabricated_score_threshold": true,
-        "passes_normal_score_threshold": false,
-        "passes_overall_contract": false
+        "passes_normal_score_threshold": true,
+        "passes_overall_contract": true
       },
       "n10000_metrics": {
         "total_samples": 10000,
         "true_positive": 2000,
-        "true_negative": 7971,
-        "false_positive": 29,
+        "true_negative": 7989,
+        "false_positive": 11,
         "false_negative": 0,
-        "precision": 0.9857072449482503,
+        "precision": 0.9945300845350572,
         "recall": 1.0,
-        "f1_score": 0.9928021841648051,
-        "accuracy": 0.9971,
-        "specificity": 0.996375,
+        "f1_score": 0.9972575417601596,
+        "accuracy": 0.9989,
+        "specificity": 0.998625,
         "anomalies_true": 2000,
-        "anomalies_predicted": 2029,
+        "anomalies_predicted": 2011,
         "normals_true": 8000,
-        "normals_predicted": 7971,
+        "normals_predicted": 7989,
         "precision_threshold": 0.8,
         "recall_threshold": 0.75,
         "fabricated_score_threshold": 5,
@@ -263,7 +263,7 @@
         "fabricated_total": 666,
         "fabricated_score_ge_threshold": 666,
         "normal_total": 8000,
-        "normal_score_le_threshold": 7971,
+        "normal_score_le_threshold": 7989,
         "passes_fabricated_score_threshold": true,
         "passes_normal_score_threshold": false,
         "passes_overall_contract": false

@@ -265,7 +265,7 @@ INT-00263,normal,normal,0,normal,0,0,0,0,0,0,,CLEAN
 INT-00264,normal,normal,0,normal,0,0,0,0,0,0,,CLEAN
 INT-00265,normal,normal,0,normal,0,0,0,0,0,0,,CLEAN
 INT-00266,normal,normal,0,normal,0,0,0,0,0,0,,CLEAN
-INT-00267,normal,normal,0,normal,0,0,0,0,0,0,,CLEAN
+INT-00267,normal,normal,0,normal,1,0,0,0,1,0,flag_iqr_variance,CLEAN
 INT-00268,normal,normal,0,normal,1,0,0,0,1,0,flag_iqr_variance,CLEAN
 INT-00269,normal,normal,0,normal,0,0,0,0,0,0,,CLEAN
 INT-00270,normal,normal,0,normal,0,0,0,0,0,0,,CLEAN

@@ -265,7 +265,7 @@ audit_logs_surveycto.csv,INT-00263,0,normal,0,0,0,0,0,,CLEAN
 audit_logs_surveycto.csv,INT-00264,0,normal,0,0,0,0,0,,CLEAN
 audit_logs_surveycto.csv,INT-00265,0,normal,0,0,0,0,0,,CLEAN
 audit_logs_surveycto.csv,INT-00266,0,normal,0,0,0,0,0,,CLEAN
-audit_logs_surveycto.csv,INT-00267,0,normal,0,0,0,0,0,,CLEAN
+audit_logs_surveycto.csv,INT-00267,1,normal,0,0,0,1,0,flag_iqr_variance,CLEAN
 audit_logs_surveycto.csv,INT-00268,1,normal,0,0,0,1,0,flag_iqr_variance,CLEAN
 audit_logs_surveycto.csv,INT-00269,0,normal,0,0,0,0,0,,CLEAN
 audit_logs_surveycto.csv,INT-00270,0,normal,0,0,0,0,0,,CLEAN

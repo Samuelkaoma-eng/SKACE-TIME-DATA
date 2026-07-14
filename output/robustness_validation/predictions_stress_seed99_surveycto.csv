@@ -308,7 +308,7 @@ INT-00306,normal,normal,0,normal,0,0,0,0,0,0,,CLEAN
 INT-00307,normal,normal,0,normal,0,0,0,0,0,0,,CLEAN
 INT-00308,normal,normal,0,normal,0,0,0,0,0,0,,CLEAN
 INT-00309,normal,normal,0,normal,0,0,0,0,0,0,,CLEAN
-INT-00310,normal,normal,0,normal,1,0,0,0,1,0,"flag_iqr_rt_mean,flag_iqr_variance",CLEAN
+INT-00310,normal,normal,0,normal,1,0,0,0,1,0,flag_iqr_variance,CLEAN
 INT-00311,normal,normal,0,normal,0,0,0,0,0,0,,CLEAN
 INT-00312,normal,normal,0,normal,0,0,0,0,0,0,,CLEAN
 INT-00313,normal,normal,0,normal,1,0,0,0,1,0,flag_iqr_variance,CLEAN
