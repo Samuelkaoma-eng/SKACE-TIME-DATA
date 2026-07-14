@@ -2,10 +2,11 @@
   "dataset_size": 2000,
   "anomaly_ratio": 0.2,
   "seed": 42,
+  "difficulty": "canonical",
   "n_normal": 1600,
   "n_fabricated": 133,
   "n_speeding": 133,
   "n_disengaged": 134,
-  "surveycto_rows": 44645,
-  "odk_rows": 44437
+  "surveycto_rows": 49313,
+  "odk_rows": 49219
 }

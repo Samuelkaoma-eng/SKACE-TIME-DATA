@@ -1,12 +1,12 @@
 {
   "dataset_size": 500,
+  "anomaly_ratio": 0.2,
+  "seed": 42,
+  "difficulty": "canonical",
   "n_normal": 400,
   "n_fabricated": 33,
   "n_speeding": 33,
   "n_disengaged": 34,
-  "anomaly_ratio": 0.2,
-  "n_fields_per_interview": 27,
-  "random_seed": 42,
-  "surveycto_rows": 17324,
-  "odk_rows": 17324
+  "surveycto_rows": 12286,
+  "odk_rows": 12298
 }
