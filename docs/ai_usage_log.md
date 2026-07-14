@@ -1,7 +1,7 @@
 # AI Usage Log, Appendix
 
-Project: Automated Extraction and Analysis of Timing-Based Paradata Features for Survey Quality Assurance
-Student: Samuel Kaoma (2022016530) · CSC 4004
+**Project:** Automated Extraction and Analysis of Timing-Based Paradata Features for Survey Quality Assurance  
+**Student:** Samuel Kaoma (2022016530) · **Course:** CSC 4004 · **Supervisor:** Mr. Mofya Phiri  
 
 Required by §9.4 of the project proposal. Each entry records the tool, the date, the task, what came back, and how much of it was used. This log was started on 6 July 2026, later than it should have been; entries before that date are reconstructed from the development history and are marked as such. It is maintained live from 6 July 2026 onward.
 
