@@ -17,6 +17,8 @@ This project analyzes timing data collected from SurveyCTO and ODK surveys and e
 
 ## Installation
 
+Requires Python 3.10 or later (verified on Python 3.14 with pandas 3.0).
+
 ```bash
 pip install -r requirements.txt
 ```
@@ -64,7 +66,12 @@ The pipeline uses transparent, reproducible stages:
 4. **Report:** Export feature tables, anomaly reports, and labelled validation metrics when ground truth is supplied.
 
 ### 3. Execution
-Run the automated pipeline on explicit files:
+The repository ships with a small ready-to-run sample: `data/surveycto.csv`,
+`data/odk.csv` and matching labels in `data/ground_truth_labels.csv`. The
+sample is a documented product of the synthetic generator
+(`python tests/generate_synthetic_final.py --overwrite`, seed 42, 24 labelled
+interviews across both formats). Run the pipeline on it directly after
+cloning:
 ```bash
 python run_pipeline.py --inputs data/odk.csv data/surveycto.csv
 ```
@@ -249,8 +256,15 @@ python scripts/validate_production_readiness.py --sizes 500 --seeds 11 42 --form
 The authoritative evaluation is the robustness round in
 `output/robustness_validation/robustness_summary.md`, which covers held-out
 seeds, stress-difficulty data and a class imbalance sweep. Headline results:
-precision 0.96 to 1.00, recall 0.84 to 1.00, all runs above the proposal
+precision 0.95 to 1.00, recall 0.84 to 1.00, all runs above the proposal
 thresholds.
+
+The robustness round is reproducible with a single command, which regenerates
+its datasets from recorded seeds and evaluates every condition:
+
+```bash
+python scripts/run_robustness_validation.py
+```
 
 Other dataset-aware validation outputs:
 - `output/synthetic_dataset_metrics.csv`
@@ -262,7 +276,3 @@ Other dataset-aware validation outputs:
 - `output/feature_validation_results.csv`
 - `output/synthetic_metrics_overview.png`
 - `output/synthetic_detection_by_type.png`
-
-Older evaluation artifacts such as `output/detailed_metrics.csv` and
-`output/evaluate_report.txt` should be treated as legacy outputs from an earlier,
-now-superseded analysis path.

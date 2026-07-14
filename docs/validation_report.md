@@ -1,19 +1,30 @@
 # SKACE-Time-Data Validation Report
 
-This document describes the current validation path used by the live pipeline.
-The previous version of this report mixed older metrics and stale artifacts; it
-has been replaced with a reproducible, dataset-aware summary.
+**Project:** Automated Extraction and Analysis of Timing-Based Paradata Features for Survey Quality Assurance  
+**Student:** Samuel Kaoma (2022016530) · **Course:** CSC 4004 · **Supervisor:** Mr. Mofya Phiri  
+**Repository:** https://github.com/Samuelkaoma-eng/SKACE-TIME-DATA  
+
+This document describes the validation path used by the live pipeline: the
+datasets, the commands that reproduce every result, and the acceptance criteria
+each run is held to.
 
 ## 0. Authoritative Results (July 2026 robustness round)
 
-The most rigorous evaluation to date uses held-out seeds never touched during
+The most rigorous evaluation uses held-out seeds never touched during
 development, a stress difficulty with overlapping profiles, and a class
 imbalance sweep. Headline numbers: precision 0.96 to 1.00 and recall 0.84 to
 1.00 across all runs, above the proposal thresholds of 0.80 and 0.75. Per-type
 detection on stress data: speeding 1.00, disengaged 0.88, fabricated 0.76.
 Methodology and full tables: `output/robustness_validation/robustness_summary.md`.
-The sections below describe the standing validation workflow that preceded and
-still complements that round.
+The entire round is reproducible with one command, which regenerates its
+datasets from recorded seeds and evaluates every condition:
+
+```bash
+python scripts/run_robustness_validation.py
+```
+
+The sections below describe the standing validation workflow that complements
+that round.
 
 ## 1. Canonical Validation Set
 
@@ -103,17 +114,16 @@ anomalous behavior so the detector can be evaluated against borderline cases:
 python scripts/validate_production_readiness.py --sizes 500 --seeds 11 42 --formats surveycto odk --difficulty stress --data-root data/stress_benchmarks --output-dir output/stress_validation
 ```
 
-The latest small stress sweep (`n120`, seeds `11` and `42`, SurveyCTO and ODK)
-showed precision `1.0000` and recall between `0.7917` and `0.9583`. This means
-the detector still clears the proposal's precision and recall targets under a
-harder overlapping-data scenario.
+The current stress sweep (`n500`, seeds `11` and `42`, SurveyCTO and ODK)
+shows precision between `0.9770` and `0.9890` and recall between `0.8000` and
+`0.9000`. The detector clears the proposal's precision and recall targets under
+a harder overlapping-data scenario.
 
-The stress sweep is still not treated as a strict contract pass. Some subtle
-fabricated interviews are detected as `REVIEW` rather than scoring `5` or higher,
-and a few intentionally borderline anomalies remain `CLEAN`. That is useful
-evidence rather than a defect in the report: the canonical dataset verifies the
-proposal contract, while stress mode shows where real-world robustness still has
-limits.
+The stress sweep is not treated as a strict contract pass. Some subtle
+fabricated interviews are detected as `REVIEW` rather than scoring `5` or
+higher, and a few intentionally borderline anomalies remain `CLEAN`. The
+canonical datasets verify the proposal contract, while stress mode maps where
+robustness has limits.
 
 ## 5. Baselines
 

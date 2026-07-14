@@ -1,9 +1,9 @@
 # Progress Report, Week 16 Review
 
-**Project:** Automated Extraction and Analysis of Timing-Based Paradata Features for Survey Quality Assurance
-**Student:** Samuel Kaoma (2022016530) · **Course:** CSC 4004 · **Supervisor:** Mr. Mofya Phiri
-**Repository:** https://github.com/Samuelkaoma-eng/SKACE-TIME-DATA (branch `main`)
-**Date:** 6 July 2026
+**Project:** Automated Extraction and Analysis of Timing-Based Paradata Features for Survey Quality Assurance  
+**Student:** Samuel Kaoma (2022016530) · **Course:** CSC 4004 · **Supervisor:** Mr. Mofya Phiri  
+**Repository:** https://github.com/Samuelkaoma-eng/SKACE-TIME-DATA (branch `main`)  
+**Date:** 6 July 2026  
 
 ## 1. What I have built so far
 
