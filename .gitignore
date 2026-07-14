@@ -39,3 +39,10 @@ data/robustness_checks/
 # Stale single-name notebook export
 output/audit_results.csv
 output/audit_results_*.csv
+
+# Regenerated benchmark packs (rebuilt by scripts/validate_production_readiness.py)
+data/generated_benchmarks/
+data/stress_benchmarks/
+
+# Editor configuration
+.vscode/
