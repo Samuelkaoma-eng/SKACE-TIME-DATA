@@ -1,7 +1,8 @@
 # Robustness Validation Results
 
-Date: 6 July 2026
-Test suite at time of run: 32/32 passing
+Date: 14 July 2026
+Test suite at time of run: 33/33 passing
+Reproduce this entire round with: `python scripts/run_robustness_validation.py`
 
 ## Why these experiments exist
 
@@ -35,7 +36,7 @@ Stress data overlaps the profiles on purpose: some genuine respondents are fast 
 | Dataset | Precision | Recall | F1 |
 |---|---|---|---|
 | Seed 7, SurveyCTO | 0.9770 | 0.8500 | 0.9091 |
-| Seed 7, ODK | 0.9574 | 0.9000 | 0.9278 |
+| Seed 7, ODK | 0.9570 | 0.8900 | 0.9223 |
 | Seed 99, SurveyCTO | 1.0000 | 0.8800 | 0.9362 |
 | Seed 99, ODK | 1.0000 | 0.8400 | 0.9130 |
 
@@ -46,6 +47,8 @@ All runs pass both success criteria. Detection by anomaly type (seed 99, SurveyC
 | Speeding | 33/33 | 1.00 |
 | Disengaged | 30/34 | 0.88 |
 | Fabricated | 25/33 | 0.76 |
+
+Aggregated across all four stress runs: speeding 132/132 (1.00), disengaged 121/136 (0.89), fabricated 93/132 (0.70), with per-run fabricated rates between 0.61 and 0.76.
 
 ### What the misses are
 
