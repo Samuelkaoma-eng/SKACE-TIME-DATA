@@ -49,3 +49,4 @@ data/stress_benchmarks/
 
 # Timestamped quickstart outputs (regenerated on every unlabelled run)
 output/*_batch_*.csv
+~$*.pptx
