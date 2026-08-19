@@ -31,7 +31,26 @@ Due dates below mirror the Capstone system as at 19 August 2026.
 
 | Final Submission | 29/09/2026 | [`v-submission-package`](https://github.com/Samuelkaoma-eng/SKACE-TIME-DATA/releases/tag/v-submission-package) | [`04e234a`](https://github.com/Samuelkaoma-eng/SKACE-TIME-DATA/commit/04e234a), [`7624397`](https://github.com/Samuelkaoma-eng/SKACE-TIME-DATA/commit/7624397) | [`docs/deliverables/`](https://github.com/Samuelkaoma-eng/SKACE-TIME-DATA/tree/main/docs/deliverables), [`docs/milestone_tracker.md`](https://github.com/Samuelkaoma-eng/SKACE-TIME-DATA/blob/main/docs/milestone_tracker.md) |
 
-Each tag marks the state of the code at that milestone: https://github.com/Samuelkaoma-eng/SKACE-TIME-DATA/tags
+## What each tag points at
+
+Tags are annotated and each one marks the commit at which that milestone's work
+was actually complete, not merely started. All five are listed at
+https://github.com/Samuelkaoma-eng/SKACE-TIME-DATA/tags
+
+| Tag | Commit | Date | What is verifiably present at that commit |
+|---|---|---|---|
+| [`v-proposal-complete`](https://github.com/Samuelkaoma-eng/SKACE-TIME-DATA/releases/tag/v-proposal-complete) | [`5370dac`](https://github.com/Samuelkaoma-eng/SKACE-TIME-DATA/commit/5370dac) | 04/04/2026 | Submitted proposal PDF, its Word source, the revised proposal text, and the 40-feature catalogue in `docs/feature_documentation.md` |
+| [`v-parsers-complete`](https://github.com/Samuelkaoma-eng/SKACE-TIME-DATA/releases/tag/v-parsers-complete) | [`c82fd96`](https://github.com/Samuelkaoma-eng/SKACE-TIME-DATA/commit/c82fd96) | 11/04/2026 | `base_parser.py`, `odk_parser.py` and `surveycto_parser.py`, the pipeline controller, and the parser unit tests |
+| [`v-features-complete`](https://github.com/Samuelkaoma-eng/SKACE-TIME-DATA/releases/tag/v-features-complete) | [`7bb265d`](https://github.com/Samuelkaoma-eng/SKACE-TIME-DATA/commit/7bb265d) | 06/07/2026 | All four feature modules covering the 40 catalogued features, and the anomaly detector with generator-specific tuning removed |
+| [`v-validation-complete`](https://github.com/Samuelkaoma-eng/SKACE-TIME-DATA/releases/tag/v-validation-complete) | [`f992676`](https://github.com/Samuelkaoma-eng/SKACE-TIME-DATA/commit/f992676) | 19/08/2026 | Validation report carrying per-type detection aggregated across all four stress runs, feature validity with Cohen's d, and the baseline comparison figures |
+| [`v-submission-package`](https://github.com/Samuelkaoma-eng/SKACE-TIME-DATA/releases/tag/v-submission-package) | [`f992676`](https://github.com/Samuelkaoma-eng/SKACE-TIME-DATA/commit/f992676) | 19/08/2026 | Final report, all Word deliverables, the presentation, the tracker and this index, with the completed validation report included |
+
+`v-validation-complete` and `v-submission-package` were both moved to `f992676`
+on 19 August 2026. They previously pointed at `7340a70` and `7624397`, where the
+validation report was still missing its effect sizes and baseline figures and
+quoted per-type detection from a single run. Naming those commits "complete"
+was inaccurate, so the tags were corrected rather than left to assert something
+the files did not support.
 
 Two entries in the system, "Final report and submission" and "Final Submission", share the
 29/09/2026 date and appear to be duplicates; this is queried with the supervisor.
