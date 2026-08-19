@@ -1,8 +1,29 @@
 # Paradata Feature Extraction Pipeline
 
+[![CI](https://github.com/Samuelkaoma-eng/SKACE-TIME-DATA/actions/workflows/ci.yml/badge.svg)](https://github.com/Samuelkaoma-eng/SKACE-TIME-DATA/actions/workflows/ci.yml)
+[![Full validation](https://github.com/Samuelkaoma-eng/SKACE-TIME-DATA/actions/workflows/full-validation.yml/badge.svg)](https://github.com/Samuelkaoma-eng/SKACE-TIME-DATA/actions/workflows/full-validation.yml)
+
 A research-grade Python project for engineering timing-based features from mobile survey paradata. 
 
 This project analyzes timing data collected from SurveyCTO and ODK surveys and extracts features that can be used to predict survey data quality issues.
+
+## Continuous Integration
+
+Two workflows run in GitHub Actions.
+
+`CI` runs on every push and pull request. It installs from `requirements.txt` on a
+clean runner, runs the full test suite, executes the pipeline end to end on the
+sample data, and checks the outputs are present and non-empty. It runs twice, once
+on Python 3.12 with pandas 2 and once on Python 3.14 with pandas 3, because a
+pandas 3 change to datetime resolution silently broke ODK duration conversion
+during development and was only caught by a manual clean-environment audit.
+
+`Full validation` reproduces the whole validation round: the complete workflow,
+the robustness experiments on held-out seeds, and the strict examiner audit. It
+then asserts that every evaluated run still clears the proposal thresholds of
+precision 0.80 and recall 0.75, and fails the build if any does not. It runs
+weekly and on demand, since the examiner audit includes an n10000 scale check
+that takes about twenty minutes.
 
 ## Project Structure
 
