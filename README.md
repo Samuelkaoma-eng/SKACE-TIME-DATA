@@ -256,7 +256,7 @@ python scripts/validate_production_readiness.py --sizes 500 --seeds 11 42 --form
 The authoritative evaluation is the robustness round in
 `output/robustness_validation/robustness_summary.md`, which covers held-out
 seeds, stress-difficulty data and a class imbalance sweep. Headline results:
-precision 0.95 to 1.00, recall 0.84 to 1.00, all runs above the proposal
+precision 0.96 to 1.00, recall 0.84 to 1.00, all runs above the proposal
 thresholds.
 
 The robustness round is reproducible with a single command, which regenerates
