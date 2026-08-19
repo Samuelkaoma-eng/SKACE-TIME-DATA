@@ -1,0 +1,121 @@
+name: Full validation
+
+# Reproduces the whole validation story from scratch on a clean machine: the
+# complete workflow, the robustness round on held-out seeds, and the strict
+# examiner audit. Everything an examiner would want to rerun, run for them.
+#
+# This is deliberately not on every push. The examiner audit includes an n10000
+# scale check that took about eighteen minutes in the recorded run, so the job
+# is manual, plus a weekly run to catch environment drift.
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_examiner_audit:
+        description: "Include the strict examiner audit (adds ~20 minutes)"
+        type: boolean
+        default: true
+  schedule:
+    # 04:00 UTC every Monday
+    - cron: "0 4 * * 1"
+
+jobs:
+  full-validation:
+    name: Reproduce the full validation round
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.14
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Record the environment
+        run: |
+          python -c "import sys, pandas, numpy, scipy, statsmodels, sklearn; print('python', sys.version.split()[0]); print('pandas', pandas.__version__); print('numpy', numpy.__version__); print('scipy', scipy.__version__); print('statsmodels', statsmodels.__version__); print('scikit-learn', sklearn.__version__)"
+
+      - name: Run the test suite
+        run: python -m pytest -q
+
+      - name: Run the complete workflow
+        run: python scripts/run_complete_workflow.py
+
+      - name: Reproduce the robustness round on held-out seeds
+        run: python scripts/run_robustness_validation.py
+
+      - name: Run the strict examiner audit
+        if: ${{ github.event_name == 'schedule' || inputs.run_examiner_audit }}
+        run: python scripts/strict_examiner_audit.py
+
+      - name: Check the headline results still hold
+        run: |
+          python - <<'PY'
+          import sys
+          from pathlib import Path
+
+          import pandas as pd
+
+          root = Path("output/robustness_validation")
+          if not root.is_dir():
+              print(f"{root} was not produced")
+              sys.exit(1)
+
+          # Proposal success criteria, fixed at proposal stage.
+          MIN_PRECISION = 0.80
+          MIN_RECALL = 0.75
+
+          rows = []
+          for path in sorted(root.glob("metrics_*.csv")):
+              frame = pd.read_csv(path)
+              for _, row in frame.iterrows():
+                  rows.append((path.stem, float(row["precision"]), float(row["recall"])))
+
+          if not rows:
+              print("No metrics files were produced")
+              sys.exit(1)
+
+          failures = []
+          for label, precision, recall in rows:
+              status = "ok"
+              if precision < MIN_PRECISION or recall < MIN_RECALL:
+                  status = "BELOW THRESHOLD"
+                  failures.append(label)
+              print(f"{label:<45} precision {precision:.4f}  recall {recall:.4f}  {status}")
+
+          precisions = [p for _, p, _ in rows]
+          recalls = [r for _, _, r in rows]
+          print()
+          print(f"Runs evaluated: {len(rows)}")
+          print(f"Precision range: {min(precisions):.4f} to {max(precisions):.4f}")
+          print(f"Recall range:    {min(recalls):.4f} to {max(recalls):.4f}")
+          print(f"Thresholds:      precision >= {MIN_PRECISION}, recall >= {MIN_RECALL}")
+
+          if failures:
+              print()
+              print("Runs below the proposal thresholds:", ", ".join(failures))
+              sys.exit(1)
+
+          print()
+          print("All runs clear the proposal thresholds.")
+          PY
+
+      - name: Upload all validation outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: full-validation-outputs
+          path: |
+            output/
+            !output/**/*.pyc
+          if-no-files-found: warn
+          retention-days: 30
