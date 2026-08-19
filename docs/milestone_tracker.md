@@ -2,7 +2,7 @@
 
 **Student:** Samuel Kaoma (2022016530) · **Course:** CSC 4004 · **Supervisor:** Mr. Mofya Phiri  
 **Repository:** https://github.com/Samuelkaoma-eng/SKACE-TIME-DATA (branch `main`)  
-**Proposal date:** 26 March 2026 · **Last verified:** 14 July 2026 (33/33 tests passing in a clean environment; robustness round on held-out seeds: precision 0.96 to 1.00, recall 0.84 to 1.00, all runs above the proposal thresholds)  
+**Proposal date:** 26 March 2026 · **Last verified:** 19 August 2026 (33/33 tests passing on Python 3.14.0 with pandas 3.0.1; robustness round on held-out seeds: precision 0.96 to 1.00, recall 0.84 to 1.00, all runs above the proposal thresholds)  
 
 Commit links use the short hash; full history is on the [commits page](https://github.com/Samuelkaoma-eng/SKACE-TIME-DATA/commits/main).
 
