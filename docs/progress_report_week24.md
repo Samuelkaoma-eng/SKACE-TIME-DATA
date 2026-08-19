@@ -29,7 +29,7 @@ The verified deliverable set is:
 | 2. Parsers for SurveyCTO and ODK with a common format | Done | `src/parsers/`, verified on both formats and hybrid files |
 | 3. Extract 30 to 50 features at three granularities | Done (40) | `src/features/`, all 40 present in every feature dataset |
 | 4. Statistical measures (variance, entropy, skewness, kurtosis) | Done | `src/features/statistical_features.py` (T-01 to T-10) |
-| 5. IQR + rule-based detection, validated on labelled data | Done | Robustness round: precision 0.95 to 1.00, recall 0.84 to 1.00 on held-out seeds, above the 0.80/0.75 criteria |
+| 5. IQR + rule-based detection, validated on labelled data | Done | Robustness round: precision 0.96 to 1.00, recall 0.84 to 1.00 on held-out seeds, above the 0.80/0.75 criteria |
 | 6. Output datasets, feature docs, format guide | Done | `output/`, `docs/`, Word copies in `docs/deliverables/` |
 
 Reconciled evaluation highlights: the class imbalance sweep holds recall 1.00 from five to thirty percent prevalence with precision no worse than 0.96; the held-out stress runs score precision 0.9570 to 1.0000 and recall 0.80 to 0.90 across both formats; speeding is always caught, disengagement in 89 percent of stress instances, and subtle fabrication in 70 percent, the known univariate limit discussed in the report. Thirty of the forty features are statistically discriminative under Mann-Whitney U tests with Bonferroni correction.
