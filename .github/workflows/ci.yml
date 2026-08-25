@@ -56,7 +56,13 @@ jobs:
       - name: Run the test suite
         run: python -m pytest -v
 
-      - name: Run the pipeline end to end on the sample data
+      - name: Run the pipeline end to end, SurveyCTO format
+        run: python run_pipeline.py --inputs data/surveycto.csv --output-dir ci_output --label ci_surveycto
+
+      - name: Run the pipeline end to end, ODK format
+        run: python run_pipeline.py --inputs data/odk.csv --output-dir ci_output --label ci_odk
+
+      - name: Run the pipeline end to end, both formats in one batch
         run: python run_pipeline.py --inputs data/odk.csv data/surveycto.csv --output-dir ci_output --label ci
 
       - name: Check the pipeline actually produced its outputs
@@ -66,11 +72,15 @@ jobs:
           from pathlib import Path
 
           expected = [
-              "question_features_ci.csv",
-              "section_features_ci.csv",
-              "feature_dataset_ci.csv",
-              "anomaly_report_ci.csv",
-              "pipeline_output_ci.csv",
+              f"{kind}_{label}.csv"
+              for label in ("ci_surveycto", "ci_odk", "ci")
+              for kind in (
+                  "question_features",
+                  "section_features",
+                  "feature_dataset",
+                  "anomaly_report",
+                  "pipeline_output",
+              )
           ]
           out = Path("ci_output")
           missing = [name for name in expected if not (out / name).is_file()]
@@ -85,14 +95,16 @@ jobs:
 
           import pandas as pd
 
-          features = pd.read_csv(out / "feature_dataset_ci.csv")
-          if features.empty:
-              print("Feature dataset has no rows")
-              sys.exit(1)
-          print(f"Feature dataset: {len(features)} interviews, {len(features.columns)} columns")
-
-          report = pd.read_csv(out / "anomaly_report_ci.csv")
-          print(f"Anomaly report: {len(report)} rows")
+          for label in ("ci_surveycto", "ci_odk", "ci"):
+              features = pd.read_csv(out / f"feature_dataset_{label}.csv")
+              if features.empty:
+                  print(f"Feature dataset {label} has no rows")
+                  sys.exit(1)
+              fam = {f: sum(1 for c in features.columns if c.startswith(f"{f}-")) for f in "QSVT"}
+              if any(v != 10 for v in fam.values()):
+                  print(f"{label}: expected 10 features per family, got {fam}")
+                  sys.exit(1)
+              print(f"{label}: {len(features)} interviews, families {fam}")
           PY
 
       - name: Upload the pipeline outputs
