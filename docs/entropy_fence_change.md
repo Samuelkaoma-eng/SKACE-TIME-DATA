@@ -79,4 +79,74 @@ state, and its result is recorded below whatever it shows.
 
 ## Held-out result
 
-Not yet run at the time this file was committed.
+Run once against the frozen state at commit `7cd5e24`, with
+`python scripts/run_robustness_validation.py`. Recorded as it came out.
+
+| Run | Difficulty | Precision before | Precision after | Recall before | Recall after |
+|---|---|---|---|---|---|
+| `sweep_r005` | canonical | 0.9615 | 0.8333 | 1.0000 | 1.0000 |
+| `sweep_r010` | canonical | 1.0000 | 0.9804 | 1.0000 | 1.0000 |
+| `sweep_r020` | canonical | 1.0000 | 0.9804 | 1.0000 | 1.0000 |
+| `sweep_r030` | canonical | 1.0000 | 1.0000 | 1.0000 | 1.0000 |
+| `benchmark_n500_surveycto` | canonical | 1.0000 | 0.9804 | 1.0000 | 1.0000 |
+| `benchmark_n500_odk` | canonical | 1.0000 | 1.0000 | 1.0000 | 1.0000 |
+| `stress_seed7_surveycto` | stress | 0.9770 | 0.9307 | 0.8500 | 0.9400 |
+| `stress_seed7_odk` | stress | 0.9570 | 0.9074 | 0.8900 | 0.9800 |
+| `stress_seed99_surveycto` | stress | 1.0000 | 0.9057 | 0.8800 | 0.9600 |
+| `stress_seed99_odk` | stress | 1.0000 | 0.9700 | 0.8400 | 0.9700 |
+
+Precision range moves from 0.9570 to 1.0000, down to 0.8333 to 1.0000. Recall
+range moves from 0.8400 to 1.0000, up to 0.9400 to 1.0000. Every run still
+clears the proposal criteria of precision 0.80 and recall 0.75.
+
+Per-class recall on the four held-out stress runs:
+
+| Anomaly type | Before | After |
+|---|---|---|
+| Speeding | 132 of 132, 1.00 | 132 of 132, 1.00 |
+| Disengaged | 121 of 136, 0.89 | 121 of 136, 0.89 |
+| Fabricated | 93 of 132, 0.70 | 132 of 132, 1.00 |
+
+False positives on genuine interviews across the four stress runs rise from 6 to
+30 out of 1,600, that is from 0.4 percent to 1.9 percent.
+
+## Reading of the result
+
+The diagnostic is confirmed. Fabricated recall on data the detector had never
+seen moves from 0.70 to 1.00, which is what the entropy separation predicted
+would happen if the estimator were corrected. The missed fabrications were a
+calibration artefact and not a limit of univariate detection, and the held-out
+evaluation establishes that independently of the development data on which the
+argument was formed. Disengaged and speeding recall are unchanged, as expected,
+since the change touches only the entropy rule.
+
+The cost is real and it is not evenly distributed. Under the stress condition
+the change is a clear improvement: recall rises by eight to thirteen points for
+a precision cost of three to nine points. Under canonical difficulty it is pure
+cost, because recall was already 1.00 there and the additional flags land only
+on genuine interviews. The worst case is the five percent prevalence sweep,
+where precision falls 12.8 points to 0.8333. That condition matters more than
+its position in the table suggests, because real fabrication rates are usually
+low, and at that prevalence the change adds four false accusations while
+catching no additional anomaly.
+
+The evaluation does not contain a low-prevalence stress run, which is the
+condition that would resemble deployment most closely: subtle fabrication that
+is also rare. Whether the recall gain would outweigh the precision cost there is
+not answered by these datasets, and constructing that condition would require a
+new evaluation rather than a re-reading of this one.
+
+## Recommendation
+
+Neither branch is unambiguously better, and the choice is a judgement about
+which error is more costly in the field. Missing a fabricated interview admits
+false data into a dataset. Flagging a genuine one sends a real enumerator for
+review on the strength of their timing. At the prevalences where fabrication
+actually occurs, this change trades roughly four of the second for zero of the
+first, and under stress conditions it trades a few of the second for many of the
+first.
+
+`main` is therefore left as the submission state: it is frozen, documented,
+reproducible and clears every committed criterion. This branch is retained as
+the evidence that the limitation was diagnosed, that a principled correction
+exists, and that its cost was measured honestly rather than asserted.
