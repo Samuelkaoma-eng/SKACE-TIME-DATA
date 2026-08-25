@@ -24,14 +24,24 @@ Detector settings are the defaults, with nothing fitted to the evaluated data.
 The lowest single precision observed is 0.9570, on seed 7 in ODK format at
 stress difficulty. The lowest recall is 0.84, on seed 99 in ODK format.
 
-Detection rates by anomaly type, aggregated across all four stress runs rather
-than quoted from any single run:
+Per-class recall by anomaly type. Each figure is the recall for that injected
+class, that is the proportion of interviews of that type which the detector
+flagged, aggregated across all four stress runs rather than quoted from any
+single run. These are diagnostic breakdowns of the combined detector's recall,
+not separate detectors and not separate success criteria.
 
-| Anomaly type | Detected | Rate | Per-run range |
+| Anomaly type | Detected | Per-class recall | Per-run range |
 |---|---|---|---|
 | Speeding | 132 of 132 | 1.00 | 1.00 to 1.00 |
 | Disengaged | 121 of 136 | 0.89 | 0.82 to 0.94 |
 | Fabricated | 93 of 132 | 0.70 | 0.61 to 0.76 |
+
+The proposal's success criteria, precision at or above 0.80 and recall at or
+above 0.75, are defined for the combined detector and are met on every run with
+margin, as the table above shows. No committed target is missed. The per-class
+figures below that threshold, in particular fabricated recall at 0.70, are
+reported because they locate where the method is weakest, not because they
+breach a commitment.
 
 Fabrication is the weakest of the three and is discussed in section 5. The
 entire round is reproducible with one command, which regenerates its datasets
@@ -165,7 +175,8 @@ the two platform formats. That consistency is itself a result: the same detector
 unmodified, performs equivalently on structurally different inputs, which is what
 the common intermediate representation was designed to achieve.
 
-Per-type detection, all four runs:
+Per-class recall by anomaly type, all four runs. Each cell is the count of that
+injected class the detector flagged, over the count present:
 
 | Run | Speeding | Disengaged | Fabricated |
 |---|---|---|---|
