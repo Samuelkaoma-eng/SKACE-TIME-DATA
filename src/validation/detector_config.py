@@ -14,6 +14,8 @@ DETECTOR_CONFIG_KEYS = [
     "too_fast_ms",
     "too_slow_ms",
     "low_entropy_threshold",
+    "entropy_fence_scale",
+    "entropy_fence_min_samples",
     "low_variance_threshold",
     "short_session_median_ratio",
     "low_mean_rt_median_ratio",

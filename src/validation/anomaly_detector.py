@@ -65,6 +65,8 @@ class AnomalyDetector:
         too_fast_ms=6000,
         too_slow_ms=3600000,
         low_entropy_threshold=0.5,
+        entropy_fence_scale=3.0,
+        entropy_fence_min_samples=30,
         low_variance_threshold=10,
         short_session_median_ratio=0.5,
         low_mean_rt_median_ratio=0.5,
@@ -83,6 +85,8 @@ class AnomalyDetector:
         self.too_fast_ms = too_fast_ms
         self.too_slow_ms = too_slow_ms
         self.low_entropy_threshold = low_entropy_threshold
+        self.entropy_fence_scale = entropy_fence_scale
+        self.entropy_fence_min_samples = entropy_fence_min_samples
         self.low_variance_threshold = low_variance_threshold
         self.short_session_median_ratio = short_session_median_ratio
         self.low_mean_rt_median_ratio = low_mean_rt_median_ratio
@@ -183,7 +187,29 @@ class AnomalyDetector:
                 df.loc[df["T-06_rt_mean"] < threshold, "flag_low_mean_rt"] = 1
 
         if "T-03_rt_entropy" in df.columns:
+            # Absolute floor. An interview with essentially no variation in
+            # response time is anomalous whatever the rest of the dataset looks
+            # like, so this catches blatant cases even in a degenerate sample.
             df.loc[df["T-03_rt_entropy"] < self.low_entropy_threshold, "flag_low_entropy"] = 1
+
+            # Distribution-relative fence, estimated from the uncontaminated
+            # side. Every anomaly profile in scope depresses entropy and none
+            # raises it, so the upper half of the distribution carries no
+            # anomalies by construction. Scale is taken from that half alone.
+            #
+            # For a symmetric distribution Q3 - median equals half the
+            # interquartile range, so median - 3 * (Q3 - median) reduces to
+            # Tukey's lower fence of Q1 - 1.5 * IQR. Unlike Tukey's form,
+            # it cannot be dragged downwards by the anomalies it is meant to
+            # isolate, which is the masking effect that made the plain fence
+            # ineffective on contaminated samples.
+            entropy_values = pd.to_numeric(df["T-03_rt_entropy"], errors="coerce").dropna()
+            if len(entropy_values) >= self.entropy_fence_min_samples:
+                entropy_median = float(entropy_values.median())
+                upper_spread = float(entropy_values.quantile(0.75)) - entropy_median
+                if np.isfinite(upper_spread) and upper_spread > 0:
+                    entropy_fence = entropy_median - self.entropy_fence_scale * upper_spread
+                    df.loc[df["T-03_rt_entropy"] < entropy_fence, "flag_low_entropy"] = 1
 
         if "T-01_rt_variance" in df.columns:
             df.loc[df["T-01_rt_variance"] < self.low_variance_threshold, "flag_uniform_timing"] = 1
