@@ -124,11 +124,59 @@ def main() -> int:
     lines.append(f"- Exercised end to end: **{n} of {n}**")
     lines.append("")
     lines.append("Features shown as end-to-end only are produced, exported and evaluated on")
-    lines.append("every labelled run, but no test pins their value to an expected result. They")
-    lines.append("are concentrated in the features that the validity analysis found")
-    lines.append("non-discriminative on the synthetic corpus, where a fixed expected value")
-    lines.append("would assert the constant rather than the calculation.")
+    lines.append("every labelled run, but no test pins their value to an expected result.")
     lines.append("")
+
+    # Cross the coverage against the feature validity results, so the gap is
+    # characterised by evidence rather than by assumption. A feature that
+    # discriminates and has no direct test is a more material gap than one that
+    # is constant across the corpus, where a fixed expected value would assert
+    # the constant rather than the calculation.
+    validity = PROJECT_ROOT / "output" / "feature_validation_results.csv"
+    if validity.is_file():
+        import csv
+
+        significant: dict[str, bool] = {}
+        with validity.open(encoding="utf-8", newline="") as handle:
+            for row in csv.DictReader(handle):
+                flag = str(row.get("significant", "")).strip().lower()
+                significant[row["feature"]] = flag in {"true", "1"}
+
+        untested = [fid for fid in implemented if not direct[fid]]
+        cells = {
+            ("sig", "untested"): [f for f in untested if significant.get(f)],
+            ("sig", "tested"): [f for f in implemented if direct[f] and significant.get(f)],
+            ("non", "untested"): [f for f in untested if significant.get(f) is False],
+            ("non", "tested"): [f for f in implemented if direct[f] and significant.get(f) is False],
+        }
+
+        lines.append("Crossed against the feature validity results:")
+        lines.append("")
+        lines.append("| | Direct test | End-to-end only |")
+        lines.append("|---|---|---|")
+        lines.append(
+            f"| Significant discriminator | {len(cells[('sig','tested')])} | "
+            f"**{len(cells[('sig','untested')])}** |"
+        )
+        lines.append(
+            f"| Not significant | {len(cells[('non','tested')])} | "
+            f"{len(cells[('non','untested')])} |"
+        )
+        lines.append("")
+        gap = sorted(f.split("_")[0] for f in cells[("sig", "untested")])
+        if gap:
+            lines.append("The material gap is the top-right cell: features that separate normal")
+            lines.append("from anomalous interviews at conventional significance, yet have no test")
+            lines.append("asserting their computed value. These are:")
+            lines.append("")
+            lines.append("> " + ", ".join(gap))
+            lines.append("")
+        benign = sorted(f.split("_")[0] for f in cells[("non", "untested")])
+        if benign:
+            lines.append("The remaining untested features (" + ", ".join(benign) + ") are constant")
+            lines.append("across the synthetic corpus, so a fixed expected value would assert the")
+            lines.append("constant rather than the calculation.")
+            lines.append("")
 
     OUTPUT.write_text("\n".join(lines) + "\n", encoding="utf-8")
     print(f"Wrote {OUTPUT.relative_to(PROJECT_ROOT)}")
