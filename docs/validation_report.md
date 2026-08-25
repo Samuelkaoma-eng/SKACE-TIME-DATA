@@ -178,6 +178,81 @@ about a third of the injected anomalies that multi-feature analysis captures.
 
 Source: `output/examiner_audit/strict_examiner_audit_report.md`.
 
+## 2.1 Contribution of each detection component
+
+The proposal requires separate performance breakdowns for the IQR-based
+statistical component and the rule-based component, so that the contribution of
+each can be assessed rather than only their combined effect.
+
+The combined detector flags an interview when `anomaly_score` reaches the
+behaviour threshold of 2, where `anomaly_score = min(iqr_flags, 1) + rule_flags`.
+The IQR contribution is capped at one on purpose, so that several correlated
+duration, mean and variance outliers arising from the same underlying timing
+pattern are not counted repeatedly. That cap makes the threshold of 2 unreachable
+for the IQR component alone, so each component is isolated as follows:
+
+- **IQR only:** any IQR fence fired, `iqr_flags >= 1`.
+- **Rules only:** `rule_flags >= 2`, the same threshold the combined detector
+  applies, with the IQR contribution removed.
+- **Combined:** the shipped detector, unchanged.
+
+Aggregated over all ten runs of the robustness round:
+
+| Component | Precision | Recall | F1 | TP | FP | FN |
+|---|---|---|---|---|---|---|
+| Combined | 0.9920 | 0.9416 | 0.9662 | 871 | 7 | 54 |
+| Rules only | 0.9988 | 0.9319 | 0.9642 | 862 | 1 | 63 |
+| IQR only | 0.6628 | 0.6162 | 0.6387 | 570 | 290 | 355 |
+
+Per run:
+
+| Run | Combined P / R | Rules only P / R | IQR only P / R |
+|---|---|---|---|
+| `benchmark_n500_odk` | 1.0000 / 1.0000 | 1.0000 / 1.0000 | 0.8547 / 1.0000 |
+| `benchmark_n500_surveycto` | 1.0000 / 1.0000 | 1.0000 / 1.0000 | 0.8929 / 1.0000 |
+| `stress_seed7_odk` | 0.9570 / 0.8900 | 0.9884 / 0.8500 | 0.3784 / 0.2800 |
+| `stress_seed7_surveycto` | 0.9770 / 0.8500 | 1.0000 / 0.8100 | 0.3158 / 0.2400 |
+| `stress_seed99_odk` | 1.0000 / 0.8400 | 1.0000 / 0.8300 | 0.3167 / 0.1900 |
+| `stress_seed99_surveycto` | 1.0000 / 0.8800 | 1.0000 / 0.8800 | 0.3200 / 0.2400 |
+| `sweep_r005` | 0.9615 / 1.0000 | 1.0000 / 1.0000 | 0.4717 / 1.0000 |
+| `sweep_r010` | 1.0000 / 1.0000 | 1.0000 / 1.0000 | 0.6667 / 1.0000 |
+| `sweep_r020` | 1.0000 / 1.0000 | 1.0000 / 1.0000 | 0.9174 / 1.0000 |
+| `sweep_r030` | 1.0000 / 1.0000 | 1.0000 / 1.0000 | 0.9174 / 0.6667 |
+
+### What the breakdown shows
+
+The rule layer carries the detection. On its own it reaches precision 0.9988 and
+recall 0.9319, which is within a point of the combined detector on both measures.
+The IQR layer on its own reaches precision 0.6628 and recall 0.6162, and under
+the stress condition its recall falls to between 0.19 and 0.28.
+
+Combining the two is nonetheless worth doing, but the margin is small and should
+be stated as such: the combination recovers nine true positives that the rules
+miss, lifting recall from 0.9319 to 0.9416, and costs six additional false
+positives, moving precision from 0.9988 to 0.9920. That is the entire measured
+contribution of the IQR component in the shipped configuration.
+
+The IQR component also degrades in a specific and instructive way. Across the
+class imbalance sweep its recall holds at 1.00 while anomalies make up 5, 10 and
+20 percent of the sample, then falls to 0.6667 at 30 percent. This is masking:
+the fences are estimated from a sample that contains the outliers they are meant
+to isolate, so as contamination rises the quartiles move with it and the fences
+stop reaching the anomalies. The same mechanism accounts for part of the
+fabricated recall shortfall analysed in
+`docs/fabricated_detection_diagnostic.md`, and it is a property of applying
+unsupervised fences to contaminated data rather than a defect in the
+implementation.
+
+This breakdown is regenerated from the recorded predictions, not from a fresh
+run, with:
+
+```bash
+python scripts/component_breakdown.py
+```
+
+Full per-run values including confusion counts:
+`output/robustness_validation/component_breakdown.csv`.
+
 ## 3. Canonical validation set
 
 The canonical labelled run is the contract test. It uses clean, reproducible
