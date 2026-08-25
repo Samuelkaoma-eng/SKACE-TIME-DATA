@@ -9,7 +9,7 @@
 
 The system is complete and verified end to end in a clean environment. Since the Week 16 review the work has been consolidation rather than new construction: a full pre-submission audit was run in a fresh virtual environment, every synthetic dataset was regenerated from its recorded seed, every documented command was re-executed, and every number in the report was re-derived from those fresh runs.
 
-The audit mattered. Installing from `requirements.txt` on a clean machine pulls pandas 3, under which the parsers' timestamp conversion silently produced ODK durations a thousand times too small; the conversion was rewritten to be independent of the library's internal datetime resolution and a regression test was added. A second defect found during reconciliation was that the question-level response time feature (Q-01) had drifted from its documented definition and duplicated another feature (Q-10); it was reimplemented as documented. The test suite now stands at 33 tests, all passing.
+The audit mattered. Installing from `requirements.txt` on a clean machine pulls pandas 3, under which the parsers' timestamp conversion silently produced ODK durations a thousand times too small; the conversion was rewritten to be independent of the library's internal datetime resolution and a regression test was added. A second defect found during reconciliation was that the question-level response time feature (Q-01) had drifted from its documented definition and duplicated another feature (Q-10); it was reimplemented as documented. The test suite stood at 33 tests at the close of that audit, all passing. It has since grown to 37 with the addition of direct tests for the timing, pace and trajectory features.
 
 The verified deliverable set is:
 
@@ -32,7 +32,7 @@ The verified deliverable set is:
 | 5. IQR + rule-based detection, validated on labelled data | Done | Robustness round: precision 0.96 to 1.00, recall 0.84 to 1.00 on held-out seeds, above the 0.80/0.75 criteria |
 | 6. Output datasets, feature docs, format guide | Done | `output/`, `docs/`, Word copies in `docs/deliverables/` |
 
-Reconciled evaluation highlights: the class imbalance sweep holds recall 1.00 from five to thirty percent prevalence with precision no worse than 0.96; the held-out stress runs score precision 0.9570 to 1.0000 and recall 0.80 to 0.90 across both formats; speeding is always caught, disengagement in 89 percent of stress instances, and subtle fabrication in 70 percent, the known univariate limit discussed in the report. Thirty of the forty features are statistically discriminative under Mann-Whitney U tests with Bonferroni correction.
+Reconciled evaluation highlights: the class imbalance sweep holds recall 1.00 from five to thirty percent prevalence with precision no worse than 0.96; the held-out stress runs on seeds 7 and 99 score precision 0.9570 to 1.0000 and recall 0.8400 to 0.8900 across both formats; speeding is always caught, disengagement in 89 percent of stress instances, and fabrication in 70 percent. A bounded diagnostic pass on those fabricated misses, reported in docs/fabricated_detection_diagnostic.md, traced them to an absolute entropy threshold calibrated to one of the two generated fabrication profiles and to contamination of the interquartile fence, rather than to an absence of univariate signal. Thirty of the forty features are statistically discriminative under Mann-Whitney U tests with Bonferroni correction.
 
 ## 3. Blockers
 

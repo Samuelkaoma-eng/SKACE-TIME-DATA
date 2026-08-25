@@ -17,28 +17,28 @@ feature dataset is produced and evaluated against ground truth in
 | Feature | Implemented in | Exported | Granular | Direct test |
 |---|---|---|---|---|
 | `Q-01_response_time_ms` | `question_features.py` | yes | yes | features |
-| `Q-02_time_to_first_interaction` | `question_features.py` | yes | yes | end-to-end only |
-| `Q-03_edit_count` | `question_features.py` | yes | yes | end-to-end only |
+| `Q-02_time_to_first_interaction` | `question_features.py` | yes | yes | features |
+| `Q-03_edit_count` | `question_features.py` | yes | yes | features |
 | `Q-04_revisit_flag` | `question_features.py` | yes | yes | features |
 | `Q-05_revisit_count` | `question_features.py` | yes | yes | features |
 | `Q-06_field_completion_ratio` | `question_features.py` | yes | yes | end-to-end only |
-| `Q-07_idle_time_ms` | `question_features.py` | yes | yes | end-to-end only |
-| `Q-08_keystroke_count` | `question_features.py` | yes | yes | end-to-end only |
-| `Q-09_constraint_trigger_count` | `question_features.py` | yes | yes | end-to-end only |
+| `Q-07_idle_time_ms` | `question_features.py` | yes | yes | features |
+| `Q-08_keystroke_count` | `question_features.py` | yes | yes | features |
+| `Q-09_constraint_trigger_count` | `question_features.py` | yes | yes | features |
 | `Q-10_first_to_last_interaction_duration` | `question_features.py` | yes | yes | features |
 
 ## S family, Section level
 
 | Feature | Implemented in | Exported | Granular | Direct test |
 |---|---|---|---|---|
-| `S-01_mean_section_pace` | `section_features.py` | yes | yes | end-to-end only |
-| `S-02_section_duration_ms` | `section_features.py` | yes | yes | end-to-end only |
+| `S-01_mean_section_pace` | `section_features.py` | yes | yes | features |
+| `S-02_section_duration_ms` | `section_features.py` | yes | yes | features |
 | `S-03_within_section_variance` | `section_features.py` | yes | yes | end_to_end, features, validation_workflows |
 | `S-04_section_to_section_pace_ratio` | `section_features.py` | yes | yes | end-to-end only |
 | `S-05_pause_count_5s` | `section_features.py` | yes | yes | end-to-end only |
 | `S-06_pause_count_30s` | `section_features.py` | yes | yes | end-to-end only |
-| `S-07_mean_pause_duration_ms` | `section_features.py` | yes | yes | end-to-end only |
-| `S-08_max_pause_duration_ms` | `section_features.py` | yes | yes | end-to-end only |
+| `S-07_mean_pause_duration_ms` | `section_features.py` | yes | yes | features |
+| `S-08_max_pause_duration_ms` | `section_features.py` | yes | yes | features |
 | `S-09_back_nav_count_section` | `section_features.py` | yes | yes | end-to-end only |
 | `S-10_section_completion_rate` | `section_features.py` | yes | yes | end-to-end only |
 
@@ -47,14 +47,14 @@ feature dataset is produced and evaluated against ground truth in
 | Feature | Implemented in | Exported | Granular | Direct test |
 |---|---|---|---|---|
 | `V-01_total_interview_duration_ms` | `survey_features.py` | yes | n/a | end_to_end, features, pipeline, validation_workflows |
-| `V-02_speed_trajectory_early` | `survey_features.py` | yes | n/a | end-to-end only |
-| `V-03_speed_trajectory_late` | `survey_features.py` | yes | n/a | end-to-end only |
-| `V-04_speed_trajectory_ratio` | `survey_features.py` | yes | n/a | validation_workflows |
+| `V-02_speed_trajectory_early` | `survey_features.py` | yes | n/a | features |
+| `V-03_speed_trajectory_late` | `survey_features.py` | yes | n/a | features |
+| `V-04_speed_trajectory_ratio` | `survey_features.py` | yes | n/a | features, validation_workflows |
 | `V-05_back_navigation_rate` | `survey_features.py` | yes | n/a | end_to_end, validation_workflows |
 | `V-06_back_navigation_total_count` | `survey_features.py` | yes | n/a | end_to_end, pipeline, validation_workflows |
 | `V-07_time_of_day_hour` | `survey_features.py` | yes | n/a | end_to_end, features, validation_workflows |
 | `V-08_day_of_week` | `survey_features.py` | yes | n/a | features |
-| `V-09_session_length_vs_median` | `survey_features.py` | yes | n/a | end-to-end only |
+| `V-09_session_length_vs_median` | `survey_features.py` | yes | n/a | features |
 | `V-10_zero_back_nav_flag` | `survey_features.py` | yes | n/a | end_to_end |
 
 ## T family, Statistical
@@ -76,12 +76,20 @@ feature dataset is produced and evaluated against ground truth in
 
 - Features catalogued and implemented: **40**
 - Exported by the pipeline in the recorded canonical run: **40 of 40**
-- Covered by a direct, feature-naming test: **22 of 40**
+- Covered by a direct, feature-naming test: **34 of 40**
 - Exercised end to end: **40 of 40**
 
 Features shown as end-to-end only are produced, exported and evaluated on
-every labelled run, but no test pins their value to an expected result. They
-are concentrated in the features that the validity analysis found
-non-discriminative on the synthetic corpus, where a fixed expected value
-would assert the constant rather than the calculation.
+every labelled run, but no test pins their value to an expected result.
+
+Crossed against the feature validity results:
+
+| | Direct test | End-to-end only |
+|---|---|---|
+| Significant discriminator | 30 | **0** |
+| Not significant | 4 | 6 |
+
+The remaining untested features (Q-06, S-04, S-05, S-06, S-09, S-10) are constant
+across the synthetic corpus, so a fixed expected value would assert the
+constant rather than the calculation.
 
