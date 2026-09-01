@@ -46,6 +46,10 @@ pip install -r requirements.txt
 python run_pipeline.py --inputs data/odk.csv data/surveycto.csv
 ```
 
+For archival reproduction of the validated September 2026 release, install the
+exact environment captured in `requirements-validated.txt` instead of the lower
+bounds in `requirements.txt`.
+
 Both formats are detected automatically. The run writes question-level and
 section-level feature tables, a one-row-per-interview feature dataset, and an
 anomaly report naming the flags behind every flagged interview. Add
@@ -259,6 +263,14 @@ ground truth with:
 
 ```bash
 python tests/generate_benchmark_datasets.py --dataset-size 500 --seed 42 --output-dir data/generated_benchmarks/n500_seed42
+```
+
+The tracked `n500`, `n2000` and `n10000` benchmark bundles are the validation
+artefacts used for the submitted work. For a lighter public archive, the
+`n10000` bundle can be regenerated from the command below and left untracked:
+
+```bash
+python tests/generate_benchmark_datasets.py --dataset-size 10000 --seed 42 --output-dir data/generated_benchmarks/n10000_seed42
 ```
 
 The default synthetic profiles are intentionally clean so they can serve as a

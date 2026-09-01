@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+message: "If you use this project, please cite it using the metadata below."
+title: "Automated Extraction and Analysis of Timing-Based Paradata Features for Survey Quality Assurance"
+authors:
+  - family-names: "Kaoma"
+    given-names: "Samuel"
+date-released: "2026-09-01"
+version: "v-submission-package"
+repository-code: "https://github.com/Samuelkaoma-eng/SKACE-TIME-DATA"
+license: "MIT"
+keywords:
+  - "survey paradata"
+  - "audit logs"
+  - "SurveyCTO"
+  - "ODK"
+  - "survey quality assurance"
