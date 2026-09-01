@@ -15,7 +15,7 @@ Datasets:
 |---|---|---|---|---|
 | `synthetic_datasets/n500` | 500 | 0.20 | 42 | canonical |
 | `synthetic_datasets/n2000` | 2,000 | 0.20 | 42 | canonical |
-| `synthetic_datasets/n10000` | 10,000 | 0.20 | 42 | canonical |
+| `synthetic_datasets/n10000` | 10,000 | 0.20 | 42 | canonical, regenerated on demand |
 
 Every dataset is reproducible from the repository root, for example:
 
@@ -23,8 +23,15 @@ Every dataset is reproducible from the repository root, for example:
 python tests/generate_benchmark_datasets.py --dataset-size 500 --seed 42 --output-dir data/synthetic_datasets/n500
 ```
 
-This copy is identical to `data/synthetic_datasets/` in the repository. The
-additional held-out evaluation datasets (imbalance sweep and stress difficulty,
+The repository tracks the smaller `n500` and `n2000` benchmark bundles. The
+larger `n10000` bundle is omitted from the current tree to keep the public
+archive smaller; regenerate it with:
+
+```bash
+python tests/generate_benchmark_datasets.py --dataset-size 10000 --seed 42 --output-dir data/synthetic_datasets/n10000
+```
+
+The additional held-out evaluation datasets (imbalance sweep and stress difficulty,
 seeds 7 and 99) are regenerated on demand by
 `python scripts/run_robustness_validation.py`, with their parameters recorded
 in the validation report.

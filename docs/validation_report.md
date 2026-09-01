@@ -381,8 +381,13 @@ Source: `output/stress_validation/production_readiness_summary.md`.
 
 ## 7. Larger benchmark packs and scale
 
-Labelled synthetic packs live in `data/synthetic_datasets/n500`, `n2000` and
-`n10000`.
+The smaller labelled synthetic packs live in `data/synthetic_datasets/n500` and
+`n2000`. The larger `n10000` pack is regenerated from its recorded seed before
+rerunning the scale check:
+
+```bash
+python tests/generate_benchmark_datasets.py --dataset-size 10000 --seed 42 --output-dir data/synthetic_datasets/n10000
+```
 
 ```bash
 python scripts/analyze_pipeline_metrics.py --datasets n500 n2000 n10000 --formats surveycto --output-dir output

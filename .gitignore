@@ -44,6 +44,10 @@ output/audit_results_*.csv
 data/generated_benchmarks/
 data/stress_benchmarks/
 
+# Large benchmark pack: regenerated from README instructions for archive/release
+data/synthetic_datasets/n10000/
+docs/deliverables/Synthetic_Validation_Datasets/synthetic_datasets/n10000/
+
 # Editor configuration
 .vscode/
 

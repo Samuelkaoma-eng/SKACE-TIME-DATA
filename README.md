@@ -265,12 +265,12 @@ ground truth with:
 python tests/generate_benchmark_datasets.py --dataset-size 500 --seed 42 --output-dir data/generated_benchmarks/n500_seed42
 ```
 
-The tracked `n500`, `n2000` and `n10000` benchmark bundles are the validation
-artefacts used for the submitted work. For a lighter public archive, the
-`n10000` bundle can be regenerated from the command below and left untracked:
+The `n500` and `n2000` benchmark bundles are tracked so the submitted validation
+evidence can be inspected directly after cloning. The larger `n10000` bundle is
+regenerated from its recorded seed when the scale check needs to be rerun:
 
 ```bash
-python tests/generate_benchmark_datasets.py --dataset-size 10000 --seed 42 --output-dir data/generated_benchmarks/n10000_seed42
+python tests/generate_benchmark_datasets.py --dataset-size 10000 --seed 42 --output-dir data/synthetic_datasets/n10000
 ```
 
 The default synthetic profiles are intentionally clean so they can serve as a
