@@ -47,6 +47,12 @@ jobs:
       - name: Run the test suite
         run: python -m pytest -q
 
+      # The n10000 bundle is not tracked in git, so a clean runner has to
+      # regenerate it from its recorded seed before the complete workflow and
+      # the examiner audit reach their scale checks.
+      - name: Regenerate the n10000 benchmark bundle
+        run: python tests/generate_benchmark_datasets.py --dataset-size 10000 --seed 42 --output-dir data/synthetic_datasets/n10000
+
       - name: Run the complete workflow
         run: python scripts/run_complete_workflow.py
 
