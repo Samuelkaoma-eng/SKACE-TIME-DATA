@@ -1,13 +1,40 @@
 # SKACE-Time-Data Validation Report
 
-**Project:** Automated Extraction and Analysis of Timing-Based Paradata Features for Survey Quality Assurance  
-**Student:** Samuel Kaoma (2022016530) · **Course:** CSC 4004 · **Supervisor:** Mr. Mofya Phiri  
+**Project:** Automated Extraction and Analysis of Timing-Based Paradata
+Features for Survey Quality Assurance  
+**Student:** Samuel Kaoma, student number 2022016530  
+**Course:** CSC 4004  
+**Supervisor:** Mr. Mofya Phiri  
 **Repository:** https://github.com/Samuelkaoma-eng/SKACE-TIME-DATA  
+**Validated state:** tag `v-validation-complete`
 
-This document reports the validation results and describes the path that produces
-them: the datasets, the commands that reproduce every figure, and the acceptance
-criteria each run is held to. Every number below is taken from a file in
-`output/`, and the source file is named alongside it.
+---
+
+This document reports the validation results and describes the path that
+produces them: the datasets, the commands that reproduce every figure, and the
+acceptance criteria each run is held to. Every number below is taken from a file
+in `output/`, and the source file is named alongside it.
+
+**Conventions.** Precision, recall and F1 are quoted to four decimal places in
+tables and rounded to two in prose. Counts are exact. Runtimes are wall clock
+seconds for a single named run, and the run is always named.
+
+### Contents
+
+| Section | Subject |
+|---|---|
+| [0](#0-headline-results) | Headline results and per-class recall |
+| [0.1](#01-auditable-evidence) | Auditable evidence: tags, tests, coverage, confusion counts |
+| [1](#1-feature-validity-and-effect-sizes) | Feature validity and effect sizes |
+| [2](#2-baseline-comparison) | Baseline comparison |
+| [2.1](#21-contribution-of-each-detection-component) | Contribution of each detection component |
+| [3](#3-canonical-validation-set) | Canonical validation set |
+| [4](#4-class-imbalance-sweep) | Class imbalance sweep |
+| [5](#5-held-out-stress-evaluation) | Held-out stress evaluation and the fabrication shortfall |
+| [6](#6-earlier-stress-sweep-seeds-11-and-42) | Earlier stress sweep, retained for continuity |
+| [7](#7-larger-benchmark-packs-and-scale) | Larger benchmark packs and scale |
+| [8](#8-production-readiness-sweep) | Production readiness sweep |
+| [9](#9-reproducibility) | Reproducibility |
 
 ## 0. Headline results
 
@@ -359,6 +386,30 @@ misses to a joint pattern that univariate methods cannot capture. The data does
 not support that reading. No threshold was changed in producing the diagnostic
 and the results reported above stand unaltered.
 
+### The correction exists, and is deliberately not in the evaluated system
+
+The diagnosis was acted on. A corrected entropy fence was developed on the same
+development seeds, frozen, and evaluated once against the held-out data. It
+keeps the absolute constant as a floor and adds a fence estimated from the
+uncontaminated upper half of the entropy distribution, a form chosen because
+every anomaly profile in scope lowers entropy and none raises it, and because it
+reduces to the ordinary Tukey fence for a symmetric distribution. Under that
+correction, fabricated per-class recall rises from 0.70 to 1.00 and the lowest
+precision observed anywhere in the round falls from 0.9570 to 0.8333.
+
+The gain concentrates in the stress condition and the cost concentrates at low
+prevalence, where recall was already complete and the extra flags fall entirely
+on genuine interviews. Since realistic fabrication rates are low, the correction
+as it stands buys no additional detection in the condition that most resembles
+deployment and pays for it in false accusations. It is therefore held on a
+separate branch and is not part of the system evaluated in this document. Every
+figure in this document describes the shipped detector without that change.
+
+The full trade-off, and the argument that adopting it is a deployment judgement
+about the relative cost of an undetected fabrication against a genuine
+enumerator sent for review rather than a methodological question, is set out in
+section 7 of `report/final_academic_report.md`.
+
 Source: `output/robustness_validation/metrics_stress_seed*.csv` and
 `detection_by_type_stress_seed*.csv`.
 
@@ -401,9 +452,33 @@ python scripts/analyze_pipeline_metrics.py --datasets n500 --formats odk --outpu
 
 Cross-format parity at n500 is exact: SurveyCTO 1.0000/1.0000 and ODK
 1.0000/1.0000. Scaling from 500 to 10,000 interviews, precision moves from
-1.0000 to 0.9945 and recall holds at 1.0000, with runtime rising by a factor of
-19.05 for a twentyfold increase in data, which is consistent with the near-linear
-complexity the design targets.
+1.0000 to 0.9945 while recall holds at 1.0000.
+
+### Source of the scaling figures
+
+The runtime figures quoted here and in the final report are those of the strict
+examiner audit, which is the run that carries the scale check as an explicit
+pass or fail condition. Its raw times are:
+
+| Dataset | Format | Interviews | Runtime | Precision | Recall |
+|---|---|---|---|---|---|
+| `n500` | SurveyCTO | 500 | 56.12 s | 1.0000 | 1.0000 |
+| `n10000` | SurveyCTO | 10,000 | 1,068.87 s | 0.9945 | 1.0000 |
+
+A twentyfold increase in input costs a factor of 19.05 in runtime, which is
+consistent with the near-linear complexity the design targets.
+
+Source: `output/examiner_audit/strict_examiner_audit_report.md` and its JSON
+companion, in which the same two times appear as `n500_runtime_seconds` and
+`n10000_runtime_seconds` under the scale stability check.
+
+These are wall clock timings of one run and they move between runs on the same
+machine. A separate aggregate timing file records 57.54 s and 1,037.74 s for the
+same two datasets, a factor of 18.04, from a different run:
+`output/synthetic_dataset_metrics.csv` and its JSON companion. The two pairs are
+not one measurement reported twice and should not be read as such. The strict
+examiner audit is the source cited throughout this document, and both runs place
+the runtime factor below the twentyfold growth in input size.
 
 Aggregate outputs: `output/synthetic_dataset_metrics.csv`,
 `output/synthetic_dataset_metrics.md`, `output/synthetic_detection_by_type.csv`.
