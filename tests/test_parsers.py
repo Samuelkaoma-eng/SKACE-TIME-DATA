@@ -44,10 +44,54 @@ def test_odk_parser_iso_timestamps_convert_to_epoch_ms(tmp_path):
     assert df.iloc[0]['end_ms'] == 1772355601500.0
     assert df.iloc[0]['duration_ms'] == 1500.0
 
+def test_odk_parser_missing_field_names_use_placeholder(tmp_path):
+    # Regression: blank ODK names were converted to the literal string "nan"
+    # instead of the unknown_field placeholder, which then leaked into the
+    # section features as a pseudo-question.
+    p = tmp_path / "blank_name_audit.csv"
+    p.write_text(
+        "instance_id,name,event,start_time,end_time\n"
+        "uuid-1,,form start,2026-03-01T09:00:00.000Z,2026-03-01T09:00:01.000Z\n"
+        "uuid-1,household_q01,question,2026-03-01T09:00:02.000Z,2026-03-01T09:00:05.000Z\n"
+    )
+
+    df = parse_odk_audit(p)
+    assert df.iloc[0]['field_name'] == 'unknown_field'
+    assert 'nan' not in set(df['field_name'].str.lower())
+    assert df.iloc[1]['field_name'] == 'household_q01'
+
 def test_odk_parser_negative_duration(tmp_path):
     p = tmp_path / "neg_audit.csv"
     # End time is before start time
     p.write_text("event,node,start,end\nQuestion,q1,1600000001000,1600000000000\n")
-    
+
     df = parse_odk_audit(p)
     assert pd.isna(df.iloc[0]['duration_ms'])
+
+def test_one_history_parses_identically_from_both_formats(tmp_path):
+    # Parser equivalence can only be claimed if both formats carry the same
+    # interviews, so one generated history is rendered into both and the
+    # intermediate representations are compared row for row.
+    from tests.test_adversarial import AdversarialDataGenerator
+
+    generator = AdversarialDataGenerator(seed=3, difficulty="stress")
+    plan = generator.build_benchmark_plan(dataset_size=20, anomaly_ratio=0.3)
+    surveycto_df, odk_df = generator.generate_paired_benchmark(plan)
+
+    reference = AdversarialDataGenerator(seed=3, difficulty="stress")
+    reference_plan = reference.build_benchmark_plan(dataset_size=20, anomaly_ratio=0.3)
+    pd.testing.assert_frame_equal(
+        surveycto_df, reference.generate_benchmark_suite(plan=reference_plan, is_odk=False)
+    )
+
+    scto_path, odk_path = tmp_path / "scto.csv", tmp_path / "odk.csv"
+    surveycto_df.to_csv(scto_path, index=False)
+    odk_df.to_csv(odk_path, index=False)
+    scto_cir = parse_surveycto_audit(scto_path).reset_index(drop=True)
+    odk_cir = parse_odk_audit(odk_path).reset_index(drop=True)
+
+    assert len(scto_cir) == len(odk_cir)
+    for column in ['interview_id', 'field_name', 'start_ms', 'end_ms', 'duration_ms']:
+        pd.testing.assert_series_equal(
+            scto_cir[column], odk_cir[column], check_dtype=False, check_names=False
+        )

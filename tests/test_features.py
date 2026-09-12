@@ -55,6 +55,30 @@ def test_section_features_infer_section_names_and_variance():
     assert section_features.loc["demographics", "S-03_within_section_variance"] > 0
 
 
+def test_section_features_exclude_administrative_form_events():
+    # Regression: form-level start and end rows carry a blank field name. If
+    # they reach section aggregation they form a pseudo-section whose gap
+    # spans the whole interview and swamps every pause statistic.
+    questions = _cir_frame()
+    admin = pd.DataFrame(
+        [
+            ("INT1", "unknown_field", "form_start", -2000, -1000),
+            ("INT1", "unknown_field", "form_end", 60000, 61000),
+        ],
+        columns=["interview_id", "field_name", "event_type", "start_ms", "end_ms"],
+    )
+    admin.loc[:, "duration_ms"] = admin["end_ms"] - admin["start_ms"]
+    with_admin = pd.concat([admin.iloc[[0]], questions, admin.iloc[[1]]], ignore_index=True)
+
+    q_features = QuestionFeatureExtractor().extract(questions)
+    expected = SectionFeatureExtractor().extract(questions, q_features)
+    actual = SectionFeatureExtractor().extract(with_admin, q_features)
+
+    assert "MainSection" not in actual.index
+    assert set(actual.index) == {"demographics", "household"}
+    pd.testing.assert_frame_equal(actual.sort_index(), expected.sort_index())
+
+
 def test_survey_features_convert_epoch_milliseconds_safely():
     cir = _cir_frame()
     cir.loc[:, "start_ms"] = cir["start_ms"] + 1672646400000

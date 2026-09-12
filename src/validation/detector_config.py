@@ -25,6 +25,7 @@ DETECTOR_CONFIG_KEYS = [
     "rule_pause_count_min",
     "rule_pause_min_ms",
     "elevated_pause_median_ratio",
+    "iqr_multiplier",
 ]
 
 

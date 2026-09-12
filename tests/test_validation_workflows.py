@@ -98,6 +98,48 @@ def test_detector_score_contract_for_fabricated_and_normal_profiles():
     assert (fabricated["anomaly_score"] == fabricated["iqr_flags"] + fabricated["rule_flags"]).all()
 
 
+def test_detector_preserves_upstream_data_quality_flag():
+    # Regression: the detector used to overwrite is_data_quality_issue, losing
+    # the controller's hierarchical integrity check raised upstream.
+    rows = [
+        {
+            "interview_id": f"N{idx}",
+            "V-01_total_interview_duration_ms": 160000 + idx * 1000,
+            "V-04_speed_trajectory_ratio": 1.0,
+            "T-06_rt_mean": 8000,
+            "is_data_quality_issue": 1 if idx == 0 else 0,
+        }
+        for idx in range(6)
+    ]
+    detected = AnomalyDetector().detect(pd.DataFrame(rows)).set_index("interview_id")
+
+    assert detected.loc["N0", "is_data_quality_issue"] == 1
+    assert detected.loc["N0", "anomaly_category"] == "dq_issue"
+    assert (detected.drop(index="N0")["is_data_quality_issue"] == 0).all()
+
+
+def test_iqr_multiplier_is_configurable(tmp_path):
+    durations = [100, 102, 104, 106, 108, 110, 112, 114, 150]
+    frame = pd.DataFrame(
+        {
+            "interview_id": [f"I{idx}" for idx in range(len(durations))],
+            "V-01_total_interview_duration_ms": durations,
+        }
+    )
+
+    assert AnomalyDetector().iqr_multiplier == AnomalyDetector.IQR_MULTIPLIER == 1.5
+    default = AnomalyDetector().detect(frame)
+    wide = AnomalyDetector(iqr_multiplier=5.0).detect(frame)
+    assert default["flag_iqr_duration"].iloc[-1] == 1
+    assert wide["flag_iqr_duration"].iloc[-1] == 0
+
+    config_path = tmp_path / "detector_config.json"
+    config_path.write_text(json.dumps({"anomaly_detector": {"iqr_multiplier": 3.0}}), encoding="utf-8")
+    assert load_detector_config(config_path) == {"iqr_multiplier": 3.0}
+    with pytest.raises(ValueError):
+        AnomalyDetector(iqr_multiplier=0)
+
+
 def test_build_recalibrated_detector_config_preserves_threshold_order():
     payload = build_recalibrated_detector_config(
         behavior_score_threshold=6.0,

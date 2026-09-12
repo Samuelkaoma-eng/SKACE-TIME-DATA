@@ -11,6 +11,9 @@ class AnomalyDetector:
     hidden model state or learned weights.
     """
 
+    # Default Tukey fence multiplier. The value in use is the instance
+    # attribute iqr_multiplier, which is a configuration parameter like
+    # every other threshold; this constant only records the default.
     IQR_MULTIPLIER = 1.5
     IQR_FLAG_COLUMNS = [
         "flag_iqr_duration",
@@ -76,7 +79,10 @@ class AnomalyDetector:
         rule_pause_count_min=2,
         rule_pause_min_ms=280000,
         elevated_pause_median_ratio=2.5,
+        iqr_multiplier=IQR_MULTIPLIER,
     ):
+        if iqr_multiplier <= 0:
+            raise ValueError("iqr_multiplier must be positive")
         self.uniform_timing_cv = uniform_timing_cv
         self.behavior_score_threshold = behavior_score_threshold
         self.anomalous_score_threshold = anomalous_score_threshold
@@ -94,6 +100,7 @@ class AnomalyDetector:
         self.rule_pause_count_min = rule_pause_count_min
         self.rule_pause_min_ms = rule_pause_min_ms
         self.elevated_pause_median_ratio = elevated_pause_median_ratio
+        self.iqr_multiplier = iqr_multiplier
 
     @staticmethod
     def _iqr_flag(series: pd.Series, multiplier: float = 1.5) -> pd.Series:
@@ -250,8 +257,7 @@ class AnomalyDetector:
                 ] = 1
         # Disengagement marker: mean inter-question pause well above the
         # sample median. Median-relative, so the threshold adapts to the
-        # instrument rather than assuming absolute pause lengths
-        # [Conrad et al. 3].
+        # instrument rather than assuming absolute pause lengths.
         if "S-07_mean_pause_duration_ms" in df.columns:
             mean_pause_median = self._positive_median(df["S-07_mean_pause_duration_ms"])
             if mean_pause_median is not None:
@@ -274,22 +280,22 @@ class AnomalyDetector:
 
         if "V-01_total_interview_duration_ms" in df.columns:
             df.loc[:, "flag_iqr_duration"] = self._iqr_flag(
-                df["V-01_total_interview_duration_ms"], self.IQR_MULTIPLIER
+                df["V-01_total_interview_duration_ms"], self.iqr_multiplier
             )
 
         if "T-06_rt_mean" in df.columns:
             df.loc[:, "flag_iqr_rt_mean"] = self._iqr_flag(
-                df["T-06_rt_mean"], self.IQR_MULTIPLIER
+                df["T-06_rt_mean"], self.iqr_multiplier
             )
 
         if "T-03_rt_entropy" in df.columns:
             df.loc[:, "flag_iqr_entropy"] = self._iqr_flag(
-                df["T-03_rt_entropy"], self.IQR_MULTIPLIER
+                df["T-03_rt_entropy"], self.iqr_multiplier
             )
 
         if "T-01_rt_variance" in df.columns:
             df.loc[:, "flag_iqr_variance"] = self._iqr_flag(
-                df["T-01_rt_variance"], self.IQR_MULTIPLIER
+                df["T-01_rt_variance"], self.iqr_multiplier
             )
 
     def detect(self, df: pd.DataFrame) -> pd.DataFrame:

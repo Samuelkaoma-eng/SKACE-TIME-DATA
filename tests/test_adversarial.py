@@ -7,9 +7,9 @@ Generates synthetic paradata covering four anomaly profiles defined in
 thesis Section 5.1:
 
   - Normal      : log-normal RT (mu=ln(8000), sigma=0.5), Poisson back-nav
-  - Fabricated  : compressed RT distributions, near-zero back-nav  [Wenz et al. 6]
+  - Fabricated  : compressed RT distributions, near-zero back-nav
   - Speeding    : RT scaled below realistic thresholds
-  - Disengaged  : uniform slow RT, high pause frequency            [Conrad et al. 3]
+  - Disengaged  : uniform slow RT, high pause frequency
   + DQ Issue    : sparse / zero-duration rows -> degenerate features
 
 Interview IDs use a fixed mapping for reproducible ground-truth evaluation.
@@ -52,7 +52,7 @@ class AdversarialDataGenerator:
     # recall or calculation items (health, economic), so genuine respondents
     # produce complexity-correlated response times [Yan & Tourangeau 5].
     # Fabricated and speeding profiles deliberately ignore these weights:
-    # complexity-blind uniform pacing is the fabrication signature [Wenz 6].
+    # complexity-blind uniform pacing is the fabrication profile injected here.
     COMPLEXITY_WEIGHTS: list = [
         0.50, 0.60, 0.55, 0.70,   # demographics: short factual items
         0.90, 1.00, 0.95, 1.10,   # household: roster-style items
@@ -363,8 +363,8 @@ class AdversarialDataGenerator:
         Fabricated profile: compressed RT distribution with very low variance,
         near-zero back-navigation.
 
-        Thesis Section 5.1: Wenz et al. [6] notes that fabricated interviews show
-        'compressed timing distributions' with reduced IQR and low variance.
+        Thesis Section 5.1: the injected profile compresses the timing
+        distribution, reducing its IQR and variance.
 
         Uses slightly varied RTs (not constant) so the profile is detectable
         through statistical properties rather than trivial exact-match.
@@ -409,8 +409,8 @@ class AdversarialDataGenerator:
         Disengaged profile: uniform slow RT, erratic back-navigation,
         extended pauses between questions.
 
-        Thesis Section 5.1: Conrad et al. [3] describes disengagement as characterized
-        by increased pause frequency and low timing variance.
+        Thesis Section 5.1: the injected profile combines increased pause
+        frequency with low timing variance.
         """
         n = self.N_QUESTIONS
         if self.difficulty == "stress":
@@ -479,3 +479,26 @@ class AdversarialDataGenerator:
         for interview_id, profile, start_epoch in plan:
             all_rows.extend(self._build_profile_rows(profile, interview_id, start_epoch, is_odk))
         return pd.DataFrame(all_rows)
+
+    def generate_paired_benchmark(self, plan: list) -> tuple[pd.DataFrame, pd.DataFrame]:
+        """
+        Render one generated history into both platform formats.
+
+        Calling generate_benchmark_suite once per format advances the random
+        state between the two calls, so the two files hold different
+        interviews. Here the generator state is replayed for each interview:
+        every draw the builders make is independent of the output format, so
+        both renderings carry the same response times, pauses, navigation and
+        constraint events. The SurveyCTO rendering is identical to
+        generate_benchmark_suite(plan, is_odk=False) from the same state.
+        """
+        surveycto_rows, odk_rows = [], []
+        for interview_id, profile, start_epoch in plan:
+            state = self.rng.bit_generator.state
+            surveycto_rows.extend(self._build_profile_rows(profile, interview_id, start_epoch, is_odk=False))
+            after_surveycto = self.rng.bit_generator.state
+            self.rng.bit_generator.state = state
+            odk_rows.extend(self._build_profile_rows(profile, interview_id, start_epoch, is_odk=True))
+            if self.rng.bit_generator.state != after_surveycto:
+                raise RuntimeError(f"Format-dependent random draw in {interview_id}; histories diverged")
+        return pd.DataFrame(surveycto_rows), pd.DataFrame(odk_rows)
