@@ -4,7 +4,7 @@
 **Student:** Samuel Kaoma (2022016530) · **Course:** CSC 4004 · **Supervisor:** Mr. Mofya Phiri  
 **Repository:** https://github.com/Samuelkaoma-eng/SKACE-TIME-DATA  
 
-This document serves as the formal guide for the Python feature extraction library built for the seed project. The library converts Common Intermediate Representation (CIR) parsed logs into 40 distinct paradata features aligned with the theories of Groves, Conrad, and Kreuter.
+This document serves as the formal guide for the Python feature extraction library built for the seed project. The library converts Common Intermediate Representation (CIR) parsed logs into 40 distinct paradata features. The source for each feature, and its verification status, is given in the final report's Appendix F.
 
 ---
 

@@ -12,6 +12,25 @@ The authoritative parser implementations are:
 - `src/parsers/surveycto_parser.py`
 - `src/parsers/odk_parser.py`
 
+> **Synthetic formats, not native exports.** Sections 1 and 2 describe the
+> layouts written by the project's synthetic generator, which are the layouts
+> the pipeline has been evaluated on. They are not the platforms' native
+> exports. ODK Collect's native `audit.csv` has the columns `event`, `node`,
+> `start` and `end`, with `start` and `end` in epoch milliseconds, and events
+> such as `form start`, `question`, `jump` and `end screen`
+> (https://docs.getodk.org/form-audit-log/). SurveyCTO's native text audit is
+> by default a per-field summary with `Field name`, `Total duration (seconds)`
+> and `First appeared (seconds into survey)`, or, with the `eventlog`
+> appearance, an event log with `Device time`, `Form time (ms)`, `Field name`,
+> `Event` and `Duration (ms)`
+> (https://docs.surveycto.com/02-designing-forms/01-core-concepts/03zd.field-types-text-audit.html).
+> The ODK parser reads ODK's native columns and timestamps when selected with
+> `--parser odk`, and maps `form start` and `end screen`, but other form-level
+> events such as `form save` and `form exit` are not yet treated as
+> administrative and form a pseudo-section in the section features. Automatic
+> detection currently routes a native ODK log to the SurveyCTO parser, and
+> SurveyCTO's native text audit is not yet supported.
+
 ## 1. SurveyCTO Raw Format
 
 The current synthetic SurveyCTO benchmark exports use these core columns:
