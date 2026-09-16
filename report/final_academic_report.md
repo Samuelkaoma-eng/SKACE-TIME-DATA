@@ -66,41 +66,41 @@ T-01 are stable across the code, the output datasets and this report.
 | 2.1 | Paradata and total survey error | 10 |
 | 2.2 | Response time and satisficing | 11 |
 | 2.3 | Detecting interviewer falsification | 12 |
-| 2.4 | Paradata in field and low-resource survey settings | 13 |
+| 2.4 | Paradata in field and low-resource survey settings | 14 |
 | 2.5 | Outlier detection on skewed data | 15 |
-| 2.6 | Evaluation on synthetic and imbalanced data | 16 |
+| 2.6 | Evaluation on synthetic and imbalanced data | 17 |
 | 3 | **Methodology** | 17 |
-| 3.1 | Common intermediate representation | 17 |
+| 3.1 | Common intermediate representation | 18 |
 | 3.2 | Feature taxonomy | 19 |
-| 3.3 | Key statistical formulations | 20 |
-| 3.4 | Anomaly detection | 21 |
+| 3.3 | Key statistical formulations | 21 |
+| 3.4 | Anomaly detection | 22 |
 | 3.5 | Computational considerations | 24 |
 | 3.6 | Ethical considerations and AI usage disclosure | 24 |
 | 4 | **Implementation** | 25 |
-| 5 | **Evaluation Methodology** | 27 |
-| 5.1 | Synthetic data generation | 27 |
-| 5.2 | Design against overfitting | 30 |
+| 5 | **Evaluation Methodology** | 28 |
+| 5.1 | Synthetic data generation | 28 |
+| 5.2 | Design against overfitting | 31 |
 | 5.3 | Datasets | 31 |
-| 5.4 | Metrics and baselines | 31 |
-| 6 | **Results** | 31 |
-| 6.1 | Canonical suite | 31 |
-| 6.2 | Feature validity | 32 |
-| 6.3 | Baseline comparison and component contribution | 34 |
-| 6.4 | Class imbalance sweep | 36 |
-| 6.5 | Held-out stress evaluation | 37 |
-| 6.6 | Detection by anomaly type | 39 |
-| 6.7 | Scalability and regression checks | 41 |
-| 7 | **Discussion** | 43 |
-| 8 | **Limitations** | 47 |
-| 9 | **Conclusion** | 49 |
-| 9.1 | Reflection | 49 |
-|  | References | 50 |
-| A | **Appendix A. Artificial intelligence usage disclosure** | 53 |
-| B | **Appendix B. Per-run confusion counts** | 61 |
-| C | **Appendix C. Full feature validity results** | 63 |
-| D | **Appendix D. Reproduction commands** | 65 |
-| E | **Appendix E. Reference verification record** | 69 |
-| F | **Appendix F. Feature-to-source map** | 83 |
+| 5.4 | Metrics and baselines | 32 |
+| 6 | **Results** | 32 |
+| 6.1 | Canonical suite | 32 |
+| 6.2 | Feature validity | 33 |
+| 6.3 | Baseline comparison and component contribution | 35 |
+| 6.4 | Class imbalance sweep | 37 |
+| 6.5 | Held-out stress evaluation | 38 |
+| 6.6 | Detection by anomaly type | 40 |
+| 6.7 | Scalability and regression checks | 42 |
+| 7 | **Discussion** | 44 |
+| 8 | **Limitations** | 48 |
+| 9 | **Conclusion** | 50 |
+| 9.1 | Reflection | 50 |
+|  | References | 51 |
+| A | **Appendix A. Artificial intelligence usage disclosure** | 55 |
+| B | **Appendix B. Per-run confusion counts** | 63 |
+| C | **Appendix C. Full feature validity results** | 64 |
+| D | **Appendix D. Reproduction commands** | 67 |
+| E | **Appendix E. Reference verification record** | 70 |
+| F | **Appendix F. Feature-to-source map** | 86 |
 
 ## List of Tables
 
@@ -108,31 +108,31 @@ T-01 are stable across the code, the output datasets and this report.
 |---|---|---|---|
 | 1 | Feature taxonomy, forty catalogued features in four groups | 3.2 | 19 |
 | 1a | Detector flags and default thresholds | 3.4 | 22 |
-| 1b | Synthetic generator parameters | 5.1 | 28 |
-| 2 | Ten largest feature effects, n500 SurveyCTO benchmark | 6.2 | 32 |
-| 3 | Full detector against two baselines representing current practice | 6.3 | 34 |
+| 1b | Synthetic generator parameters | 5.1 | 29 |
+| 2 | Ten largest feature effects, n500 SurveyCTO benchmark | 6.2 | 33 |
+| 3 | Full detector against two baselines representing current practice | 6.3 | 35 |
 | 4 | Contribution of each detection component, aggregated over ten runs | 6.3 | 35 |
-| 5 | Class imbalance sweep, held-out seed 7 | 6.4 | 36 |
-| 6 | Held-out stress evaluation, seeds 7 and 99 in both formats | 6.5 | 37 |
-| 6a | Both baselines on the held-out stress runs | 6.5 | 38 |
-| 6b | One generated history written into both formats | 6.5 | 38 |
-| 7 | Per-class recall by injected anomaly type | 6.6 | 39 |
-| 8 | Scale behaviour, strict examiner audit | 6.7 | 42 |
-| 8a | Peak resident memory by dataset | 6.7 | 42 |
-| A1 | Artificial intelligence tool use, by episode | A.4 | 56 |
-| B1 | Confusion counts per run, robustness round | B.1 | 62 |
-| B2 | Confusion counts aggregated by platform format | B.2 | 62 |
-| C1 | Mann-Whitney U results for all forty features | C | 63 |
-| E1 | Verification of every reference, including those withdrawn | E | 69 |
-| E2 | Candidate sources for section 2, not yet cited | E | 82 |
-| F1 | Source for each of the forty features | F | 83 |
+| 5 | Class imbalance sweep, held-out seed 7 | 6.4 | 37 |
+| 6 | Held-out stress evaluation, seeds 7 and 99 in both formats | 6.5 | 38 |
+| 6a | Both baselines on the held-out stress runs | 6.5 | 39 |
+| 6b | One generated history written into both formats | 6.5 | 39 |
+| 7 | Per-class recall by injected anomaly type | 6.6 | 40 |
+| 8 | Scale behaviour, strict examiner audit | 6.7 | 43 |
+| 8a | Peak resident memory by dataset | 6.7 | 43 |
+| A1 | Artificial intelligence tool use, by episode | A.4 | 57 |
+| B1 | Confusion counts per run, robustness round | B.1 | 63 |
+| B2 | Confusion counts aggregated by platform format | B.2 | 63 |
+| C1 | Mann-Whitney U results for all forty features | C | 64 |
+| E1 | Verification of every reference, including those withdrawn | E | 71 |
+| E2 | Candidate sources for section 2, not yet cited | E | 85 |
+| F1 | Source for each of the forty features | F | 87 |
 
 ## List of Figures
 
 | Figure | Title | Section | Page |
 |---|---|---|---|
-| 1 | Five-layer pipeline architecture | 4 | 25 |
-| 2 | Precision and recall against anomaly prevalence | 6.4 | 37 |
+| 1 | Five-layer pipeline architecture | 4 | 26 |
+| 2 | Precision and recall against anomaly prevalence | 6.4 | 38 |
 
 ---
 
@@ -177,7 +177,7 @@ Section 2 reviews the literature in five themes: paradata and total survey error
 
 ## 2. Literature Review
 
-This chapter reviews the work the project builds on, in five themes: paradata within the total survey error framework, response time as a measure of effort, the detection of interviewer falsification, paradata in field and low-resource collection, and outlier detection on skewed data. A sixth and shorter theme covers evaluation on synthetic and imbalanced data. Appendix E records the verification of every source cited here, including those whose pagination or supporting passage still has to be confirmed against a library copy.
+This chapter reviews the work the project builds on, in five themes: paradata within the total survey error framework, response time as a measure of effort, the detection of interviewer falsification, paradata in field and low-resource collection, and outlier detection on skewed data. A sixth and shorter theme covers evaluation on synthetic and imbalanced data. Appendix E records the verification of every source cited here, including those cited only from an abstract or publisher record.
 
 ### 2.1 Paradata and total survey error
 
@@ -189,7 +189,7 @@ Two properties of that description shape this project. The first is that the rec
 
 ### 2.2 Response time and satisficing
 
-The reason timing carries information about quality is cognitive. Answering a survey question properly requires comprehension, retrieval, judgement and response selection, and Krosnick (1991) argues that respondents for whom this is effortful may satisfice: rather than optimising, they settle for an answer that is merely satisfactory, skipping or truncating the middle stages. Effort that is not spent does not appear in the answer, but it does appear in the clock. Yan and Tourangeau (2008) examine that relationship directly, modelling web survey response latency as a function of respondent characteristics and question complexity, and finding that both matter: harder questions take longer, and answers given unusually quickly relative to the demands of the question are associated with lower quality.
+The reason timing carries information about quality is cognitive. Answering a survey question properly requires comprehension, retrieval, judgement and response selection, and Krosnick (1991) argues that respondents for whom this is effortful may satisfice rather than optimise. Summarising the account later, he describes such respondents as people who "shortcut the cognitive processes they execute when answering questions" (Krosnick, 1999, p. 39), and ties the behaviour to respondents who "lack the skills and motivation to answer thoughtfully" and to questions that demand difficult cognitive tasks (p. 41). Effort that is not spent does not appear in the answer, but it can appear in the clock. Yan and Tourangeau (2008) supply the other half of that argument, what determines how long an answer takes. Modelling web survey response times at the level of both question and respondent, they find that response times depend on the length and structure of the question, which largely reflects reading time, on the number and type of answer categories, on the position of the question within the questionnaire, and on respondent characteristics including age, education and experience with web surveys (Yan and Tourangeau, 2008, p. 51). They are explicit about what their study does not address: its emphasis "is not on the relation between response time and data quality per se" (p. 56). They are cited here for what drives response time, not for any claim that fast answers are poor ones; that link is what the next two studies test.
 
 Two studies turn this into an operational threshold, and the difference between them is the one this project has to resolve. Zhang and Conrad (2014) set a speeding threshold at 300 milliseconds per word, a rough estimate of reading speed, multiplied by the number of words in the question, reasoning that a response given faster than the question could plausibly have been read cannot rest on having read it. They find that speeding is associated with straightlining, that is with giving identical answers down a grid, and that the tendency is stronger among younger and less educated respondents. Conrad et al. (2017) use the same style of benchmark at 350 milliseconds per word, and state the principle explicitly: they define speeding "as an absolute rather than relative phenomenon: response time below a psychologically based threshold" rather than a response that is merely faster than other responses. They then show that prompting respondents who cross that threshold reduces speeding on later questions.
 
@@ -209,7 +209,7 @@ Three things follow for this project. The timing signature of fabrication is con
 
 The literature above is drawn largely from well-resourced survey programmes, and the deployment case for this project rests on settings that look different. The platform this project targets was built for those settings: Hartung et al. (2010) present ODK as an "open-source suite of tools designed to build information services for developing regions" (p. 1), comprising Collect for mobile data entry, Aggregate for server-side storage, and Build and Voice alongside them, and describe four deployments that exercise the design. Both platforms now record process data as a standard feature rather than as an add-on. ODK Collect can attach an audit log to every submission, recording each event, the node it concerns, and start and end times in epoch milliseconds (ODK, n.d.). SurveyCTO records per-field timing in its text audits, and offers quality tools of its own, including a minimum time per field with a count of speed violations, and automated checks that warn about quality concerns in incoming data (SurveyCTO, n.d.-a, n.d.-b).
 
-What is scarce in these settings is not the data but the capacity to act on it. Hoogeveen and Pape (2020) collect World Bank experience of collecting data in fragile and low-capacity states, with the explicit aim of shifting the question from "there are no data" to "how do we go about collecting data here?" (Hoogeveen and Pape, 2020, foreword). Supervisory capacity is thin, back-checking a meaningful share of interviews is often impractical, and collection runs on the same mobile platforms this project targets. Finn and Ranchhod (2017) supply the counterfactual that makes the problem concrete: fabrication in South Africa's National Income Dynamics Study was detected during fieldwork and the affected interviews were re-conducted, and while the fabrication would not have substantially affected their univariate estimates, it did affect some key covariates once panel estimators were used. Fabrication in field surveys is therefore real, occurs at measurable rates, and is detectable while collection is still in progress, which is the window a paradata pipeline operates in; and its consequences are uneven enough that detecting it is a better strategy than reasoning about whether a particular analysis would survive it.
+What is scarce in these settings is not the data but the capacity to act on it. Hoogeveen and Pape (2020) collect World Bank experience of collecting data in fragile and low-capacity states, with the explicit aim of shifting the question from "there are no data" to "how do we go about collecting data here?" (Hoogeveen and Pape, 2020, foreword). Supervisory capacity is thin, back-checking a meaningful share of interviews is often impractical, and collection runs on the same mobile platforms this project targets. Finn and Ranchhod (2017) supply the counterfactual that makes the problem concrete: fabrication in South Africa's National Income Dynamics Study, affecting about 7 percent of the sample, was detected while fieldwork was still under way and the affected interviews were re-conducted, and they find that it would not have affected their univariate and cross-sectional estimates meaningfully, but would have led to substantially different conclusions once panel estimators were used (Finn and Ranchhod, 2017, p. 129). Fabrication in field surveys is therefore real, occurs at measurable rates, and is detectable while collection is still in progress, which is the window a paradata pipeline operates in; and its consequences are uneven enough that detecting it is a better strategy than reasoning about whether a particular analysis would survive it.
 
 The most directly comparable deployment is Goel, Abraham and Lahoti (2022), who used paradata during the India Working Survey to identify enumerators whose field practice deviated from that of their peers, and fed the finding back to them through their supervisors while collection was still running. Two features of their design bear on this project. The first is dynamic benchmarking: they compare each enumerator against a group facing similar field conditions rather than against a fixed constant, which is the reasoning behind the median-relative thresholds in Table 1a. The second is a caution this project adopts in section 7. A flag, they write, "should not be construed as conclusive evidence of wrongdoing", because "while it correctly identifies deviant behavior, it does not go into the reasons for it" (Goel et al., 2022, p. 11).
 
@@ -219,7 +219,7 @@ Three implications follow for the design here, and each is honoured in the imple
 
 The detector's statistical layer rests on Tukey's boxplot fences, which mark as potential outliers any value outside the interval from the first quartile minus one and a half interquartile ranges to the third quartile plus the same margin. The construction uses only order statistics, so computing it requires no distributional assumption, and it is resistant to the influence of the very values it is meant to identify.
 
-Its flagging rate, however, is not assumption-free, and Hubert and Vandervieren (2008) quantify the gap. For a normal distribution the expected proportion of observations outside the fence is only 0.7 percent, but for a chi-squared distribution with one degree of freedom 7.56 percent of regular observations can be expected to exceed the upper fence, and for a lognormal distribution 7.76 percent; in their worked example of intervals between coal mining disasters, 6.84 percent of observations fall beyond the upper whisker without being outliers in any meaningful sense. Their conclusion is blunt: because textbooks and software rarely distinguish potential outliers from real ones, "many practitioners nowadays incorrectly use the boxplot as a tool for outlier detection" (Hubert and Vandervieren, 2008, §1). Response time distributions are strongly right-skewed, which places this project squarely in the case they warn about, and it is why the statistical layer is read here alongside the rules rather than on its own.
+Its flagging rate, however, is not assumption-free, and Hubert and Vandervieren (2008) quantify the gap. For a normal distribution the expected proportion of observations outside the fence is only 0.7 percent, but for a chi-squared distribution with one degree of freedom 7.56 percent of regular observations can be expected to exceed the upper fence, and for a lognormal distribution 7.76 percent; in their worked example of intervals between coal mining disasters, 6.84 percent of observations fall beyond the upper whisker without being outliers in any meaningful sense. Their conclusion is blunt: because textbooks and software rarely distinguish potential outliers from real ones, "many practitioners nowadays incorrectly use the boxplot as a tool for outlier detection" (Hubert and Vandervieren, 2008, §1). The distribution of response times is, in Yan and Tourangeau's words, "not normal, but asymmetrical and positively skewed" (2008, p. 52), which places this project squarely in the case Hubert and Vandervieren warn about, and it is why the statistical layer is read here alongside the rules rather than on its own.
 
 Their review of earlier corrections bears directly on section 7. Some authors adjusted the fence for skewness by replacing the interquartile range with the lower and upper semi-interquartile ranges, the distances from the median to the first and third quartiles, giving a fence from the first quartile minus three lower semi-interquartile ranges to the third quartile plus three upper ones (Kimber, 1990; Aucremanne et al., 2004, as cited in Hubert and Vandervieren, 2008, §1). The entropy fence trialled in section 7 is the lower-side analogue of exactly that construction, with the same constant, so it is not an invention of this project. Hubert and Vandervieren also judge the semi-interquartile fence to adjust insufficiently for skewness, which is a documented limitation of the correction and is reported as one. Their own proposal replaces it with a fence scaled by the medcouple, a robust measure of skewness, chosen so that the skewness estimate is itself not distorted by the outliers being sought.
 
@@ -617,7 +617,7 @@ The third is about sources, and it is not comfortable. Two of the references in 
 
 - Groves, R.M., Fowler, F.J., Couper, M.P., Lepkowski, J.M., Singer, E. and Tourangeau, R. (2009) *Survey Methodology*. 2nd edn. Hoboken, NJ: Wiley.
 
-- Hartung, C., Anokwa, Y., Brunette, W., Lerer, A., Tseng, C. and Borriello, G. (2010) 'Open Data Kit: tools to build information services for developing regions', in *Proceedings of the 4th ACM/IEEE International Conference on Information and Communication Technologies and Development (ICTD '10)*. New York: ACM. doi:10.1145/2369220.2369236.
+- Hartung, C., Anokwa, Y., Brunette, W., Lerer, A., Tseng, C. and Borriello, G. (2010) 'Open Data Kit: tools to build information services for developing regions', in *Proceedings of the 4th ACM/IEEE International Conference on Information and Communication Technologies and Development (ICTD '10)*. New York: ACM, pp. 1-12. doi:10.1145/2369220.2369236.
 
 - Hawkins, D.M. (1980) *Identification of Outliers*. London: Chapman and Hall.
 
@@ -636,6 +636,8 @@ The third is about sources, and it is not comfortable. Two of the references in 
 - Kreuter, F. (ed.) (2013) *Improving Surveys with Paradata: Analytic Uses of Process Information*. Hoboken, NJ: Wiley.
 
 - Krosnick, J.A. (1991) 'Response strategies for coping with the cognitive demands of attitude measures in surveys', *Applied Cognitive Psychology*, 5(3), pp. 213-236.
+
+- Krosnick, J.A. (1999) 'Maximizing questionnaire quality', in Robinson, J.P., Shaver, P.R. and Wrightsman, L.S. (eds) *Measures of Political Attitudes*. San Diego, CA: Academic Press, pp. 37-57.
 
 - McKinney, W. (2017) *Python for Data Analysis: Data Wrangling with Pandas, NumPy, and IPython*. 2nd edn. Sebastopol, CA: O'Reilly Media.
 
@@ -979,14 +981,14 @@ The bibliographic checks and the full-text reading recorded here were carried ou
 | Bredl, Winker and Kötschau (2012), *Survey Methodology* 38(1), pp. 1-10 | https://www150.statcan.gc.ca/n1/pub/12-001-x/2012001/article/11680-eng.pdf | Correct | Full text; duration indicator p. 2 |
 | Bushery et al. (1999), ASA Survey Research Methods Section Proceedings, pp. 316-320 | http://www.asasrms.org/Proceedings/papers/1999_053.pdf | Correct | Full text; both quotations p. 317 |
 | Chandola, Banerjee and Kumar (2009), *ACM Computing Surveys* 41(3), article 15 | https://doi.org/10.1145/1541880.1541882 | Correct | Full text; univariate definition §2.1, unsupervised assumption §3. The paper does not discuss masking, and the earlier citation for it has been corrected |
-| Cohen (1988), *Statistical Power Analysis for the Behavioral Sciences*, 2nd edn | https://doi.org/10.4324/9780203771587 | Correct | Not consulted; cited only for the conventional effect-size measure |
+| Cohen (1988), *Statistical Power Analysis for the Behavioral Sciences*, 2nd edn | https://doi.org/10.4324/9780203771587 | Correct. Confirmed in the Crossref registry; the DOI identifies Routledge's 2013 reissue of the same second edition | Not consulted; cited only for the conventional effect-size measure |
 | Conrad, Tourangeau, Couper and Zhang (2017), *Survey Research Methods* 11(1), pp. 45-61 | https://ojs.ub.uni-konstanz.de/srm/article/view/6304 | Correct | Full text; absolute definition of speeding and the 350 ms per word benchmark, section 1 |
 | Couper (1998), ASA Survey Research Methods Section Proceedings, pp. 41-49 | http://www.asasrms.org/Proceedings/papers/1998_006.pdf | Pages were missing in the first submission; pp. 41-49 added | Full text; process data p. 44, keystroke files p. 45 |
-| Finn and Ranchhod (2017), *World Bank Economic Review* 31(1), pp. 129-157 | https://doi.org/10.1093/wber/lhv054 | Correct | Abstract; the detection-during-fieldwork and panel-estimator claims must be confirmed against the full text |
+| Finn and Ranchhod (2017), *World Bank Economic Review* 31(1), pp. 129-157 | https://doi.org/10.1093/wber/lhv054 | Correct. Confirmed in the Crossref registry, which records online publication in 2015 ahead of the 2017 issue | Full text; prevalence, detection during fieldwork and the panel-estimator finding, p. 129. The first submission's wording, that the fabrication affected "some key covariates", was not the authors' and has been replaced with their own finding |
 | Goel, Abraham and Lahoti (2022), IZA Discussion Paper No. 15041 | https://docs.iza.org/dp15041.pdf | Correct | Full text; flags and dynamic benchmarking p. 3 and p. 5, the caution about evidence of wrongdoing p. 11. The published version, Goel and Abraham (2025) in *Development Policy Review*, has not been consulted, so the working paper is cited |
 | Groves et al. (2009), *Survey Methodology*, 2nd edn | ISBN 978-0-470-46546-2 | Correct | Not consulted; cited only for the total survey error framework at the level of the book's scope |
-| Hartung et al. (2010), *ICTD '10* | https://doi.org/10.1145/2369220.2369236 | Correct; page range still to be added | Full text; description of the suite p. 1 |
-| Hawkins (1980), *Identification of Outliers* | https://doi.org/10.1007/978-94-015-3994-4 | Correct | Not consulted; no longer cited for a specific claim |
+| Hartung et al. (2010), *ICTD '10*, pp. 1-12 | https://doi.org/10.1145/2369220.2369236 | Correct; page range confirmed in the Crossref registry | Full text; description of the suite p. 1 |
+| Hawkins (1980), *Identification of Outliers* | https://doi.org/10.1007/978-94-015-3994-4 | Correct. Confirmed in the Crossref registry, which lists Springer's digitised edition of the 1980 Chapman and Hall book | Not consulted; no longer cited for a specific claim |
 | Hodge and Austin (2004), *Artificial Intelligence Review* 22, pp. 85-126 | https://doi.org/10.1007/s10462-004-4304-y | Correct | Full text; single-dimensional methods and boxplots, section 3 |
 | Hoogeveen and Pape (eds) (2020), *Data Collection in Fragile States* | https://doi.org/10.1007/978-3-030-25120-8 | Correct; open access, first published online October 2019 | Full text of the foreword, from which the quotation is taken; individual chapters not read |
 | Hubert and Vandervieren (2008), *Computational Statistics & Data Analysis* 52, pp. 5186-5201 | https://doi.org/10.1016/j.csda.2007.11.008 | Correct | Full text of the authors' accepted manuscript; exceedance probabilities, the practitioner quotation and the semi-interquartile fence all §1. Section numbers are cited rather than pages because the manuscript is not paginated as published |
@@ -994,17 +996,18 @@ The bibliographic checks and the full-text reading recorded here were carried ou
 | Japkowicz and Stephen (2002), *Intelligent Data Analysis* 6(5), pp. 429-449 | https://doi.org/10.3233/IDA-2002-6504 | Correct | Abstract; the prevalence-sensitivity claim must be confirmed against the full text |
 | Kerby (2014), *Comprehensive Psychology* 3 | https://doi.org/10.2466/11.IT.3.1 | Correct | Abstract, which states the simple difference formula used here |
 | Kreuter (ed.) (2013), *Improving Surveys with Paradata* | https://doi.org/10.1002/9781118596869 | Correct | Not consulted; cited only for the scope of the volume. The two specific findings attributed to it in the first submission have been removed |
-| Krosnick (1991), *Applied Cognitive Psychology* 5(3), pp. 213-236 | https://doi.org/10.1002/acp.2350050305 | Correct | Abstract, which states the satisficing account used here |
+| Krosnick (1991), *Applied Cognitive Psychology* 5(3), pp. 213-236 | https://doi.org/10.1002/acp.2350050305 | Correct; confirmed in the Crossref registry | Abstract. The satisficing account attributed to it is also stated, and attributed to this paper, in Krosnick (1999, pp. 39, 41), which was read at full text |
+| Krosnick (1999), 'Maximizing questionnaire quality', in Robinson, Shaver and Wrightsman (eds), *Measures of Political Attitudes*, pp. 37-57 | Academic Press chapter; no DOI | Correct; the chapter's title page gives the book, editors, publisher and first page | Full text; satisficing p. 39 and p. 41, fatigue p. 40 |
 | McKinney (2017), *Python for Data Analysis*, 2nd edn | ISBN 978-1-491-95766-0 | Correct | Not consulted; cited as the reference for the software stack |
 | ODK (n.d.), *Form audit log* | https://docs.getodk.org/form-audit-log/ | Correct | Full page read: columns event, node, start, end; epoch-millisecond timestamps; the event list |
 | Schwanhäuser, Sakshaug and Kosyakova (2022), *Public Opinion Quarterly* 86(1), pp. 51-81 | https://pmc.ncbi.nlm.nih.gov/articles/PMC8944307/ | Correct | Full text; indicators, comparison of methods and the lower-variance finding. Claims are paraphrased rather than quoted |
 | SurveyCTO (n.d.-a), *Field type: text audit* | https://docs.surveycto.com/02-designing-forms/01-core-concepts/03zd.field-types-text-audit.html | Correct | Full page read: the default and eventlog layouts |
 | SurveyCTO (n.d.-b), *Collecting high-quality data* | https://docs.surveycto.com/04-monitoring-and-management/02-managing-for-quality/01.collecting-high-quality-data.html | Correct | Full page read: speed limits, speed violation counts, automated quality checks |
 | Tukey (1977), *Exploratory Data Analysis* | book, no DOI | Correct | Not consulted; the fence construction is cited as described by Hubert and Vandervieren (2008, §1) |
-| Yan and Tourangeau (2008), *Applied Cognitive Psychology* 22(1), pp. 51-68 | https://doi.org/10.1002/acp.1331 | Correct | Abstract; the complexity and latency claims must be confirmed against the full text. The log-normal claim previously attributed to this paper has been withdrawn |
+| Yan and Tourangeau (2008), *Applied Cognitive Psychology* 22(1), pp. 51-68 | https://doi.org/10.1002/acp.1331 | Correct; confirmed in the Crossref registry | Full text; determinants of response time p. 51, positive skew p. 52, the disclaimer about data quality p. 56. The draft's claim that the paper links fast answers to lower quality was not supported, since the authors say their emphasis is not on that relation, and has been corrected |
 | Zhang and Conrad (2014), *Survey Research Methods* 8(2), pp. 127-135 | https://ojs.ub.uni-konstanz.de/srm/article/view/5453 | Correct | Full text; the 300 ms per word threshold and the straightlining association, section 2 |
 
-**Outstanding.** Six sources are cited from an abstract or not consulted at all: Benjamini and Hochberg (1995), Cohen (1988), Finn and Ranchhod (2017), Groves et al. (2009), Iglewicz and Hoaglin (1993), Japkowicz and Stephen (2002), Kerby (2014), Krosnick (1991), Kreuter (2013), McKinney (2017), Tukey (1977) and Yan and Tourangeau (2008). Each is cited only at the level its abstract or publisher record supports, and none carries a load-bearing result. Obtaining the full texts through the university library and completing the last column is the remaining work.
+**Outstanding.** Every reference was confirmed to exist through the Crossref DOI registry, the Open Library ISBN record, or the publisher's own document. Ten are cited from their abstract or publisher record rather than their full text: Benjamini and Hochberg (1995), Cohen (1988), Groves et al. (2009), Hawkins (1980), Iglewicz and Hoaglin (1993), Japkowicz and Stephen (2002), Kerby (2014), Kreuter (2013), McKinney (2017) and Tukey (1977). Each is cited only for what its abstract or record supports, and none carries a load-bearing result. Krosnick (1991) is also at abstract level, but the claim attributed to it is independently supported by Krosnick (1999), read at full text.
 
 **Table E2. Sources checked but not cited.** These were verified during the rebuild of section 2 and remain available if the themes are extended.
 
@@ -1022,13 +1025,13 @@ The bibliographic checks and the full-text reading recorded here were carried ou
 
 Every feature, the source the first submission gave for it in `docs/feature_documentation.md`, and the source it rests on after the rebuild of section 2. Seventeen features had been attributed to one of the two references that cannot be located. Where the rebuilt literature supports a feature, the replacement source is named with its page; where it does not, the feature is described as a design choice, with whatever partial support exists stated rather than implied.
 
-Counting the entries below, 19 of the forty features are attributed to a named source and 21 are design choices. That is a fair summary of the position: the timing and variability features are grounded in the falsification and response time literature, while the navigation, pause, trajectory and completion features are this project's own constructions. Section 8 treats the second group as a limitation, and the evaluation in section 6.2 is silent on most of them in any case.
+Counting the entries below, 23 of the forty features are attributed to a named source and 17 are design choices. That is a fair summary of the position: the timing, variability and pace-trajectory features are grounded in the falsification and response time literature, while the navigation, pause and completion features are this project's own constructions. Section 8 treats the second group as a limitation, and the evaluation in section 6.2 is silent on most of them in any case.
 
 **Table F1. Source for each of the forty features.**
 
 | ID | Feature | Source in the first submission | Source after revision |
 |---|---|---|---|
-| Q-01 | Response time | Yan and Tourangeau (2008) | Response time as unspent effort (2.2): Krosnick (1991); Yan and Tourangeau (2008); Birnbaum et al. (2013, p. 2913), whose instance-level features aggregate per-question answer times |
+| Q-01 | Response time | Yan and Tourangeau (2008) | Satisficing as shortcut cognitive effort (2.2): Krosnick (1999, p. 39); determinants of response time: Yan and Tourangeau (2008, p. 51); Birnbaum et al. (2013, p. 2913), whose instance-level features aggregate per-question answer times |
 | Q-02 | Time to first interaction | Couper (1998) | Birnbaum et al. (2013, p. 2913), whose instance-level features aggregate per-question answer times, including delay to first edit |
 | Q-03 | Edit count | Conrad et al. (2013), withdrawn | Couper (1998, p. 45), for the keystroke record from which edits are counted; Birnbaum et al. (2013, p. 2913), whose instance-level features aggregate per-question answer times |
 | Q-04 | Revisit flag | Wenz et al. (2019), withdrawn | Design choice. Nearest support is Birnbaum et al. (2013, p. 2913), whose conditional-path features test whether fabricators take short routes through an instrument |
@@ -1049,9 +1052,9 @@ Counting the entries below, 19 of the forty features are attributed to a named s
 | S-09 | Section back-navigation count | Couper (1998) | Design choice. Nearest support is Birnbaum et al. (2013, p. 2913), whose conditional-path features test whether fabricators take short routes through an instrument |
 | S-10 | Section completion rate | Groves et al. (2009) | Design choice. A data-presence proxy imposed by the log (3.2) |
 | V-01 | Total interview duration | Yan and Tourangeau (2008) | Falsification timing signature (2.3): Bushery et al. (1999, p. 317); Schwanhäuser et al. (2022) |
-| V-02 | Early pace | Kreuter (2013) | Design choice. Nearest support is the satisficing account in Krosnick (1991), on effort declining through an instrument |
-| V-03 | Late pace | Conrad et al. (2013), withdrawn | Design choice, as V-02 |
-| V-04 | Pace trajectory ratio | Wenz et al. (2019), withdrawn | Design choice, as V-02 |
+| V-02 | Early pace | Kreuter (2013) | Yan and Tourangeau (2008, p. 51), who find response time depends on a question's position within the questionnaire; Krosnick (1999, p. 40), on responses degrading after respondents "have become fatigued answering a lot of prior questions" |
+| V-03 | Late pace | Conrad et al. (2013), withdrawn | As V-02 |
+| V-04 | Pace trajectory ratio | Wenz et al. (2019), withdrawn | As V-02 |
 | V-05 | Back-navigation rate | Couper (1998) | Design choice. Nearest support is Birnbaum et al. (2013, p. 2913), whose conditional-path features test whether fabricators take short routes through an instrument |
 | V-06 | Back-navigation total | Groves et al. (2009) | Design choice. Nearest support is Birnbaum et al. (2013, p. 2913), whose conditional-path features test whether fabricators take short routes through an instrument |
 | V-07 | Start hour | Wenz et al. (2019), withdrawn | Design choice. Bushery et al. (1999) use date and time stamps for interviewer screening, but not the hour of day as such |
@@ -1061,7 +1064,7 @@ Counting the entries below, 19 of the forty features are attributed to a named s
 | T-01 | Response time variance | Wenz et al. (2019), withdrawn | Lower variability in falsified interviews (2.3): Bredl et al. (2012, p. 2); Schwanhäuser et al. (2022) |
 | T-02 | Response time IQR | Kreuter (2013) | Lower variability in falsified interviews (2.3): Bredl et al. (2012, p. 2); Schwanhäuser et al. (2022) |
 | T-03 | Response time entropy | Conrad et al. (2013), withdrawn | Lower variability in falsified interviews (2.3): Bredl et al. (2012, p. 2); Schwanhäuser et al. (2022). The entropy formulation itself is a design choice (3.3) |
-| T-04 | Response time skewness | Yan and Tourangeau (2008) | Design choice. Response time distributions are right-skewed, which is the property the statistical layer must respect (2.5) |
+| T-04 | Response time skewness | Yan and Tourangeau (2008) | Yan and Tourangeau (2008, p. 52), who report that response time distributions are "asymmetrical and positively skewed" |
 | T-05 | Response time excess kurtosis | Wenz et al. (2019), withdrawn | Lower variability in falsified interviews (2.3): Bredl et al. (2012, p. 2); Schwanhäuser et al. (2022) |
 | T-06 | Response time mean | Groves et al. (2009) | Birnbaum et al. (2013, p. 2913), whose instance-level features aggregate per-question answer times |
 | T-07 | Response time median | Yan and Tourangeau (2008) | Birnbaum et al. (2013, p. 2913), whose instance-level features aggregate per-question answer times, who use median answer time |
