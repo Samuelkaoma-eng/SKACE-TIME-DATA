@@ -197,12 +197,21 @@ class AnomalyDetector:
             # raises it, so the upper half of the distribution carries no
             # anomalies by construction. Scale is taken from that half alone.
             #
-            # For a symmetric distribution Q3 - median equals half the
-            # interquartile range, so median - 3 * (Q3 - median) reduces to
-            # Tukey's lower fence of Q1 - 1.5 * IQR. Unlike Tukey's form,
-            # it cannot be dragged downwards by the anomalies it is meant to
-            # isolate, which is the masking effect that made the plain fence
-            # ineffective on contaminated samples.
+            # This is the lower-side form of the semi-interquartile fence
+            # [Q1 - 3 SIQR_L ; Q3 + 3 SIQR_U] discussed by Hubert and
+            # Vandervieren (2008, section 1), with SIQR_U = Q3 - median.
+            #
+            # It does NOT reduce to Tukey's fence under symmetry, as an
+            # earlier version of this comment claimed. With Q3 - median = d,
+            # the interquartile range is 2d, so Tukey's lower fence is
+            # Q1 - 1.5 * 2d = median - 4d, while this fence is median - 3d:
+            # tighter by d, and equivalent to a Tukey fence with a multiplier
+            # of 1.0. What it does avoid is being dragged downwards by the
+            # anomalies it is meant to isolate, because the scale comes from
+            # the upper half of the distribution, which the in-scope anomaly
+            # profiles do not occupy. The median itself still moves with
+            # contamination, so the fence is less contaminated, not
+            # uncontaminated.
             entropy_values = pd.to_numeric(df["T-03_rt_entropy"], errors="coerce").dropna()
             if len(entropy_values) >= self.entropy_fence_min_samples:
                 entropy_median = float(entropy_values.median())
