@@ -54,85 +54,85 @@ T-01 are stable across the code, the output datasets and this report.
 |---|---|---|
 |  | Declaration | 2 |
 |  | Conventions used in this report | 2 |
-|  | Abstract | 5 |
-| 1 | **Introduction** | 6 |
+|  | Abstract | 6 |
+| 1 | **Introduction** | 7 |
 | 1.1 | Problem statement | 7 |
-| 1.2 | Aim | 7 |
-| 1.3 | Objectives | 7 |
-| 1.4 | Scope | 8 |
-| 1.5 | Contributions | 8 |
-| 1.6 | Structure of the report | tbc |
-| 2 | **Literature Review** | 8 |
-| 2.1 | Paradata and total survey error | tbc |
-| 2.2 | Response time and satisficing | tbc |
-| 2.3 | Detecting interviewer falsification | tbc |
-| 2.4 | Paradata in field and low-resource survey settings | 10 |
-| 2.5 | Outlier detection on skewed data | tbc |
-| 2.6 | Evaluation on synthetic and imbalanced data | tbc |
-| 3 | **Methodology** | 11 |
-| 3.1 | Common intermediate representation | 11 |
-| 3.2 | Feature taxonomy | 12 |
-| 3.3 | Key statistical formulations | 14 |
-| 3.4 | Anomaly detection | 14 |
-| 3.5 | Computational considerations | 15 |
-| 3.6 | Ethical considerations and AI usage disclosure | 15 |
-| 4 | **Implementation** | 16 |
-| 5 | **Evaluation Methodology** | 18 |
-| 5.1 | Synthetic data generation | 18 |
-| 5.2 | Design against overfitting | 19 |
-| 5.3 | Datasets | 19 |
-| 5.4 | Metrics and baselines | 20 |
-| 6 | **Results** | 20 |
-| 6.1 | Canonical suite | 20 |
-| 6.2 | Feature validity | 20 |
-| 6.3 | Baseline comparison and component contribution | 22 |
-| 6.4 | Class imbalance sweep | 23 |
-| 6.5 | Held-out stress evaluation | 25 |
-| 6.6 | Detection by anomaly type | 25 |
-| 6.7 | Scalability and regression checks | 27 |
-| 7 | **Discussion** | 28 |
-| 8 | **Limitations** | 31 |
-| 9 | **Conclusion** | 32 |
-| 9.1 | Reflection | tbc |
-|  | References | 33 |
-| A | **Appendix A. Artificial intelligence usage disclosure** | 35 |
-| B | **Appendix B. Per-run confusion counts** | 41 |
-| C | **Appendix C. Full feature validity results** | 42 |
-| D | **Appendix D. Reproduction commands** | 45 |
-| E | **Appendix E. Reference verification record** | tbc |
-| F | **Appendix F. Feature-to-source map** | tbc |
+| 1.2 | Aim | 8 |
+| 1.3 | Objectives | 8 |
+| 1.4 | Scope | 9 |
+| 1.5 | Contributions | 9 |
+| 1.6 | Structure of the report | 9 |
+| 2 | **Literature Review** | 10 |
+| 2.1 | Paradata and total survey error | 10 |
+| 2.2 | Response time and satisficing | 11 |
+| 2.3 | Detecting interviewer falsification | 12 |
+| 2.4 | Paradata in field and low-resource survey settings | 13 |
+| 2.5 | Outlier detection on skewed data | 15 |
+| 2.6 | Evaluation on synthetic and imbalanced data | 16 |
+| 3 | **Methodology** | 17 |
+| 3.1 | Common intermediate representation | 17 |
+| 3.2 | Feature taxonomy | 19 |
+| 3.3 | Key statistical formulations | 20 |
+| 3.4 | Anomaly detection | 21 |
+| 3.5 | Computational considerations | 24 |
+| 3.6 | Ethical considerations and AI usage disclosure | 24 |
+| 4 | **Implementation** | 25 |
+| 5 | **Evaluation Methodology** | 27 |
+| 5.1 | Synthetic data generation | 27 |
+| 5.2 | Design against overfitting | 30 |
+| 5.3 | Datasets | 31 |
+| 5.4 | Metrics and baselines | 31 |
+| 6 | **Results** | 31 |
+| 6.1 | Canonical suite | 31 |
+| 6.2 | Feature validity | 32 |
+| 6.3 | Baseline comparison and component contribution | 34 |
+| 6.4 | Class imbalance sweep | 36 |
+| 6.5 | Held-out stress evaluation | 37 |
+| 6.6 | Detection by anomaly type | 39 |
+| 6.7 | Scalability and regression checks | 41 |
+| 7 | **Discussion** | 43 |
+| 8 | **Limitations** | 47 |
+| 9 | **Conclusion** | 49 |
+| 9.1 | Reflection | 49 |
+|  | References | 50 |
+| A | **Appendix A. Artificial intelligence usage disclosure** | 53 |
+| B | **Appendix B. Per-run confusion counts** | 61 |
+| C | **Appendix C. Full feature validity results** | 63 |
+| D | **Appendix D. Reproduction commands** | 65 |
+| E | **Appendix E. Reference verification record** | 69 |
+| F | **Appendix F. Feature-to-source map** | 83 |
 
 ## List of Tables
 
 | Table | Title | Section | Page |
 |---|---|---|---|
-| 1 | Feature taxonomy, forty catalogued features in four groups | 3.2 | 13 |
-| 1a | Detector flags and default thresholds | 3.4 | tbc |
-| 1b | Synthetic generator parameters | 5.1 | tbc |
-| 2 | Ten largest feature effects, n500 SurveyCTO benchmark | 6.2 | 21 |
-| 3 | Full detector against two baselines representing current practice | 6.3 | 22 |
-| 4 | Contribution of each detection component, aggregated over ten runs | 6.3 | 22 |
-| 5 | Class imbalance sweep, held-out seed 7 | 6.4 | 24 |
-| 6 | Held-out stress evaluation, seeds 7 and 99 in both formats | 6.5 | 25 |
-| 6a | Both baselines on the held-out stress runs | 6.5 | tbc |
-| 6b | One generated history written into both formats | 6.5 | tbc |
-| 7 | Per-class recall by injected anomaly type | 6.6 | 25 |
-| 8 | Scale behaviour, strict examiner audit | 6.7 | 28 |
-| 8a | Peak resident memory by dataset | 6.7 | tbc |
-| A1 | Artificial intelligence tool use, by episode | A.4 | 37 |
-| B1 | Confusion counts per run, robustness round | B.1 | 41 |
-| B2 | Confusion counts aggregated by platform format | B.2 | 42 |
-| C1 | Mann-Whitney U results for all forty features | C | 42 |
-| E1 | Verification of every reference, including those withdrawn | E | tbc |
-| E2 | Candidate sources for section 2, not yet cited | E | tbc |
-| F1 | Source for each of the forty features | F | tbc |
+| 1 | Feature taxonomy, forty catalogued features in four groups | 3.2 | 19 |
+| 1a | Detector flags and default thresholds | 3.4 | 22 |
+| 1b | Synthetic generator parameters | 5.1 | 28 |
+| 2 | Ten largest feature effects, n500 SurveyCTO benchmark | 6.2 | 32 |
+| 3 | Full detector against two baselines representing current practice | 6.3 | 34 |
+| 4 | Contribution of each detection component, aggregated over ten runs | 6.3 | 35 |
+| 5 | Class imbalance sweep, held-out seed 7 | 6.4 | 36 |
+| 6 | Held-out stress evaluation, seeds 7 and 99 in both formats | 6.5 | 37 |
+| 6a | Both baselines on the held-out stress runs | 6.5 | 38 |
+| 6b | One generated history written into both formats | 6.5 | 38 |
+| 7 | Per-class recall by injected anomaly type | 6.6 | 39 |
+| 8 | Scale behaviour, strict examiner audit | 6.7 | 42 |
+| 8a | Peak resident memory by dataset | 6.7 | 42 |
+| A1 | Artificial intelligence tool use, by episode | A.4 | 56 |
+| B1 | Confusion counts per run, robustness round | B.1 | 62 |
+| B2 | Confusion counts aggregated by platform format | B.2 | 62 |
+| C1 | Mann-Whitney U results for all forty features | C | 63 |
+| E1 | Verification of every reference, including those withdrawn | E | 69 |
+| E2 | Candidate sources for section 2, not yet cited | E | 82 |
+| F1 | Source for each of the forty features | F | 83 |
 
 ## List of Figures
 
 | Figure | Title | Section | Page |
 |---|---|---|---|
-| 1 | Five-layer pipeline architecture | 4 | 17 |
-| 2 | Precision and recall against anomaly prevalence | 6.4 | 24 |
+| 1 | Five-layer pipeline architecture | 4 | 25 |
+| 2 | Precision and recall against anomaly prevalence | 6.4 | 37 |
 
 ---
 

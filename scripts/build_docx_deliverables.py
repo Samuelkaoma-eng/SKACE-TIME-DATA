@@ -339,7 +339,13 @@ def fit_tables(path: Path) -> int:
     """
     document = Document(str(path))
     section = document.sections[0]
-    available = int((section.page_width - section.left_margin - section.right_margin) / 635)
+    # A reference .docx need not carry explicit page geometry, in which case
+    # python-docx reports None and Word falls back to its own defaults. Use the
+    # geometry the other deliverables carry rather than failing the build.
+    page_width = section.page_width if section.page_width is not None else 7772400
+    left_margin = section.left_margin if section.left_margin is not None else 914400
+    right_margin = section.right_margin if section.right_margin is not None else 914400
+    available = int((page_width - left_margin - right_margin) / 635)
 
     adjusted = 0
     for table in document.tables:
