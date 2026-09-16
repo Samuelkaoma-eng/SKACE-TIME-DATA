@@ -24,12 +24,12 @@ The authoritative parser implementations are:
 > appearance, an event log with `Device time`, `Form time (ms)`, `Field name`,
 > `Event` and `Duration (ms)`
 > (https://docs.surveycto.com/02-designing-forms/01-core-concepts/03zd.field-types-text-audit.html).
-> The ODK parser reads ODK's native columns and timestamps when selected with
-> `--parser odk`, and maps `form start` and `end screen`, but other form-level
-> events such as `form save` and `form exit` are not yet treated as
-> administrative and form a pseudo-section in the section features. Automatic
-> detection currently routes a native ODK log to the SurveyCTO parser, and
-> SurveyCTO's native text audit is not yet supported.
+> ODK's native layout is now supported: automatic detection recognises it by
+> its event vocabulary, and `form start`, `end screen`, `form save`,
+> `form exit`, `form resume` and `form finalize` are all normalised and
+> excluded from the section statistics. This was verified against a log built
+> from the documentation, not against a real export. SurveyCTO's native text
+> audit is not yet supported in either of its forms.
 
 ## 1. SurveyCTO Raw Format
 
@@ -106,9 +106,12 @@ The parser also supports alternative ODK-style names such as:
   - uses the first available column from `node`, `name`, or `field`
 - `event_type`
   - `form-start` and `form start` -> `form_start`
-  - `question-start` and synthetic `question` -> `field_start`
+  - `question-start`, `question` and `group questions` -> `field_start`
   - `question-end` -> `field_end`
-  - synthetic `end screen` -> `form_end`
+  - `end screen` -> `form_end`
+  - `form save`, `form exit`, `form resume` and `form finalize` -> `form_save`,
+    `form_exit`, `form_resume` and `form_finalize`, which the section features
+    exclude as administrative
 - `start_ms` / `end_ms`
   - numeric values are interpreted as epoch milliseconds or epoch seconds
   - ISO 8601 strings are parsed and converted to epoch milliseconds with millisecond precision preserved

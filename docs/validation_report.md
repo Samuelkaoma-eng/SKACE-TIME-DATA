@@ -6,7 +6,7 @@ Features for Survey Quality Assurance
 **Course:** CSC 4004  
 **Supervisor:** Mr. Mofya Phiri  
 **Repository:** https://github.com/Samuelkaoma-eng/SKACE-TIME-DATA  
-**Validated state:** tag `v-validation-complete`
+**Validated state:** tag `v-resubmission`. The earlier tag `v-validation-complete` predates the September 2026 revision
 
 ---
 
@@ -82,22 +82,22 @@ Methodology and full tables: `output/robustness_validation/robustness_summary.md
 
 ## 0.1 Auditable evidence
 
-**Validated state.** Tag `v-validation-complete`. The exact commit it resolves
-to is verifiable with:
+**Validated state.** Tag `v-resubmission`. The exact commit it resolves to is
+verifiable with:
 
 ```bash
-git rev-parse v-validation-complete
+git rev-parse v-resubmission
 ```
 
 The tag table at the end of `docs/evidence_index.md` records the same mapping
 and what is present in that tree.
 
-**Test suite.** Command and output, run on Python 3.14.0 with pandas 3.0.1:
+**Test suite.** Command and output, run on Python 3.14.0:
 
 ```
 $ python -m pytest -q
-.....................................                                    [100%]
-37 passed in 5.99s
+...........................................                              [100%]
+43 passed in 6.39s
 ```
 
 **Feature coverage.** `docs/feature_coverage.md` tabulates all 40 catalogued
@@ -135,11 +135,16 @@ all forty, ten in each of the four families. Survey-level (V) and statistical
 | ODK | 273 | 27 | 4 | 1,196 | 0.9856 | 0.9100 |
 | SurveyCTO | 598 | 27 | 3 | 2,872 | 0.9950 | 0.9568 |
 
-Both formats clear the proposal criteria. ODK carries all four false positives
-across the whole round and a slightly lower recall, which is consistent with its
-timestamps arriving as ISO strings rather than epoch milliseconds and therefore
-passing through one more conversion step. The difference is four interviews in
-1,500 and does not affect any verdict.
+Both formats clear the proposal criteria. The round raised seven false positives,
+four on ODK inputs and three on SurveyCTO inputs. The two rows are not a
+like-for-like comparison: each format's files hold different generated
+interviews, and the prevalence sweep was run in SurveyCTO format only. When one
+generated history is written into both formats, the two parsers give identical
+features, scores and categories for all 1,500 interviews
+(`scripts/run_platform_parity.py`, `output/platform_parity/`), so the difference
+above reflects the sampled interviews, not the parsers. An earlier version of
+this document attributed it to ISO timestamp conversion; that explanation is
+withdrawn.
 
 **Per-class recall by anomaly type** is in section 0 above, and the diagnostic
 behind the fabricated figure is `docs/fabricated_detection_diagnostic.md`.
@@ -175,7 +180,13 @@ week, S-04 section to section pace ratio, S-05 and S-06 pause counts, S-09
 section back navigation count, S-10 section completion rate, and Q-04 to Q-06
 revisit flag, revisit count and field completion ratio. The first two are
 contextual rather than behavioural. The remainder are constant across the
-synthetic corpus and therefore carry no signal in it. All ten are retained in
+synthetic corpus, for reasons in the implementation as well as the generator:
+S-04 averages to one when sections are of equal size, S-09 matches only `back`
+and `backward` while the generator emits `jump`, every canonical pause is under
+1.2 s, the generator never returns to an earlier question, and every question
+and section is always completed. The Mann-Whitney statistic for the seven fully
+constant features is 20000.0 (400 × 100 / 2, every pair tied) with an undefined
+p-value. All ten are retained in
 the output for analysts but carry no weight in detection.
 
 Full table, including rank-biserial values, group means and standard deviations:
@@ -194,16 +205,25 @@ On the n500 SurveyCTO benchmark, 100 anomalies in 500 interviews:
 |---|---|---|---|
 | Full detector | 1.0000 | 1.0000 | 1.0000 |
 | Duration-only IQR baseline | 0.9565 | 0.6600 | 0.7811 |
-| Zero back navigation baseline | 0.4648 | 0.6600 | 0.5455 |
+| V-10 rule (a run of 20 or more events without back-navigation) | 0.4648 | 0.6600 | 0.5455 |
 
 The duration-only baseline reaches acceptable precision but misses 34 of the 100
 anomalies, every one of which has a total duration inside the Tukey fences. The
-zero back navigation baseline flags 142 interviews to find the same 66, giving
-76 false positives. Neither baseline meets the proposal's recall threshold of
+V-10 baseline, which flags any interview containing a run of twenty or more
+consecutive events without a back or jump event (earlier versions of this
+document called it a zero back-navigation baseline, which it is not), flags 142
+interviews to find the same 66, giving 76 false positives. Neither baseline meets the proposal's recall threshold of
 0.75. This is the central result of the project: aggregate duration alone misses
 about a third of the injected anomalies that multi-feature analysis captures.
 
 Source: `output/examiner_audit/strict_examiner_audit_report.md`.
+
+Under the held-out stress condition the gap widens. Across the four stress runs
+the duration-only baseline flags no anomalous interview at all (recall 0.0000 on
+every run), and the V-10 rule reaches recall between 0.35 and 0.51 at precision
+between 0.16 and 0.22, against the full detector's 0.9830 precision and 0.8650
+recall in aggregate. Source: `output/robustness_validation/baseline_breakdown.csv`,
+produced by `scripts/baseline_breakdown.py`.
 
 ## 2.1 Contribution of each detection component
 
@@ -465,8 +485,11 @@ pass or fail condition. Its raw times are:
 | `n500` | SurveyCTO | 500 | 56.12 s | 1.0000 | 1.0000 |
 | `n10000` | SurveyCTO | 10,000 | 1,068.87 s | 0.9945 | 1.0000 |
 
-A twentyfold increase in input costs a factor of 19.05 in runtime, which is
-consistent with the near-linear complexity the design targets.
+A twentyfold increase in input cost a factor of 19.05 in runtime on this run.
+The factor moves between runs and machines (18.04 in a second run here, 20.3 to
+21.0 in an independent reproduction on other hardware) and should not carry
+weight; what holds throughout is a roughly constant cost per interview, about
+0.11 s, which is the near-linear scaling the design targets.
 
 Source: `output/examiner_audit/strict_examiner_audit_report.md` and its JSON
 companion, in which the same two times appear as `n500_runtime_seconds` and
@@ -477,8 +500,7 @@ machine. A separate aggregate timing file records 57.54 s and 1,037.74 s for the
 same two datasets, a factor of 18.04, from a different run:
 `output/synthetic_dataset_metrics.csv` and its JSON companion. The two pairs are
 not one measurement reported twice and should not be read as such. The strict
-examiner audit is the source cited throughout this document, and both runs place
-the runtime factor below the twentyfold growth in input size.
+examiner audit is the source cited throughout this document.
 
 Aggregate outputs: `output/synthetic_dataset_metrics.csv`,
 `output/synthetic_dataset_metrics.md`, `output/synthetic_detection_by_type.csv`.
@@ -519,7 +541,8 @@ fabricated versus normal feature separation, baseline comparisons, SurveyCTO and
 ODK parity, and scale behaviour between n500 and n10000. Every check passes in
 the recorded run.
 
-Test suite: 37 tests, all passing, verified on Python 3.14.0 with pandas 3.0.1.
+Test suite: 43 tests, all passing (verified on Python 3.14.0 with pandas 2.3.2
+during revision; the original 37 were verified with pandas 3.0.1).
 
 ```bash
 python -m pytest
