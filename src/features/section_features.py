@@ -34,10 +34,15 @@ class SectionFeatureExtractor:
         if cir_df.empty:
             return pd.DataFrame()
 
-        # Administrative form-level events (form start/end rows with blank
-        # nodes) are not part of any questionnaire section; keeping them
-        # would create a pseudo-section whose gaps span the whole interview.
-        cir_df = cir_df[~cir_df["event_type"].isin(["form_start", "form_end"])].copy()
+        # Administrative form-level events (form start, form end, and the
+        # save, exit, resume and finalize events ODK also records) are not
+        # part of any questionnaire section; keeping them would create a
+        # pseudo-section whose gaps span the whole interview. Rows without a
+        # usable field name are dropped for the same reason: ODK writes its
+        # jump screen and form-level events with an empty node.
+        administrative = cir_df["event_type"].astype(str).str.startswith("form_")
+        unnamed = cir_df["field_name"].astype(str).isin(["unknown_field", "nan", ""])
+        cir_df = cir_df[~(administrative | unnamed)].copy()
         if cir_df.empty:
             return pd.DataFrame()
 

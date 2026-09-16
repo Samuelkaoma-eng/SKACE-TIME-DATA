@@ -61,9 +61,18 @@ class ODKParser(BaseParser):
                 'form-end': 'form_end',
                 'question-start': 'field_start',
                 'question-end': 'field_end',
-                'form start': 'form_start',  # Synthetic data format
-                'question': 'field_start',   # Synthetic data format
-                'end screen': 'form_end'     # Synthetic data format
+                'form start': 'form_start',
+                'question': 'field_start',
+                'group questions': 'field_start',
+                'end screen': 'form_end',
+                # Remaining form-level events in ODK's documented audit log.
+                # They carry no node, so they are normalised to form_* names
+                # and excluded from section statistics alongside form start
+                # and form end.
+                'form save': 'form_save',
+                'form exit': 'form_exit',
+                'form resume': 'form_resume',
+                'form finalize': 'form_finalize'
             })
         else:
             std_df['event_type'] = 'unknown_event'

@@ -68,6 +68,37 @@ def test_odk_parser_negative_duration(tmp_path):
     df = parse_odk_audit(p)
     assert pd.isna(df.iloc[0]['duration_ms'])
 
+def test_native_odk_audit_log_is_detected_and_administrative_rows_excluded(tmp_path):
+    # ODK's documented audit log has event/node/start/end columns with epoch
+    # millisecond timestamps, which look like a SurveyCTO export. It must be
+    # routed to the ODK parser by its event vocabulary, and its form-level
+    # events must not become a pseudo-section.
+    from src.features.question_features import QuestionFeatureExtractor
+    from src.features.section_features import SectionFeatureExtractor
+    from src.pipeline.controller import PipelineController
+
+    p = tmp_path / "audit.csv"
+    p.write_text(
+        "event,node,start,end\n"
+        "form start,,1672646400000,\n"
+        "question,/data/household/q01,1672646401000,1672646406000\n"
+        "question,/data/household/q02,1672646406500,1672646414000\n"
+        "jump,,1672646414500,1672646416000\n"
+        "question,/data/health/q03,1672646420000,1672646431000\n"
+        "end screen,,1672646431500,1672646433000\n"
+        "form save,,1672646433000,\n"
+        "form exit,,1672646433100,\n"
+    )
+
+    cir = PipelineController(parser_type='auto')._parse_to_cir(p)
+    assert set(cir['event_type']) >= {'form_start', 'field_start', 'form_end'}
+    assert 'form save' not in set(cir['event_type'])
+
+    q = QuestionFeatureExtractor().extract(cir)
+    sections = SectionFeatureExtractor().extract(cir, q)
+    assert set(sections.index) == {'household', 'health'}
+    assert 'MainSection' not in sections.index
+
 def test_one_history_parses_identically_from_both_formats(tmp_path):
     # Parser equivalence can only be claimed if both formats carry the same
     # interviews, so one generated history is rendered into both and the

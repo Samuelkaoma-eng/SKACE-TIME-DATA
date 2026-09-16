@@ -12,6 +12,17 @@ from src.features.statistical_features import StatisticalFeatureExtractor
 from src.validation.anomaly_detector import AnomalyDetector
 from src.validation.detector_config import validate_detector_config
 
+ODK_NATIVE_EVENTS = {
+    'form start',
+    'end screen',
+    'group questions',
+    'form save',
+    'form exit',
+    'form resume',
+    'form finalize',
+}
+
+
 class PipelineController:
     """
     Orchestrates the paradata feature extraction pipeline.
@@ -102,6 +113,16 @@ class PipelineController:
                 if 'instance_id' in cols or 'name' in cols:
                     print(f"  -> Parsing {filepath.name} using ODKParser...")
                     return ODKParser().parse(filepath)
+
+                # A native ODK audit log has node/start/end columns like a
+                # SurveyCTO export, so it is identified by its event
+                # vocabulary instead. These names appear in ODK's documented
+                # audit log and in no SurveyCTO export.
+                if 'event' in df_raw.columns:
+                    events = set(df_raw['event'].astype(str).str.strip().str.lower())
+                    if events & ODK_NATIVE_EVENTS:
+                        print(f"  -> Parsing {filepath.name} using ODKParser (native audit log)...")
+                        return ODKParser().parse(filepath)
 
                 if self._looks_like_iso_timestamp(df_raw):
                     print(f"  -> Parsing {filepath.name} using ODKParser...")
