@@ -1,0 +1,4 @@
+dataset,surveycto_identical_to_round_file,interviews,features_compared,interviews_with_any_feature_difference,interviews_with_score_difference,interviews_with_category_difference
+canonical_seed42,True,500,40,0,0,0
+stress_seed7,True,500,40,0,0,0
+stress_seed99,True,500,40,0,0,0

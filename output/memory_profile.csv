@@ -1,0 +1,5 @@
+dataset,format,interviews,question_rows,section_rows,raw_file_mib,baseline_rss_mib,peak_rss_mib,runtime_seconds
+n500,surveycto,500,10000,2500,0.8,142.1,161.1,39.78
+n500,odk,500,10000,2500,1.1,141.6,160.1,38.49
+n2000,surveycto,2000,40000,10000,3.2,141.9,210.0,151.67
+n2000,odk,2000,40000,10000,4.5,142.1,209.5,131.95
