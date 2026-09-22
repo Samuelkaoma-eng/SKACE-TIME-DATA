@@ -1,7 +1,7 @@
-"""Build the two figures embedded in the final academic report.
+"""Build the three figures embedded in the final academic report.
 
-The per-class recall figure was dropped in revision because it repeated
-Table 7; its builder is kept for reference but no longer called.
+The earlier per-class recall figure was dropped in revision because it
+repeated Table 7; its builder is kept for reference but no longer called.
 
 Every value plotted here is transcribed from a recorded output file under
 `output/`; the source is named in the docstring of each builder. Regenerate with:
@@ -191,6 +191,81 @@ def build_prevalence(path: Path) -> None:
     plt.close(fig)
 
 
+def build_envelope(path: Path) -> None:
+    """Figure 3. Detection against anomaly prevalence beyond the sweep.
+
+    Source: output/prevalence_envelope/envelope_summary.csv, written by
+    scripts/run_prevalence_envelope.py and reported in section 6.4 of the
+    report and section 4.1 of the validation report. Unlike the other figures
+    the values are read from that file rather than transcribed, because there
+    are eighty of them.
+    """
+    import csv
+
+    source = Path("output/prevalence_envelope/envelope_summary.csv")
+    with source.open(encoding="utf-8") as handle:
+        rows = [row for row in csv.DictReader(handle) if row["size"] == "500"]
+
+    panels = [
+        ("canonical", "Canonical difficulty"),
+        ("stress", "Stress difficulty"),
+    ]
+    fig, axes = plt.subplots(1, 2, figsize=(7.6, 3.9), sharey=True)
+    for ax, (difficulty, heading) in zip(axes, panels):
+        subset = sorted(
+            (row for row in rows if row["difficulty"] == difficulty),
+            key=lambda row: float(row["prevalence"]),
+        )
+        prevalence = [float(row["prevalence"]) * 100 for row in subset]
+
+        ax.axvspan(55, 95, color=GRID, alpha=0.45, linewidth=0, zorder=0)
+        ax.axvline(30, color=MUTED, linewidth=0.9, linestyle=(0, (1, 2)), zorder=1)
+        ax.axhline(0.80, color=ACCENT_2, linewidth=1.0, linestyle=(0, (5, 4)), zorder=1)
+        ax.axhline(0.75, color=ACCENT_3, linewidth=1.0, linestyle=(0, (2, 3)), zorder=1)
+
+        ax.plot(prevalence, [float(row["recall"]) for row in subset], marker="s", markersize=4.8,
+                linewidth=1.8, color=ACCENT_3, label="Recall", zorder=3)
+        ax.plot(prevalence, [float(row["precision"]) for row in subset], marker="o", markersize=4.8,
+                linewidth=1.8, color=ACCENT, label="Precision", zorder=4)
+        ax.plot(prevalence, [float(row["recall_fabricated"]) for row in subset], marker="^", markersize=4.6,
+                linewidth=1.3, linestyle=(0, (4, 2)), color=ACCENT_2, label="Fabricated recall", zorder=3)
+        ax.plot(prevalence, [float(row["recall_speeding"]) for row in subset], marker="v", markersize=4.6,
+                linewidth=1.3, linestyle=(0, (1, 1.5)), color=MUTED, label="Speeding recall", zorder=3)
+
+        ax.text(31.5, 0.035, "earlier sweep\nended here", fontsize=7.2, color=MUTED, ha="left", va="bottom",
+                linespacing=1.3)
+        ax.text(82, 0.19, "anomalies are\nthe majority", fontsize=7.2, color=MUTED, ha="center", va="center",
+                linespacing=1.3)
+        ax.set_title(heading, fontsize=9.2, loc="left", pad=6)
+        ax.set_xticks([5, 10, 20, 30, 40, 50, 60, 70, 80, 90])
+        ax.set_xticklabels(["5", "10", "20", "30", "40", "50", "60", "70", "80", "90"], fontsize=8)
+        ax.set_xlim(2, 93)
+        ax.set_ylim(0, 1.04)
+        ax.set_xlabel("Anomaly prevalence in the batch, percent")
+        ax.grid(axis="y", color=GRID, linewidth=0.8)
+        ax.set_axisbelow(True)
+
+    axes[0].set_ylabel("Score")
+    axes[0].text(42.5, 0.5, "recall, fabricated\nand speeding recall\nall hold at 1.00", fontsize=7.2,
+                 color=MUTED, ha="center", va="center", linespacing=1.3)
+    axes[0].text(3, 0.806, "precision criterion 0.80", fontsize=7.2, color=ACCENT_2, va="bottom", ha="left")
+    axes[0].text(3, 0.745, "recall criterion 0.75", fontsize=7.2, color=ACCENT_3, va="top", ha="left")
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig.legend(handles, labels, frameon=False, ncol=4, loc="lower center", bbox_to_anchor=(0.5, -0.02),
+               fontsize=8.2, columnspacing=1.8, handlelength=2.2)
+    fig.suptitle(
+        "Detection against anomaly prevalence, extended to 90 percent\n"
+        "Held-out seeds 7 and 99 pooled, SurveyCTO, 500 interviews, default configuration",
+        fontsize=9.8,
+        x=0.02,
+        ha="left",
+    )
+
+    fig.tight_layout(rect=(0, 0.07, 1, 1))
+    fig.savefig(path, dpi=200, bbox_inches="tight")
+    plt.close(fig)
+
+
 def build_per_class(path: Path) -> None:
     """Figure 3. Per-class recall on the held-out stress runs.
 
@@ -279,6 +354,7 @@ def main() -> None:
     FIGURE_DIR.mkdir(parents=True, exist_ok=True)
     build_architecture(FIGURE_DIR / "figure1_architecture.png")
     build_prevalence(FIGURE_DIR / "figure2_prevalence.png")
+    build_envelope(FIGURE_DIR / "figure3_prevalence_envelope.png")
     for figure in sorted(FIGURE_DIR.glob("figure*.png")):
         print(f"wrote {figure}")
 
