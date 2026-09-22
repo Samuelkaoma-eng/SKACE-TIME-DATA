@@ -140,6 +140,36 @@ def test_iqr_multiplier_is_configurable(tmp_path):
         AnomalyDetector(iqr_multiplier=0)
 
 
+def test_entropy_fence_is_off_by_default_and_configurable(tmp_path):
+    # Forty genuine-looking entropies between 2.0 and 3.0 and one mildly
+    # compressed interview at 1.2 bits: above the 0.5 absolute floor, below
+    # the fence median - 3 * (Q3 - median).
+    entropies = [2.0 + idx / 40 for idx in range(40)] + [1.2]
+    frame = pd.DataFrame(
+        {
+            "interview_id": [f"I{idx}" for idx in range(len(entropies))],
+            "T-03_rt_entropy": entropies,
+        }
+    )
+
+    assert AnomalyDetector().entropy_fence_scale is None
+    default = AnomalyDetector().detect(frame)
+    fenced = AnomalyDetector(entropy_fence_scale=3.0).detect(frame)
+    assert default["flag_low_entropy"].sum() == 0
+    assert fenced["flag_low_entropy"].iloc[-1] == 1
+    assert fenced["flag_low_entropy"].iloc[:-1].sum() == 0
+
+    # Below the minimum sample the fence is not estimated at all.
+    small = AnomalyDetector(entropy_fence_scale=3.0, entropy_fence_min_samples=50).detect(frame)
+    assert small["flag_low_entropy"].sum() == 0
+
+    config_path = tmp_path / "detector_config.json"
+    config_path.write_text(json.dumps({"anomaly_detector": {"entropy_fence_scale": 3.0}}), encoding="utf-8")
+    assert load_detector_config(config_path) == {"entropy_fence_scale": 3.0}
+    with pytest.raises(ValueError):
+        AnomalyDetector(entropy_fence_scale=0)
+
+
 def test_build_recalibrated_detector_config_preserves_threshold_order():
     payload = build_recalibrated_detector_config(
         behavior_score_threshold=6.0,
