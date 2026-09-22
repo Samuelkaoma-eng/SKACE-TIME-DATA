@@ -35,6 +35,8 @@ notebooks/*.executed.ipynb
 data/synthetic/
 data/workflow_validation/
 data/robustness_checks/
+data/platform_parity/
+data/prevalence_envelope/
 
 # Stale single-name notebook export
 output/audit_results.csv
@@ -54,3 +56,12 @@ docs/deliverables/Synthetic_Validation_Datasets/synthetic_datasets/n10000/
 # Timestamped quickstart outputs (regenerated on every unlabelled run)
 output/*_batch_*.csv
 ~$*.pptx
+
+# Handwritten signature: kept out of version control on purpose
+docs/deliverables/assets/
+
+# Per-run files of the prevalence envelope; the pooled tables are kept
+output/prevalence_envelope/runs/
+
+# Demo run behind the presentation panels (see scripts/build_demo_panels.py)
+output/*_demo.*
