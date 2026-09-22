@@ -20,7 +20,7 @@ Implementation started immediately after the proposal was accepted and moved fas
 
 | Objective from proposal | Status at Week 8 | Where |
 |---|---|---|
-| 1. Catalogue timing features from the literature | Done | Proposal §2, Tables 1 to 3 |
+| 1. Catalogue timing features from the literature | Done | Proposal section 2, Tables 1 to 3 |
 | 2. Parsers for SurveyCTO and ODK with a common format | Done | `src/parsers/` |
 | 3. Extract 30 to 50 features at three granularities | Done (40) | `src/features/` |
 | 4. Statistical measures (variance, entropy, skewness, kurtosis) | Done | `src/features/statistical_features.py` |

@@ -30,6 +30,7 @@ seconds for a single named run, and the run is always named.
 | [2.1](#21-contribution-of-each-detection-component) | Contribution of each detection component |
 | [3](#3-canonical-validation-set) | Canonical validation set |
 | [4](#4-class-imbalance-sweep) | Class imbalance sweep |
+| [4.1](#41-prevalence-envelope-beyond-thirty-percent) | Prevalence envelope beyond thirty percent |
 | [5](#5-held-out-stress-evaluation) | Held-out stress evaluation and the fabrication shortfall |
 | [6](#6-earlier-stress-sweep-seeds-11-and-42) | Earlier stress sweep, retained for continuity |
 | [7](#7-larger-benchmark-packs-and-scale) | Larger benchmark packs and scale |
@@ -65,7 +66,15 @@ not separate detectors and not separate success criteria.
 
 The proposal's success criteria, precision at or above 0.80 and recall at or
 above 0.75, are defined for the combined detector and are met on every run with
-margin, as the table above shows. No committed target is missed. The per-class
+margin, as the table above shows. No committed target is missed within the
+prevalence range the round tests.
+
+**Operating envelope.** The method assumes that anomalies are a minority of the
+batch, because its adaptive thresholds are estimated from the batch they judge.
+Both criteria hold at every prevalence up to fifty percent; when anomalies are
+the majority, recall under stress falls to 0.44 and precision to 0.73 (section
+4.1). The detector should be run on batches pooled across enumerators rather
+than on one enumerator's caseload alone. The per-class
 figures below that threshold, in particular fabricated recall at 0.70, are
 reported because they locate where the method is weakest, not because they
 breach a commitment.
@@ -96,8 +105,8 @@ and what is present in that tree.
 
 ```
 $ python -m pytest -q
-...........................................                              [100%]
-43 passed in 6.39s
+............................................                             [100%]
+44 passed in 6.93s
 ```
 
 **Feature coverage.** `docs/feature_coverage.md` tabulates all 40 catalogued
@@ -345,6 +354,51 @@ quantifies the review burden a deployment should expect.
 
 Source: `output/robustness_validation/metrics_sweep_r*.csv`.
 
+## 4.1 Prevalence envelope beyond thirty percent
+
+The sweep above stops at thirty percent. Extended to ninety percent, at both
+difficulties and at 100 and 500 interviews, on held-out seeds 7 and 99 with the
+default configuration, it shows the range of prevalence the method holds in. Results for 500
+interviews, the two seeds pooled on confusion counts. Canonical recall is 1.0000
+at every level, and stress speeding recall is 1.00 up to fifty percent, 0.97 at
+sixty, 0.16 at seventy and 0.00 from eighty:
+
+| Anomaly prevalence | Canonical precision | Stress precision | Stress recall | Stress fabricated recall |
+|---|---|---|---|---|
+| 5 percent | 0.9804 | 0.9615 | 1.0000 | 1.00 |
+| 10 percent | 0.9901 | 0.9789 | 0.9300 | 0.94 |
+| 20 percent | 0.9950 | 0.9886 | 0.8650 | 0.74 |
+| 30 percent | 1.0000 | 0.9871 | 0.7633 | 0.41 |
+| 40 percent | 1.0000 | 0.9969 | 0.7925 | 0.47 |
+| 50 percent | 1.0000 | 0.9950 | 0.7980 | 0.48 |
+| 60 percent | 0.9983 | 1.0000 | 0.7900 | 0.44 |
+| 70 percent | 1.0000 | 0.9868 | 0.5329 | 0.45 |
+| 80 percent | 0.8000 | 0.7324 | 0.4688 | 0.40 |
+| 90 percent | 0.9009 | 0.8440 | 0.4389 | 0.32 |
+
+Both criteria hold up to fifty percent in every condition, including the noisier
+100-interview runs. Beyond that the median-relative rules and the interquartile
+fences are estimated from a batch whose median is an anomalous interview. Under
+stress at eighty percent speeding is no longer detected at all, because the
+speeders set the median, while 68 of the 100 genuine interviews are flagged,
+mostly for pauses long relative to that median. Under canonical difficulty at
+eighty and ninety percent every interview is flagged, so precision equals the
+prevalence. Mild fabrication degrades earlier: its per-class recall is 0.74 at
+twenty percent and below 0.50 from thirty.
+
+This matters most for an enumerator who fabricates an entire caseload.
+Analysed alone, that caseload is almost wholly anomalous and largely
+undetectable by this method, so batches should be pooled across enumerators.
+Section 6.4 and section 8 of the report give the full reading, and Figure 3
+there plots the curve.
+
+```bash
+python scripts/run_prevalence_envelope.py
+```
+
+Source: `output/prevalence_envelope/envelope_summary.csv` and
+`envelope_summary.md`, which also holds the 100-interview results.
+
 ## 5. Held-out stress evaluation
 
 The stress generator overlaps the profiles on purpose. Some genuine respondents
@@ -406,14 +460,18 @@ misses to a joint pattern that univariate methods cannot capture. The data does
 not support that reading. No threshold was changed in producing the diagnostic
 and the results reported above stand unaltered.
 
-### The correction exists, and is deliberately not in the evaluated system
+### The correction exists, and is off by default in the evaluated system
 
 The diagnosis was acted on. A corrected entropy fence was developed on the same
 development seeds, frozen, and evaluated once against the held-out data. It
-keeps the absolute constant as a floor and adds a fence estimated from the
-uncontaminated upper half of the entropy distribution, a form chosen because
-every anomaly profile in scope lowers entropy and none raises it, and because it
-reduces to the ordinary Tukey fence for a symmetric distribution. Under that
+keeps the absolute constant as a floor and adds a fence at the median minus three
+times the distance from the median to the third quartile, taking its scale from
+the upper half of the entropy distribution because every anomaly profile in scope
+lowers entropy and none raises it. That half is less contaminated than the lower
+half, not uncontaminated, since the anomalies still pull the median down. An
+earlier version of this report said the fence reduces to the ordinary Tukey fence
+for a symmetric distribution. It does not: under symmetry it equals a Tukey fence
+with a multiplier of 1.0 rather than 1.5, so it is also tighter. Under that
 correction, fabricated per-class recall rises from 0.70 to 1.00 and the lowest
 precision observed anywhere in the round falls from 0.9570 to 0.8333.
 
@@ -421,9 +479,11 @@ The gain concentrates in the stress condition and the cost concentrates at low
 prevalence, where recall was already complete and the extra flags fall entirely
 on genuine interviews. Since realistic fabrication rates are low, the correction
 as it stands buys no additional detection in the condition that most resembles
-deployment and pays for it in false accusations. It is therefore held on a
-separate branch and is not part of the system evaluated in this document. Every
-figure in this document describes the shipped detector without that change.
+deployment and pays for it in false accusations. It therefore ships as a
+configuration option that is off by default (`entropy_fence_scale`, unset), and
+every figure in this document describes the detector with it off. Setting
+`entropy_fence_scale` to 3.0 reproduces the held-out figures above exactly; the
+full record is `docs/entropy_fence_change.md`.
 
 The full trade-off, and the argument that adopting it is a deployment judgement
 about the relative cost of an undetected fabrication against a genuine
@@ -541,8 +601,8 @@ fabricated versus normal feature separation, baseline comparisons, SurveyCTO and
 ODK parity, and scale behaviour between n500 and n10000. Every check passes in
 the recorded run.
 
-Test suite: 43 tests, all passing (verified on Python 3.14.0 with pandas 2.3.2
-during revision; the original 37 were verified with pandas 3.0.1).
+Test suite: 44 tests, all passing on Python 3.14.0 with pandas 3.0.1 from
+`requirements-validated.txt`, and with pandas 2.3.2.
 
 ```bash
 python -m pytest

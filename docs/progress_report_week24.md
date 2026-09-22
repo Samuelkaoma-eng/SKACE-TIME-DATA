@@ -25,7 +25,7 @@ The verified deliverable set is:
 
 | Objective from proposal | Status | Where |
 |---|---|---|
-| 1. Catalogue timing features from the literature | Done | Proposal §2, Tables 1 to 3; report §2 |
+| 1. Catalogue timing features from the literature | Done | Proposal section 2, Tables 1 to 3; report section 2 |
 | 2. Parsers for SurveyCTO and ODK with a common format | Done | `src/parsers/`, verified on both formats and hybrid files |
 | 3. Extract 30 to 50 features at three granularities | Done (40) | `src/features/`, all 40 present in every feature dataset |
 | 4. Statistical measures (variance, entropy, skewness, kurtosis) | Done | `src/features/statistical_features.py` (T-01 to T-10) |

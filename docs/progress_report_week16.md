@@ -21,7 +21,7 @@ The main components are:
 
 | Objective from proposal | Status | Where |
 |---|---|---|
-| 1. Catalogue timing features from the literature | Done | Proposal §2, Tables 1–3 |
+| 1. Catalogue timing features from the literature | Done | Proposal section 2, Tables 1–3 |
 | 2. Parsers for SurveyCTO and ODK with a common format | Done | `src/parsers/`, `tests/test_parsers.py` |
 | 3. Extract 30–50 features at three granularities | Done (40) | `src/features/` |
 | 4. Statistical measures (variance, entropy, skewness, kurtosis) | Done | `src/features/statistical_features.py` |
@@ -35,7 +35,7 @@ Compared to the timeline in the proposal, I am ahead on implementation: the buil
 ## 3. Blockers
 
 - I missed the Week 8 review and I am submitting this late progress summary to catch up. My apologies for that.
-- The AI Usage Log required by §9.4 of my proposal was not kept as I went. It now exists (`docs/ai_usage_log.md`) with earlier entries reconstructed from the development history and marked as such; it is maintained live from 6 July onward.
+- The AI Usage Log required by section 9.4 of my proposal was not kept as I went. It now exists (`docs/ai_usage_log.md`) with earlier entries reconstructed from the development history and marked as such; it is maintained live from 6 July onward.
 - No real labelled paradata was available, so evaluation is synthetic-only as scoped in the proposal. This limits external validity and I flag it in the report.
 
 ## 4. Next steps (Weeks 17–24)
