@@ -313,11 +313,26 @@ precision 0.80 and recall 0.75, and fails the build if any does not. It runs
 weekly and on demand, since the examiner audit includes an n10000 scale check
 that takes about twenty minutes.
 
-## Hosted Results Site
+## Hosted Review Dashboard
 
-The `Dockerfile` builds a static results page. At build time it runs the
-pipeline on the sample data and on both n500 benchmark files, then serves the
-metrics, detection by type, flagged interviews and every output CSV with nginx.
+The `Dockerfile` builds a review dashboard that shows the pipeline used the way a
+survey team would use it: a batch of audit logs comes in, the pipeline runs, and
+the team works through a queue of interviews to back-check. At build time it runs
+the real pipeline on four batches (the 24-interview sample, both n500 benchmark
+files, and a harder batch regenerated from held-out seed 7) and writes what each
+run produced as data for the dashboard in `site/`. nginx then serves it.
+
+- **Review queue**: every interview, sorted by what to look at first, with its
+  status and score. Selecting one shows what to do with it, each flag in words
+  with the interview's value against the batch median, its response time per
+  question against the batch, and its raw audit log rows.
+- **Run output**: the pipeline's console output and each output file, readable in
+  place and downloadable.
+- **Validation**: precision, recall, detection by type and every interview where
+  the queue and the synthetic labels disagree, plus the executed audit notebook.
+- **How it is used**: the operating procedure from the report, and what a
+  deployment needs.
+
 Nothing runs when a visitor opens the page, and the page names the commit it was
 built from.
 
@@ -327,13 +342,14 @@ docker run --rm -p 8080:8080 paradata-site
 ```
 
 Then open `http://localhost:8080`. `/health` returns the status, the data mode
-(always `synthetic`) and the commit. To build the page without Docker, run
-`python scripts/build_results_site.py --out build/site`.
+(always `synthetic`) and the commit. To build without Docker, run
+`python scripts/build_results_site.py --out build/site` and serve that folder
+over HTTP, for example `python -m http.server --directory build/site`.
 
 To host it on Dokploy, create an application from this repository's `main`
 branch with the Dockerfile build type, set the container port to `8080`, and
 attach a domain. Each push to `main` then rebuilds the image, which takes about
-three minutes.
+six minutes.
 
 ## Current Validation Outputs
 

@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Paradata Review</title>
+<meta name="description" content="Review dashboard for survey audit logs: which interviews to back-check, and why.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div class="top-inner">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="22" height="22"><path d="M3 17l5-6 4 3 4-7 5 10" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
+      <div>
+        <div class="brand-name">Paradata Review</div>
+        <div class="brand-sub">Which interviews to back-check, and why</div>
+      </div>
+    </div>
+    <nav class="tabs" aria-label="Views">
+      <a href="#review" data-view="review">Review queue</a>
+      <a href="#output" data-view="output">Run output</a>
+      <a href="#validation" data-view="validation">Validation</a>
+      <a href="#how" data-view="how">How it is used</a>
+    </nav>
+  </div>
+</header>
+
+<div class="notice">Synthetic data only. These batches were generated with known labels so every decision can be checked. No real respondent data is on this site.</div>
+
+<main id="app">
+  <section class="batches" aria-label="Batch">
+    <div class="section-label">Batch received from the field</div>
+    <div id="batch-list" class="batch-list"></div>
+  </section>
+
+  <section id="view-review" class="view" hidden>
+    <div id="summary" class="tiles"></div>
+    <div class="workspace">
+      <div class="queue card">
+        <div class="queue-head">
+          <h2>Review queue</h2>
+          <div class="queue-tools">
+            <input id="search" type="search" placeholder="Find an interview" aria-label="Find an interview">
+            <select id="sort" aria-label="Sort">
+              <option value="priority">Priority</option>
+              <option value="score">Score</option>
+              <option value="id">Interview ID</option>
+            </select>
+          </div>
+        </div>
+        <div id="filters" class="chips" role="group" aria-label="Filter by status"></div>
+        <div class="table-wrap queue-table">
+          <table>
+            <thead><tr><th>Interview</th><th>Status</th><th class="num">Score</th><th>Main reasons</th></tr></thead>
+            <tbody id="queue-body"></tbody>
+          </table>
+        </div>
+        <div id="queue-foot" class="muted small"></div>
+      </div>
+      <article id="detail" class="detail card" aria-live="polite"></article>
+    </div>
+  </section>
+
+  <section id="view-output" class="view" hidden>
+    <div class="card">
+      <h2>What the pipeline printed</h2>
+      <p class="muted">The console output of the run, exactly as a data manager sees it in the project folder.</p>
+      <pre id="run-log" class="terminal"></pre>
+    </div>
+    <div class="card">
+      <h2>Files it wrote</h2>
+      <p class="muted">Open a file to read it here. Every file can also be downloaded.</p>
+      <div id="file-list" class="file-list"></div>
+      <div id="file-preview"></div>
+    </div>
+  </section>
+
+  <section id="view-validation" class="view" hidden></section>
+
+  <section id="view-how" class="view" hidden></section>
+</main>
+
+<footer class="foot" id="foot"></footer>
+<script src="app.js"></script>
+</body>
+</html>

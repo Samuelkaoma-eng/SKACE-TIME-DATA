@@ -1,13 +1,16 @@
 """Build the static results site served by the Docker image.
 
-Runs the pipeline on the shipped synthetic datasets, then writes one HTML page
-that reports each run's metrics, detection by anomaly type and flagged
-interviews, with every output CSV beside it for download. Nothing on the page
-is typed in by hand: change the code, rebuild, and the page follows.
+Runs the pipeline on the shipped synthetic datasets, as a survey team would
+run it on a batch of uploads, and writes what each run produced as data for
+the review dashboard in site/: every interview with its status, its score and
+the reason for each flag in words, its response time per question against the
+batch, its raw audit log rows, the pipeline's own console output, and the
+output files. The labelled evaluation is written separately, for the page's
+validation view, because a team in the field has no labels.
 
 The audit notebook, notebooks/System_Audit_Report.ipynb, is executed against
-the n500 SurveyCTO run and rendered as notebook.html beside the page. It runs
-in a temporary working folder, so the repository's own output/ is untouched.
+the n500 SurveyCTO run and rendered as notebook.html. It runs in a temporary
+working folder, so the repository's own output/ is untouched.
 
     python scripts/build_results_site.py --out build/site
 
@@ -18,60 +21,214 @@ the hosted site always reports the commit it was built from.
 import argparse
 import html
 import json
+import math
 import os
 import shutil
 import subprocess
 import sys
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+
+from src.validation.anomaly_detector import AnomalyDetector  # noqa: E402
 
 # label, title, inputs, ground truth, one-line description
 RUNS = [
     (
         "sample",
-        "Sample data, both formats",
+        "Sample batch, both platforms",
         ["data/odk.csv", "data/surveycto.csv"],
         "data/ground_truth_labels.csv",
-        "The 24-interview sample that ships with the repository, SurveyCTO and "
-        "ODK logs processed together in one run.",
+        "24 interviews uploaded from SurveyCTO and ODK together, including six broken records.",
     ),
     (
         "n500_surveycto",
-        "500-interview benchmark, SurveyCTO",
+        "500 interviews, SurveyCTO",
         ["data/synthetic_datasets/n500/audit_logs_surveycto.csv"],
         "data/synthetic_datasets/n500/ground_truth_labels.csv",
-        "The canonical benchmark: 400 normal interviews and 100 with injected "
-        "fabrication, speeding or disengagement (seed 42).",
+        "A survey-sized batch exported from SurveyCTO.",
     ),
     (
         "n500_odk",
-        "500-interview benchmark, ODK",
+        "500 interviews, ODK",
         ["data/synthetic_datasets/n500/audit_logs_odk.csv"],
         "data/synthetic_datasets/n500/ground_truth_labels.csv",
-        "The same 500 interviews written as ODK audit logs, to show the two "
-        "parsers agree.",
+        "The same 500 interviews exported from ODK Collect.",
     ),
 ]
+
+# A harder batch, regenerated at build time from its recorded seed: held-out
+# seed 7 at stress difficulty, where some genuine interviews are fast with little
+# navigation and some fabrications are only mildly compressed, so the queue has
+# review cases, false alarms and misses. The generated files stay in a temporary
+# folder; pages show the path the project's robustness script uses for them.
+STRESS_SEED = 7
+STRESS_SHOWN = "data/robustness_checks/n500_seed7_stress"
+SHOWN_PREFIXES: dict[str, str] = {}
 
 # The run the audit notebook is executed against.
 NOTEBOOK_RUN = "n500_surveycto"
 NOTEBOOK = ROOT / "notebooks" / "System_Audit_Report.ipynb"
 
-DOWNLOADS = [
-    ("anomaly_report", "Anomaly report"),
-    ("predictions", "Predictions against labels"),
-    ("feature_dataset", "Per-interview features"),
-    ("section_features", "Section-level features"),
-    ("question_features", "Question-level features"),
-    ("metrics", "Metrics"),
+# Output files shown in the page's output view, in the order a user would open them.
+OUTPUT_FILES = [
+    ("anomaly_report", "Anomaly report", "One row per interview: score, status and the flags that fired."),
+    ("feature_dataset", "Interview features", "The 40 timing features for every interview."),
+    ("section_features", "Section features", "Timing per interview and section."),
+    ("question_features", "Question features", "Timing per interview and question."),
+    ("predictions", "Predictions against labels", "Validation only: each prediction beside its label."),
+    ("metrics", "Metrics", "Validation only: precision, recall and the acceptance checks."),
+]
+
+# Features shown beside the batch median on an interview's page.
+KEY_FEATURES = [
+    ("V-01_total_interview_duration_ms", "Total duration", "ms"),
+    ("T-06_rt_mean", "Mean response time", "ms"),
+    ("T-07_rt_median", "Median response time", "ms"),
+    ("T-02_rt_iqr", "Response time IQR", "ms"),
+    ("T-03_rt_entropy", "Response time entropy", "num"),
+    ("T-08_rt_cv", "Coefficient of variation", "num"),
+    ("V-06_back_navigation_total_count", "Back-navigations", "int"),
+    ("V-05_back_navigation_rate", "Back-navigation rate", "pct"),
+    ("S-07_mean_pause_duration_ms", "Mean pause", "ms"),
+    ("S-08_max_pause_duration_ms", "Longest pause", "ms"),
+    ("S-06_pause_count_30s", "Pauses over 30 s", "int"),
+    ("V-09_session_length_vs_median", "Length against batch median", "ratio"),
 ]
 
 
-def run_pipeline(label: str, inputs: list[str], ground_truth: str, out_dir: Path) -> None:
+ZERO_IS_REAL = [
+    "V-06_back_navigation_total_count", "V-05_back_navigation_rate",
+    "S-06_pause_count_30s", "V-09_session_length_vs_median",
+]
+
+
+def shown(text: str) -> str:
+    """Replace build-time temporary paths with the paths a user would type."""
+    for real, display in SHOWN_PREFIXES.items():
+        text = text.replace(real, display).replace(real.replace("\\", "/"), display)
+        text = text.replace(display + "\\", display + "/")
+    return text
+
+
+def secs(ms) -> str:
+    """Format milliseconds for a reader: 1.2 s, 46 s, 3.1 min."""
+    if ms is None or (isinstance(ms, float) and math.isnan(ms)):
+        return "n/a"
+    s = float(ms) / 1000
+    if abs(s) >= 120:
+        return f"{s / 60:.1f} min"
+    if abs(s) >= 10:
+        return f"{s:.0f} s"
+    return f"{s:.1f} s"
+
+
+def num(v, digits=2) -> str:
+    return "n/a" if v is None or (isinstance(v, float) and math.isnan(v)) else f"{float(v):.{digits}f}"
+
+
+def positive_median(series: pd.Series):
+    values = pd.to_numeric(series, errors="coerce")
+    values = values[values > 0]
+    return float(values.median()) if not values.empty else None
+
+
+def tukey(series: pd.Series, k: float):
+    values = pd.to_numeric(series, errors="coerce")
+    q1, q3 = values.quantile(0.25), values.quantile(0.75)
+    return q1 - k * (q3 - q1), q3 + k * (q3 - q1)
+
+
+def explain(flag: str, r: dict, b: dict, d: AnomalyDetector) -> tuple[str, str, str]:
+    """Return (kind, short label, sentence) for one flag on one interview.
+
+    Each sentence restates the detector's rule with this interview's value and
+    the batch value it was compared against, so the reason can be checked.
+    """
+    v = r.get
+    rules = {
+        "flag_too_fast": ("rule", "Too fast overall",
+                          f"The whole interview took {secs(v('V-01_total_interview_duration_ms'))}, under the "
+                          f"{secs(d.too_fast_ms)} floor."),
+        "flag_too_slow": ("rule", "Too slow overall",
+                          f"The whole interview took {secs(v('V-01_total_interview_duration_ms'))}, over the "
+                          f"{secs(d.too_slow_ms)} ceiling."),
+        "flag_short_relative_duration": ("rule", "Short for this batch",
+                                         f"It took {num(v('V-09_session_length_vs_median'))} times the batch's "
+                                         f"median length; the rule fires below {d.short_session_median_ratio}."),
+        "flag_low_mean_rt": ("rule", "Answers too fast",
+                             f"Mean response time {secs(v('T-06_rt_mean'))} is under half the batch median of "
+                             f"{secs(b['T-06_rt_mean'])}."),
+        "flag_low_entropy": ("rule", "Same time on every question",
+                             f"Response-time entropy is {num(v('T-03_rt_entropy'))}, under {d.low_entropy_threshold}: "
+                             "almost every answer fell in the same one-second band."),
+        "flag_uniform_timing": ("rule", "Uniform pacing",
+                                f"Coefficient of variation {num(v('T-08_rt_cv'), 3)} is under {d.uniform_timing_cv}: "
+                                "easy and hard questions took the same time."),
+        "flag_low_rt_iqr": ("rule", "Compressed spread",
+                            f"The spread of response times (IQR {secs(v('T-02_rt_iqr'))}) is at most half the batch "
+                            f"median of {secs(b['T-02_rt_iqr'])}, alongside uniform timing."),
+        "flag_low_section_variance": ("rule", "Flat within sections",
+                                      "Timing barely varies inside each section: "
+                                      f"{100 * (v('S-03_within_section_variance') or 0) / b['S-03_within_section_variance']:.1f} "
+                                      "percent of the batch median, under the 25 percent rule, alongside compressed timing."),
+        "flag_zero_back_nav": ("rule", "Never went back",
+                               "No back-navigation at all, together with compressed timing."),
+        "flag_high_back_nav": ("rule", "Went back very often",
+                               f"Went back on {100 * (v('V-05_back_navigation_rate') or 0):.0f} percent of questions, "
+                               f"at or above {d.high_back_nav_rate_threshold:.0%}."),
+        "flag_moderate_back_nav": ("rule", "Went back often",
+                                   f"Went back on {100 * (v('V-05_back_navigation_rate') or 0):.0f} percent of questions, "
+                                   f"at or above {d.moderate_back_nav_rate_threshold:.0%}."),
+        "flag_long_pause_relative": ("rule", "Long pause",
+                                     f"The longest pause, {secs(v('S-08_max_pause_duration_ms'))}, is at least "
+                                     f"{d.long_pause_median_ratio:g} times the batch median of "
+                                     f"{secs(b['S-08_max_pause_duration_ms'])}."),
+        "flag_elevated_pause": ("rule", "Pauses between questions",
+                                f"The mean pause between questions, {secs(v('S-07_mean_pause_duration_ms'))}, is at "
+                                f"least {d.elevated_pause_median_ratio:g} times the batch median of "
+                                f"{secs(b['S-07_mean_pause_duration_ms'])}."),
+        "flag_rule_pause": ("rule", "Repeated long pauses",
+                            f"{int(v('S-06_pause_count_30s') or 0)} pauses over 30 s, the longest "
+                            f"{secs(v('S-08_max_pause_duration_ms'))}."),
+        "flag_iqr_duration": ("iqr", "Unusual total duration",
+                              f"Total duration {secs(v('V-01_total_interview_duration_ms'))} is outside the batch's fences "
+                              f"of {secs(b['fence_V-01'][0])} to {secs(b['fence_V-01'][1])}."),
+        "flag_iqr_rt_mean": ("iqr", "Unusual mean response time",
+                             f"Mean response time {secs(v('T-06_rt_mean'))} is outside the batch's fences of "
+                             f"{secs(b['fence_T-06'][0])} to {secs(b['fence_T-06'][1])}."),
+        "flag_iqr_entropy": ("iqr", "Unusual entropy",
+                             f"Entropy {num(v('T-03_rt_entropy'))} is outside the batch's fences of "
+                             f"{num(b['fence_T-03'][0])} to {num(b['fence_T-03'][1])}."),
+        "flag_iqr_variance": ("iqr", "Unusual variance",
+                              "Response-time variance is outside the batch's fences."),
+        "flag_invalid_ratio": ("dq", "Speed trajectory missing",
+                               "The early and late pace could not be computed from this record."),
+        "flag_missing_data": ("dq", "No response times",
+                              "No usable response times were recorded."),
+        "flag_inconsistent_metrics": ("dq", "Timings contradict each other",
+                                      "Recorded times are inconsistent, for example a question longer than its section."),
+    }
+    return rules.get(flag, ("rule", flag, flag))
+
+
+def clean(value):
+    """JSON-safe scalar."""
+    if value is None:
+        return None
+    if isinstance(value, float) and (math.isnan(value) or math.isinf(value)):
+        return None
+    if hasattr(value, "item"):
+        value = value.item()
+    return value
+
+
+def run_pipeline(label: str, inputs: list[str], ground_truth: str, out_dir: Path) -> tuple[str, float]:
     command = [
         sys.executable, "run_pipeline.py",
         "--inputs", *inputs,
@@ -80,7 +237,135 @@ def run_pipeline(label: str, inputs: list[str], ground_truth: str, out_dir: Path
         "--output-dir", str(out_dir),
     ]
     print(f"Running {label}: {' '.join(command[1:])}", flush=True)
-    subprocess.run(command, cwd=ROOT, check=True)
+    started = time.perf_counter()
+    result = subprocess.run(command, cwd=ROOT, check=True, capture_output=True, text=True)
+    seconds = time.perf_counter() - started
+    print(result.stdout, flush=True)
+    # Show the log as a user would see it in the project folder, not with this
+    # build's absolute paths.
+    log = result.stdout.replace(str(out_dir), "output").replace(str(ROOT) + os.sep, "")
+    log = log.replace("\\", "/") if os.sep == "\\" else log
+    command_line = shown("python run_pipeline.py --inputs " + " ".join(inputs) +
+                         f" --ground-truth {ground_truth} --label {label}")
+    return f"$ {command_line}\n{shown(log).strip()}\n", seconds
+
+
+def batch_data(label, title, inputs, ground_truth, description, run_dir, log, seconds):
+    detector = AnomalyDetector()
+    report = pd.read_csv(run_dir / f"anomaly_report_{label}.csv").fillna({"flagged_features": ""})
+    features = pd.read_csv(run_dir / f"feature_dataset_{label}.csv")
+    questions = pd.read_csv(run_dir / f"question_features_{label}.csv")
+    predictions = pd.read_csv(run_dir / f"predictions_{label}.csv")
+    metrics = json.loads((run_dir / f"metrics_{label}.json").read_text())[0]
+    by_type = pd.read_csv(run_dir / f"detection_by_type_{label}.csv")
+
+    # The batch statistics the rules compare against.
+    # The detector takes its medians over positive values only, so broken
+    # records do not drag them down; the explanations quote the same numbers.
+    # Counts, rates and the length ratio keep their zeros, which are real.
+    batch = {name: positive_median(features[name]) for name, _, _ in KEY_FEATURES if name in features}
+    for name in ZERO_IS_REAL:
+        batch[name] = clean(float(pd.to_numeric(features[name], errors="coerce").median()))
+    batch["S-03_within_section_variance"] = positive_median(features["S-03_within_section_variance"])
+    batch["fence_V-01"] = tukey(features["V-01_total_interview_duration_ms"], detector.iqr_multiplier)
+    batch["fence_T-06"] = tukey(features["T-06_rt_mean"], detector.iqr_multiplier)
+    batch["fence_T-03"] = tukey(features["T-03_rt_entropy"], detector.iqr_multiplier)
+
+    question_order = list(dict.fromkeys(questions["field_name"].dropna()))
+    rt = questions.pivot_table(index="interview_id", columns="field_name",
+                               values="Q-01_response_time_ms", aggfunc="first")
+    rt = rt.reindex(columns=question_order)
+    batch_rt = [clean(x) for x in rt.median(axis=0, skipna=True).tolist()]
+
+    feature_rows = features.set_index("interview_id").to_dict("index")
+    interviews = []
+    for row in report.itertuples(index=False):
+        f = feature_rows.get(row.interview_id, {})
+        flags = [x for x in str(row.flagged_features).split(",") if x]
+        explained = []
+        for flag in flags:
+            kind, short, sentence = explain(flag, f, batch, detector)
+            explained.append({"flag": flag, "kind": kind, "label": short, "text": sentence})
+        series = rt.loc[row.interview_id].tolist() if row.interview_id in rt.index else []
+        interviews.append({
+            "id": row.interview_id,
+            "file": row.file_name,
+            "status": row.status,
+            "category": row.anomaly_category,
+            "score": int(row.anomaly_score),
+            "iqr": int(row.iqr_flags),
+            "rule": int(row.rule_flags),
+            "dq": int(row.is_data_quality_issue),
+            "flags": explained,
+            "f": {name: clean(f.get(name)) for name, _, _ in KEY_FEATURES},
+            "rt": [clean(x) for x in series],
+        })
+
+    counts = report["status"].value_counts().to_dict()
+    dq = int(report["is_data_quality_issue"].sum())
+    flagged_behaviour = int(((report["status"] == "FLAGGED") & (report["is_data_quality_issue"] == 0)).sum())
+
+    raw_rows = 0
+    platforms = []
+    for path in inputs:
+        frame = pd.read_csv(ROOT / path)
+        raw_rows += len(frame)
+        platforms.append("ODK" if "instance_id" in frame.columns else "SurveyCTO")
+
+    files = []
+    for stem, name, note in OUTPUT_FILES:
+        path = run_dir / f"{stem}_{label}.csv"
+        if path.exists():
+            frame = pd.read_csv(path)
+            files.append({"stem": stem, "name": name, "note": note,
+                          "path": f"runs/{label}/{path.name}",
+                          "rows": len(frame), "columns": len(frame.columns),
+                          "bytes": path.stat().st_size})
+
+    truth = predictions.set_index("interview_id")["anomaly_type"].to_dict()
+    return {
+        "label": label,
+        "title": title,
+        "description": description,
+        "inputs": [shown(p) for p in inputs],
+        "platforms": sorted(set(platforms)),
+        "raw_rows": raw_rows,
+        "seconds": round(seconds, 1),
+        "log": log,
+        "thresholds": {"review": detector.behavior_score_threshold,
+                       "flagged": detector.anomalous_score_threshold},
+        "counts": {
+            "total": len(report),
+            "clean": int(counts.get("CLEAN", 0)),
+            "review": int(counts.get("REVIEW", 0)),
+            "flagged": flagged_behaviour,
+            "dq": dq,
+        },
+        "questions": question_order,
+        "batch_rt": batch_rt,
+        "batch": {name: clean(batch.get(name)) for name, _, _ in KEY_FEATURES},
+        "key_features": [{"name": n, "label": l, "unit": u} for n, l, u in KEY_FEATURES],
+        "interviews": interviews,
+        "files": files,
+        "validation": {
+            "metrics": {k: clean(v) for k, v in metrics.items()},
+            "by_type": [{k: clean(v) for k, v in r.items()} for r in by_type.to_dict("records")],
+            "truth": truth,
+        },
+    }
+
+
+def raw_data(inputs: list[str]) -> dict:
+    """Every raw audit log row, grouped by interview, for the interview view."""
+    out = {}
+    for path in inputs:
+        frame = pd.read_csv(ROOT / path, dtype=str).fillna("")
+        key = "interview_id" if "interview_id" in frame.columns else "instance_id"
+        columns = list(frame.columns)
+        for interview_id, group in frame.groupby(key, sort=False):
+            out[interview_id] = {"file": Path(path).name, "columns": columns,
+                                 "rows": group.values.tolist()}
+    return out
 
 
 def render_notebook(label: str, run_dir: Path, out: Path) -> None:
@@ -115,219 +400,12 @@ def render_notebook(label: str, run_dir: Path, out: Path) -> None:
     banner = (
         '<div style="font:15px/1.5 system-ui,sans-serif;padding:10px 16px;'
         'background:#fff7e0;color:#6b4e00;border-bottom:1px solid #e8d9a8">'
-        f'<a href="./" style="color:#2563eb">Back to the results</a> &middot; '
-        f"This notebook was executed on the <code>{esc(label)}</code> run when the site was "
+        '<a href="./#validation" style="color:#2563eb">Back to the dashboard</a> &middot; '
+        f"This notebook was executed on the <code>{html.escape(label)}</code> batch when the site was "
         "built. Synthetic data only.</div>"
     )
     head_end = body.index(">", body.index("<body")) + 1
     (out / "notebook.html").write_text(body[:head_end] + banner + body[head_end:], encoding="utf-8")
-
-
-def esc(value) -> str:
-    return html.escape(str(value))
-
-
-def pct(value: float) -> str:
-    return f"{value * 100:.1f}%"
-
-
-def run_section(label: str, title: str, inputs: list[str], description: str, run_dir: Path) -> str:
-    metrics = json.loads((run_dir / f"metrics_{label}.json").read_text())[0]
-    by_type = pd.read_csv(run_dir / f"detection_by_type_{label}.csv")
-    predictions = pd.read_csv(run_dir / f"predictions_{label}.csv").fillna("")
-
-    tiles = "".join(
-        f'<div class="tile"><span class="tile-label">{name}</span>'
-        f'<span class="tile-value">{value}</span>'
-        f'<span class="tile-note">{note}</span></div>'
-        for name, value, note in [
-            ("Precision", f"{metrics['precision']:.3f}", f"target {metrics['precision_threshold']}"),
-            ("Recall", f"{metrics['recall']:.3f}", f"target {metrics['recall_threshold']}"),
-            ("F1", f"{metrics['f1_score']:.3f}", ""),
-            ("Specificity", f"{metrics['specificity']:.3f}", ""),
-            ("Interviews", f"{metrics['total_samples']}", f"{metrics['anomalies_true']} labelled anomalous"),
-        ]
-    )
-
-    confusion = (
-        '<table class="confusion"><thead><tr><th></th><th>Flagged</th><th>Not flagged</th></tr></thead><tbody>'
-        f'<tr><th>Labelled anomalous</th><td>{metrics["true_positive"]}</td><td>{metrics["false_negative"]}</td></tr>'
-        f'<tr><th>Labelled normal</th><td>{metrics["false_positive"]}</td><td>{metrics["true_negative"]}</td></tr>'
-        "</tbody></table>"
-    )
-
-    bars = "".join(
-        f'<div class="bar-row"><span class="bar-name">{esc(row.anomaly_type)}</span>'
-        f'<span class="bar-track"><span class="bar-fill" style="width:{row.detection_rate * 100:.1f}%"></span></span>'
-        f'<span class="bar-value">{int(row.detected)} of {int(row.total)} ({pct(row.detection_rate)})</span></div>'
-        for row in by_type.itertuples()
-    )
-
-    flagged = predictions[predictions["predicted_is_anomalous"] == 1].sort_values(
-        ["anomaly_score", "interview_id"], ascending=[False, True]
-    )
-    missed = predictions[(predictions["is_anomalous"] == 1) & (predictions["predicted_is_anomalous"] == 0)]
-
-    def rows(frame: pd.DataFrame) -> str:
-        return "".join(
-            f'<tr class="{"wrong" if row.is_anomalous != row.predicted_is_anomalous else ""}">'
-            f"<td>{esc(row.interview_id)}</td><td>{esc(row.anomaly_type)}</td>"
-            f"<td>{esc(row.anomaly_category)}</td><td class=\"num\">{esc(row.anomaly_score)}</td>"
-            f'<td class="flags">{esc(str(row.flagged_features).replace(",", ", "))}</td></tr>'
-            for row in frame.itertuples()
-        )
-
-    table_head = (
-        "<thead><tr><th>Interview</th><th>Label</th><th>Category</th>"
-        '<th class="num">Score</th><th>Flags raised</th></tr></thead>'
-    )
-    missed_block = (
-        f'<details><summary>Labelled anomalous but not flagged ({len(missed)})</summary>'
-        f'<div class="scroll"><table>{table_head}<tbody>{rows(missed)}</tbody></table></div></details>'
-        if len(missed)
-        else ""
-    )
-
-    links = "".join(
-        f'<li><a href="runs/{label}/{stem}_{label}.csv" download>{name}</a></li>'
-        for stem, name in DOWNLOADS
-    )
-    sources = ", ".join(f"<code>{esc(path)}</code>" for path in inputs)
-
-    return f"""
-<section id="{label}">
-  <h2>{esc(title)}</h2>
-  <p>{esc(description)}</p>
-  <p class="muted">Input: {sources}</p>
-  <div class="tiles">{tiles}</div>
-  <div class="split">
-    <div><h3>Confusion matrix</h3>{confusion}</div>
-    <div><h3>Detection by anomaly type</h3><div class="bars">{bars}</div></div>
-  </div>
-  <details><summary>Flagged interviews ({len(flagged)}), highest score first</summary>
-    <div class="scroll"><table>{table_head}<tbody>{rows(flagged)}</tbody></table></div>
-  </details>
-  {missed_block}
-  <h3>Download this run</h3>
-  <ul class="downloads">{links}</ul>
-</section>"""
-
-
-STYLE = """
-:root {
-  --bg: #f7f8fa; --surface: #ffffff; --ink: #1f2933; --muted: #5f6b7a;
-  --line: #dde3ea; --accent: #2563eb; --accent-soft: #dbe6fd; --warn: #fdecea;
-  --banner: #fff7e0; --banner-ink: #6b4e00;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #12161c; --surface: #1a2029; --ink: #e4e8ee; --muted: #9aa5b4;
-    --line: #2c3542; --accent: #6b9cff; --accent-soft: #233456; --warn: #3a2224;
-    --banner: #2f2814; --banner-ink: #f1d58a;
-  }
-}
-:root[data-theme="dark"] {
-  --bg: #12161c; --surface: #1a2029; --ink: #e4e8ee; --muted: #9aa5b4;
-  --line: #2c3542; --accent: #6b9cff; --accent-soft: #233456; --warn: #3a2224;
-  --banner: #2f2814; --banner-ink: #f1d58a;
-}
-* { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--ink);
-  font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-main { max-width: 980px; margin: 0 auto; padding: 24px 16px 64px; }
-h1 { font-size: 1.8rem; line-height: 1.25; margin: 8px 0 12px; }
-h2 { font-size: 1.35rem; margin: 0 0 8px; }
-h3 { font-size: 1rem; margin: 20px 0 8px; }
-a { color: var(--accent); }
-code { font-size: 0.88em; overflow-wrap: anywhere; }
-.muted { color: var(--muted); font-size: 0.92rem; }
-.banner { background: var(--banner); color: var(--banner-ink); border-radius: 8px;
-  padding: 10px 14px; font-size: 0.92rem; margin: 16px 0; }
-nav { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 24px; }
-nav a { background: var(--accent-soft); border-radius: 999px; padding: 4px 12px;
-  text-decoration: none; font-size: 0.9rem; }
-section { background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
-  padding: 20px; margin: 0 0 20px; }
-.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin: 16px 0; }
-.tile { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; }
-.tile-label { color: var(--muted); font-size: 0.82rem; }
-.tile-value { font-size: 1.5rem; font-weight: 600; font-variant-numeric: tabular-nums; }
-.tile-note { color: var(--muted); font-size: 0.78rem; min-height: 1em; }
-.split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 24px; }
-@media (max-width: 720px) { .split { grid-template-columns: minmax(0, 1fr); } }
-table { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
-th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
-td:first-child { white-space: nowrap; }
-td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
-.confusion td { text-align: right; font-variant-numeric: tabular-nums; font-size: 1rem; }
-tr.wrong td { background: var(--warn); }
-td.flags { color: var(--muted); font-size: 0.82rem; overflow-wrap: anywhere; }
-.bars { display: flex; flex-direction: column; gap: 8px; }
-.bar-row { display: grid; grid-template-columns: 90px minmax(0, 1fr) auto; gap: 10px; align-items: center; font-size: 0.88rem; }
-.bar-track { background: var(--accent-soft); border-radius: 4px; height: 12px; overflow: hidden; }
-.bar-fill { display: block; height: 100%; background: var(--accent); }
-.bar-value { font-variant-numeric: tabular-nums; color: var(--muted); white-space: nowrap; }
-details { margin-top: 16px; }
-summary { cursor: pointer; font-weight: 600; }
-.scroll { max-height: 420px; overflow: auto; margin-top: 8px; border: 1px solid var(--line); border-radius: 8px; }
-.downloads { display: flex; flex-wrap: wrap; gap: 8px 20px; padding-left: 18px; margin: 0; }
-pre { background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
-  padding: 12px; overflow-x: auto; font-size: 0.85rem; }
-footer { color: var(--muted); font-size: 0.85rem; }
-"""
-
-
-def build_page(sections: list[str], version: str, built: str) -> str:
-    nav = "".join(f'<a href="#{label}">{esc(title)}</a>' for label, title, *_ in RUNS)
-    nav += '<a href="#notebook">Audit notebook</a>'
-    version_text = f"commit <code>{esc(version)}</code>" if version != "unknown" else "an unknown commit"
-    return f"""<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Paradata Pipeline Results</title>
-<meta name="description" content="Live results of the paradata feature extraction pipeline on labelled synthetic survey audit logs.">
-<style>{STYLE}</style>
-</head>
-<body>
-<main>
-  <p class="muted">Final-year project, Samuel Kaoma</p>
-  <h1>Paradata feature extraction pipeline: results</h1>
-  <p>Survey platforms such as SurveyCTO and ODK record an audit log of every interview: when each
-  question opened, how long it took, when the enumerator went back. This pipeline turns that log into
-  forty timing features and uses them to flag interviews that look fabricated, rushed or disengaged,
-  naming the features behind every flag.</p>
-  <div class="banner">Synthetic data only. Every interview here was generated with a known label, so
-  each flag can be checked against the truth. No real respondent data is on this site.</div>
-  <p class="muted">Each run below was produced by the pipeline itself when this site was built from
-  {version_text} on {esc(built)}. Rows shaded red are interviews the pipeline got wrong.</p>
-  <nav>{nav}</nav>
-  {"".join(sections)}
-  <section id="notebook">
-    <h2>Audit notebook</h2>
-    <p>The system audit notebook recomputes every anomaly score from the exported features,
-    checks it against what the pipeline reported, and plots the score distribution, feature
-    correlations and the separation between normal and anomalous interviews. It was executed
-    on the 500-interview SurveyCTO run when this site was built.</p>
-    <p><a href="notebook.html">Open the executed notebook</a></p>
-  </section>
-  <section>
-    <h2>Reproduce it</h2>
-    <p>Every number on this page comes from these commands, run on a fresh copy of the repository:</p>
-    <pre>pip install -r requirements.txt
-python scripts/build_results_site.py --out build/site</pre>
-    <p class="muted">Or one run directly:
-    <code>python run_pipeline.py --inputs data/synthetic_datasets/n500/audit_logs_surveycto.csv
-    --ground-truth data/synthetic_datasets/n500/ground_truth_labels.csv --label n500_surveycto</code></p>
-  </section>
-  <footer>Detection is not uniform across anomaly types, and the full validation report (including the
-  stress condition where normal and anomalous behaviour overlap) is in <code>docs/validation_report.md</code>
-  in the repository.</footer>
-</main>
-</body>
-</html>
-"""
 
 
 def main() -> int:
@@ -346,23 +424,51 @@ def main() -> int:
         out = ROOT / out
     if out.exists():
         shutil.rmtree(out)
-    (out / "runs").mkdir(parents=True)
+    shutil.copytree(ROOT / "site", out)
+    (out / "runs").mkdir()
+    (out / "data").mkdir()
 
     version = args.version.strip() or "unknown"
     built = datetime.now(timezone.utc).strftime("%d %B %Y, %H:%M UTC")
 
-    sections = []
-    for label, title, inputs, ground_truth, description in RUNS:
+    import tempfile
+
+    generated = tempfile.TemporaryDirectory()
+    stress_dir = Path(generated.name)
+    subprocess.run(
+        [sys.executable, "tests/generate_benchmark_datasets.py", "--dataset-size", "500",
+         "--seed", str(STRESS_SEED), "--difficulty", "stress", "--output-dir", str(stress_dir)],
+        cwd=ROOT, check=True, capture_output=True, text=True)
+    SHOWN_PREFIXES[str(stress_dir)] = STRESS_SHOWN
+    runs = RUNS + [(
+        "stress_seed7_surveycto",
+        "500 interviews, harder batch",
+        [str(stress_dir / "audit_logs_surveycto.csv")],
+        str(stress_dir / "ground_truth_labels.csv"),
+        "Held-out seed 7 at stress difficulty: some genuine interviews are fast, some fabrications are mild, "
+        "so the queue has review cases, false alarms and misses.",
+    )]
+
+    index = []
+    for label, title, inputs, ground_truth, description in runs:
         run_dir = out / "runs" / label
-        run_pipeline(label, inputs, ground_truth, run_dir)
+        log, seconds = run_pipeline(label, inputs, ground_truth, run_dir)
         if label == NOTEBOOK_RUN and not args.skip_notebook:
             render_notebook(label, run_dir, out)
+        data = batch_data(label, title, inputs, ground_truth, description, run_dir, log, seconds)
+        (out / "data" / f"{label}.json").write_text(json.dumps(data, separators=(",", ":")), encoding="utf-8")
+        (out / "data" / f"raw_{label}.json").write_text(
+            json.dumps(raw_data(inputs), separators=(",", ":")), encoding="utf-8")
         # The combined output repeats the feature dataset and the anomaly
-        # report, so it is left out of the downloads.
+        # report, so it is not published.
         (run_dir / f"pipeline_output_{label}.csv").unlink(missing_ok=True)
-        sections.append(run_section(label, title, inputs, description, run_dir))
+        index.append({"label": label, "title": title, "description": description,
+                      "total": data["counts"]["total"], "platforms": data["platforms"]})
 
-    (out / "index.html").write_text(build_page(sections, version, built), encoding="utf-8")
+    (out / "data" / "index.json").write_text(json.dumps({
+        "batches": index, "version": version, "built": built,
+        "notebook": NOTEBOOK_RUN if not args.skip_notebook else None,
+    }), encoding="utf-8")
     (out / "health.json").write_text(
         json.dumps({"status": "ok", "data_mode": "synthetic", "version": version}),
         encoding="utf-8",

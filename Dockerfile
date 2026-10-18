@@ -3,11 +3,13 @@
 # Static results site for the paradata pipeline, built for Dokploy.
 #
 # The pipeline runs here, at build time, on the synthetic datasets that ship
-# with the repository, and the audit notebook is executed on one run. The
-# finished page and every output CSV are then served by nginx, so nothing runs
-# when a visitor opens the site and there is no upload, no account and no live
-# Python process to go wrong. Every push to
-# main rebuilds the image, so the page always reports the commit it came from.
+# with the repository and on a harder batch regenerated from its recorded seed,
+# and the audit notebook is executed on one run. What each run produced is
+# written as data for the review dashboard in site/. nginx then serves the
+# dashboard, the data and every output CSV, so nothing runs when a visitor opens
+# the site and there is no upload, no account and no live Python process to go
+# wrong. Every push to main rebuilds the image, so the page always reports the
+# commit it came from.
 #
 #   docker build -t paradata-site .
 #   docker run --rm -p 8080:8080 paradata-site     # http://localhost:8080
@@ -70,6 +72,8 @@ RUN pip install --only-binary=:all: -c requirements-validated.txt \
 COPY run_pipeline.py ./
 COPY src/ ./src/
 COPY scripts/__init__.py scripts/build_results_site.py ./scripts/
+COPY site/ ./site/
+COPY tests/__init__.py tests/generate_benchmark_datasets.py tests/test_adversarial.py ./tests/
 COPY notebooks/System_Audit_Report.ipynb ./notebooks/
 COPY data/odk.csv data/surveycto.csv data/ground_truth_labels.csv ./data/
 COPY data/synthetic_datasets/n500/ ./data/synthetic_datasets/n500/
