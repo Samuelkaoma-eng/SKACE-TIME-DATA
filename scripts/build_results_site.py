@@ -5,6 +5,10 @@ that reports each run's metrics, detection by anomaly type and flagged
 interviews, with every output CSV beside it for download. Nothing on the page
 is typed in by hand: change the code, rebuild, and the page follows.
 
+The audit notebook, notebooks/System_Audit_Report.ipynb, is executed against
+the n500 SurveyCTO run and rendered as notebook.html beside the page. It runs
+in a temporary working folder, so the repository's own output/ is untouched.
+
     python scripts/build_results_site.py --out build/site
 
 The Dockerfile runs this at build time and serves the result with nginx, so
@@ -53,6 +57,10 @@ RUNS = [
     ),
 ]
 
+# The run the audit notebook is executed against.
+NOTEBOOK_RUN = "n500_surveycto"
+NOTEBOOK = ROOT / "notebooks" / "System_Audit_Report.ipynb"
+
 DOWNLOADS = [
     ("anomaly_report", "Anomaly report"),
     ("predictions", "Predictions against labels"),
@@ -73,6 +81,43 @@ def run_pipeline(label: str, inputs: list[str], ground_truth: str, out_dir: Path
     ]
     print(f"Running {label}: {' '.join(command[1:])}", flush=True)
     subprocess.run(command, cwd=ROOT, check=True)
+
+
+def render_notebook(label: str, run_dir: Path, out: Path) -> None:
+    """Execute the audit notebook on one run and write it as notebook.html."""
+    import tempfile
+
+    import nbformat
+    from nbconvert import HTMLExporter
+    from nbconvert.preprocessors import ExecutePreprocessor
+
+    print(f"Executing the audit notebook on {label}", flush=True)
+    with tempfile.TemporaryDirectory() as tmp:
+        work = Path(tmp)
+        # The notebook takes the folder holding src/ as the project root and
+        # reads the run's tables from output/ there.
+        shutil.copytree(ROOT / "src", work / "src", ignore=shutil.ignore_patterns("__pycache__"))
+        (work / "output").mkdir()
+        for stem in ("pipeline_output", "question_features", "section_features"):
+            shutil.copy(run_dir / f"{stem}_{label}.csv", work / "output")
+
+        notebook = nbformat.read(NOTEBOOK, as_version=4)
+        os.environ["SKACE_NOTEBOOK_RUN_LABEL"] = label
+        os.environ.setdefault("MPLBACKEND", "module://matplotlib_inline.backend_inline")
+        ExecutePreprocessor(timeout=600, kernel_name="python3").preprocess(
+            notebook, {"metadata": {"path": str(work)}}
+        )
+
+    body, _ = HTMLExporter(template_name="lab").from_notebook_node(notebook)
+    banner = (
+        '<div style="font:15px/1.5 system-ui,sans-serif;padding:10px 16px;'
+        'background:#fff7e0;color:#6b4e00;border-bottom:1px solid #e8d9a8">'
+        f'<a href="./" style="color:#2563eb">Back to the results</a> &middot; '
+        f"This notebook was executed on the <code>{esc(label)}</code> run when the site was "
+        "built. Synthetic data only.</div>"
+    )
+    head_end = body.index(">", body.index("<body")) + 1
+    (out / "notebook.html").write_text(body[:head_end] + banner + body[head_end:], encoding="utf-8")
 
 
 def esc(value) -> str:
@@ -231,6 +276,7 @@ footer { color: var(--muted); font-size: 0.85rem; }
 
 def build_page(sections: list[str], version: str, built: str) -> str:
     nav = "".join(f'<a href="#{label}">{esc(title)}</a>' for label, title, *_ in RUNS)
+    nav += '<a href="#notebook">Audit notebook</a>'
     version_text = f"commit <code>{esc(version)}</code>" if version != "unknown" else "an unknown commit"
     return f"""<!doctype html>
 <html lang="en">
@@ -255,6 +301,14 @@ def build_page(sections: list[str], version: str, built: str) -> str:
   {version_text} on {esc(built)}. Rows shaded red are interviews the pipeline got wrong.</p>
   <nav>{nav}</nav>
   {"".join(sections)}
+  <section id="notebook">
+    <h2>Audit notebook</h2>
+    <p>The system audit notebook recomputes every anomaly score from the exported features,
+    checks it against what the pipeline reported, and plots the score distribution, feature
+    correlations and the separation between normal and anomalous interviews. It was executed
+    on the 500-interview SurveyCTO run when this site was built.</p>
+    <p><a href="notebook.html">Open the executed notebook</a></p>
+  </section>
   <section>
     <h2>Reproduce it</h2>
     <p>Every number on this page comes from these commands, run on a fresh copy of the repository:</p>
@@ -281,6 +335,7 @@ def main() -> int:
         default=os.environ.get("BUILD_VERSION", ""),
         help="Commit the site is built from, shown on the page and at /health",
     )
+    parser.add_argument("--skip-notebook", action="store_true", help="Do not execute the audit notebook")
     args = parser.parse_args()
 
     out = Path(args.out)
@@ -297,6 +352,8 @@ def main() -> int:
     for label, title, inputs, ground_truth, description in RUNS:
         run_dir = out / "runs" / label
         run_pipeline(label, inputs, ground_truth, run_dir)
+        if label == NOTEBOOK_RUN and not args.skip_notebook:
+            render_notebook(label, run_dir, out)
         # The combined output repeats the feature dataset and the anomaly
         # report, so it is left out of the downloads.
         (run_dir / f"pipeline_output_{label}.csv").unlink(missing_ok=True)

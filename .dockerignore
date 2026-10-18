@@ -1,5 +1,6 @@
-# The image needs the pipeline, the build script, the sample data and the n500
-# benchmark. Everything else stays out of the build context.
+# The image needs the pipeline, the build script, the audit notebook, the
+# sample data and the n500 benchmark. Everything else stays out of the build
+# context.
 *
 !Dockerfile
 !requirements-validated.txt
@@ -8,6 +9,7 @@
 !scripts/__init__.py
 !scripts/build_results_site.py
 !deploy/nginx.conf
+!notebooks/System_Audit_Report.ipynb
 !data/odk.csv
 !data/surveycto.csv
 !data/ground_truth_labels.csv

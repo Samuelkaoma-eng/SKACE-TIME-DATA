@@ -381,7 +381,7 @@ dataset already contains pipeline-produced anomaly outputs.""")
 comparison_summary = []
 for source_col, recomputed_col in comparison_pairs:
     if source_col in df.columns and recomputed_col in df.columns:
-        mismatches = (df[source_col].astype(str) != df[recomputed_col].astype(str)).sum()
+        mismatches = (df[source_col].fillna('').astype(str) != df[recomputed_col].fillna('').astype(str)).sum()
         comparison_summary.append({
             'column': source_col,
             'mismatches': int(mismatches),
