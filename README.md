@@ -348,8 +348,8 @@ over HTTP, for example `python -m http.server --directory build/site`.
 
 To host it on Dokploy, create an application from this repository's `main`
 branch with the Dockerfile build type, set the container port to `8080`, and
-attach a domain. Each push to `main` then rebuilds the image, which takes about
-six minutes.
+attach a domain. Each push to `main` then rebuilds the image, which takes a few
+minutes.
 
 ## Current Validation Outputs
 

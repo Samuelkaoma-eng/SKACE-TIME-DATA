@@ -21,6 +21,9 @@
     </div>
     <nav class="tabs" aria-label="Views">
       <a href="#review" data-view="review">Review queue</a>
+      <a href="#data" data-view="data">Data in</a>
+      <a href="#method" data-view="method">Method</a>
+      <a href="#charts" data-view="charts">Charts</a>
       <a href="#output" data-view="output">Run output</a>
       <a href="#validation" data-view="validation">Validation</a>
       <a href="#how" data-view="how">How it is used</a>
@@ -64,6 +67,12 @@
     </div>
   </section>
 
+  <section id="view-data" class="view" hidden></section>
+
+  <section id="view-method" class="view" hidden></section>
+
+  <section id="view-charts" class="view" hidden></section>
+
   <section id="view-output" class="view" hidden>
     <div class="card">
       <h2>What the pipeline printed</h2>
@@ -84,6 +93,8 @@
 </main>
 
 <footer class="foot" id="foot"></footer>
+<script src="charts.js"></script>
+<script src="views.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

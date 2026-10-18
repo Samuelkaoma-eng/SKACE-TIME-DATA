@@ -1,6 +1,7 @@
 # The image needs the pipeline, the build script and dashboard, the audit
-# notebook, the sample data, the n500 benchmark and the generator for the
-# harder batch. Everything else stays out of the build context.
+# notebook, the feature documentation, the prevalence results, the sample data,
+# the n500 benchmark and the generator for the harder batch. Everything else
+# stays out of the build context.
 *
 !Dockerfile
 !requirements-validated.txt
@@ -8,12 +9,15 @@
 !src/
 !scripts/__init__.py
 !scripts/build_results_site.py
+!scripts/baseline_breakdown.py
 !site/
 !tests/__init__.py
 !tests/generate_benchmark_datasets.py
 !tests/test_adversarial.py
 !deploy/nginx.conf
 !notebooks/System_Audit_Report.ipynb
+!docs/feature_documentation.md
+!output/prevalence_envelope/envelope_summary.csv
 !data/odk.csv
 !data/surveycto.csv
 !data/ground_truth_labels.csv

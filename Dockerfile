@@ -71,10 +71,12 @@ RUN pip install --only-binary=:all: -c requirements-validated.txt \
 
 COPY run_pipeline.py ./
 COPY src/ ./src/
-COPY scripts/__init__.py scripts/build_results_site.py ./scripts/
+COPY scripts/__init__.py scripts/build_results_site.py scripts/baseline_breakdown.py ./scripts/
 COPY site/ ./site/
 COPY tests/__init__.py tests/generate_benchmark_datasets.py tests/test_adversarial.py ./tests/
 COPY notebooks/System_Audit_Report.ipynb ./notebooks/
+COPY docs/feature_documentation.md ./docs/
+COPY output/prevalence_envelope/envelope_summary.csv ./output/prevalence_envelope/
 COPY data/odk.csv data/surveycto.csv data/ground_truth_labels.csv ./data/
 COPY data/synthetic_datasets/n500/ ./data/synthetic_datasets/n500/
 COPY --from=version /version ./VERSION

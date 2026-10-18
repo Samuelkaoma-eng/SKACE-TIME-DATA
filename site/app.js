@@ -2,7 +2,14 @@
 // from data/ and renders them. No libraries and no network beyond this site.
 "use strict";
 
-const state = { index: null, batch: null, raw: {}, view: "review", filter: "all", sort: "priority", query: "", selected: null };
+// ?theme=light or ?theme=dark overrides the system setting, for example on a projector.
+try {
+  const theme = new URLSearchParams(location.search).get("theme");
+  if (theme === "light" || theme === "dark") document.documentElement.dataset.theme = theme;
+} catch { /* the page works without it */ }
+
+const state = { index: null, batch: null, raw: {}, view: "review", filter: "all", sort: "priority", query: "", selected: null, family: "Q", colorBy: "lane" };
+const VIEWS = ["review", "data", "method", "charts", "output", "validation", "how"];
 const cache = {};
 const $ = (sel) => document.querySelector(sel);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -49,13 +56,13 @@ function readHash() {
   const raw = location.hash.replace(/^#/, "");
   const [view, query] = raw.split("?");
   const params = new URLSearchParams(query || "");
-  return { view: ["review", "output", "validation", "how"].includes(view) ? view : "review",
+  return { view: VIEWS.includes(view) ? view : "review",
     batch: params.get("batch"), id: params.get("id") };
 }
 function writeHash() {
   const params = new URLSearchParams();
   if (state.batch) params.set("batch", state.batch.label);
-  if (state.view === "review" && state.selected) params.set("id", state.selected);
+  if (["review", "data", "method"].includes(state.view) && state.selected) params.set("id", state.selected);
   const next = `#${state.view}?${params}`;
   if (location.hash !== next) history.replaceState(null, "", next);
 }
@@ -97,11 +104,12 @@ async function selectBatch(label, id) {
 }
 
 function renderView() {
-  for (const v of ["review", "output", "validation", "how"]) $(`#view-${v}`).hidden = v !== state.view;
+  for (const v of VIEWS) $(`#view-${v}`).hidden = v !== state.view;
   document.querySelectorAll(".tabs a").forEach((a) => {
     if (a.dataset.view === state.view) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
   });
   writeHash();
+  refreshViews();
 }
 
 // ------------------------------------------------------------------ batches ---
@@ -122,7 +130,7 @@ function renderSummary() {
     <div class="tile-value">${value}</div><div class="tile-note">${note}</div></div>`;
   $("#summary").innerHTML = [
     tile("", "Interviews processed", c.total.toLocaleString(),
-      `${b.raw_rows.toLocaleString()} raw log rows · ${b.seconds} s`),
+      `${b.raw_rows.toLocaleString()} raw log rows`),
     tile("flagged", "Flagged", c.flagged, `score ${b.thresholds.flagged} or more: quarantine`),
     tile("review", "Review", c.review, `score ${b.thresholds.review} to ${b.thresholds.flagged - 1}: back-check`),
     tile("dq", "Data quality", c.dq, "broken records: check the device"),
@@ -191,6 +199,7 @@ function select(id, scroll) {
   state.selected = id;
   document.querySelectorAll("tr.row").forEach((tr) => tr.setAttribute("aria-selected", tr.dataset.id === id));
   renderDetail();
+  refreshViews();
   writeHash();
   if (scroll && window.matchMedia("(max-width: 900px)").matches) $("#detail").scrollIntoView({ behavior: "smooth", block: "start" });
 }
@@ -215,7 +224,7 @@ function chart(iv) {
     <polyline class="series" points="${path(ys)}"/>
     ${ys.map((v, i) => (v === null || v === undefined) ? "" : `<circle class="dot" cx="${x(i)}" cy="${y(v / 1000)}" r="2.6"><title>Question ${i + 1}, ${esc(b.questions[i] || "")}: ${secs(v)} (batch median ${secs(base[i])})</title></circle>`).join("")}
   </svg>
-  <div class="legend"><span>This interview</span><span class="base">Batch median</span><em>Question number, in instrument order</em></div>`;
+  <div class="legend"><span style="--swatch:var(--series)"><i></i>This interview</span><span class="dashed" style="--swatch:var(--baseline)"><i></i>Batch median</span><em>Question number, in instrument order</em></div>`;
 }
 
 function renderDetail() {
@@ -389,7 +398,7 @@ function renderHow() {
         <p><strong>Recalibrate for a new instrument.</strong> Defaults suit a twenty-question household survey; the repository includes a recalibration script.</p></div>
       <div class="card"><h2>What this site is</h2>
         <p>Each batch above was run through the real pipeline, unchanged, when this site was built from the repository; the run output tab shows its console output and files. In a survey the same command runs on the data manager's computer or a team server, and produces the same files.</p>
-        <p>This batch: ${plural(b.raw_rows, "raw log row")} from ${esc(b.inputs.join(" and "))}, processed in ${b.seconds} s.</p></div>
+        <p>This batch: ${plural(b.raw_rows, "raw log row")} from ${esc(b.inputs.join(" and "))}.</p></div>
     </div>`;
 }
 
