@@ -1,0 +1,21 @@
+# The image needs the pipeline, the build script, the sample data and the n500
+# benchmark. Everything else stays out of the build context.
+*
+!Dockerfile
+!requirements-validated.txt
+!run_pipeline.py
+!src/
+!scripts/__init__.py
+!scripts/build_results_site.py
+!deploy/nginx.conf
+!data/odk.csv
+!data/surveycto.csv
+!data/ground_truth_labels.csv
+!data/synthetic_datasets/n500/
+
+# Commit ids only, for the version stage. Nothing else under .git.
+!.git/HEAD
+!.git/refs/heads/
+!.git/packed-refs
+
+**/__pycache__

@@ -313,6 +313,28 @@ precision 0.80 and recall 0.75, and fails the build if any does not. It runs
 weekly and on demand, since the examiner audit includes an n10000 scale check
 that takes about twenty minutes.
 
+## Hosted Results Site
+
+The `Dockerfile` builds a static results page. At build time it runs the
+pipeline on the sample data and on both n500 benchmark files, then serves the
+metrics, detection by type, flagged interviews and every output CSV with nginx.
+Nothing runs when a visitor opens the page, and the page names the commit it was
+built from.
+
+```bash
+docker build -t paradata-site .
+docker run --rm -p 8080:8080 paradata-site
+```
+
+Then open `http://localhost:8080`. `/health` returns the status, the data mode
+(always `synthetic`) and the commit. To build the page without Docker, run
+`python scripts/build_results_site.py --out build/site`.
+
+To host it on Dokploy, create an application from this repository's `main`
+branch with the Dockerfile build type, set the container port to `8080`, and
+attach a domain. Each push to `main` then rebuilds the image, which takes about
+three minutes.
+
 ## Current Validation Outputs
 
 The authoritative evaluation is the robustness round in

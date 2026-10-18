@@ -65,3 +65,6 @@ output/prevalence_envelope/runs/
 
 # Demo run behind the presentation panels (see scripts/build_demo_panels.py)
 output/*_demo.*
+
+# Static results site, rebuilt by scripts/build_results_site.py
+build/
