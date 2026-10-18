@@ -103,7 +103,10 @@ def render_notebook(label: str, run_dir: Path, out: Path) -> None:
 
         notebook = nbformat.read(NOTEBOOK, as_version=4)
         os.environ["SKACE_NOTEBOOK_RUN_LABEL"] = label
-        os.environ.setdefault("MPLBACKEND", "module://matplotlib_inline.backend_inline")
+        # The inline backend puts each figure into the notebook. A non-interactive
+        # backend such as Agg, the default where there is no display, would
+        # leave plt.show() drawing nothing.
+        os.environ["MPLBACKEND"] = "module://matplotlib_inline.backend_inline"
         ExecutePreprocessor(timeout=600, kernel_name="python3").preprocess(
             notebook, {"metadata": {"path": str(work)}}
         )
