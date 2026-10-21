@@ -83,7 +83,7 @@ and what happened to the output in the submitted work.
 | 10 to 16 Sep 2026 | Claude Code (Claude Opus 5) | Check every reference against its primary source, obtain and read the open-access full texts, and rebuild section 2 from them; draft the corrections the supervisor's review required | The repository, the report, and public sources fetched from the web | **Modified.** The tool carried out the bibliographic checks, read the sources that were obtainable, and drafted the rebuilt literature review, the comparison in section 7, appendices E and F and the reflection in section 9.2. Appendix E of the report records how far each source was verified; no claim in section 2 rests on a source listed there as abstract-level or not consulted. The drafted prose is mine to read, correct and endorse before submission. |
 | 10 to 16 Sep 2026 | Claude Code (Claude Opus 5) | Make the fence multiplier configurable, add the regression tests the review found missing, and build the baseline, platform parity and memory analyses it asked for | The repository | **Accepted after verification.** Every change is covered by a test or reproduces a recorded output: the suite reached forty-three tests at `v-resubmission` and forty-four at `v-final-release`, the baseline script reproduces Table 3 of the report exactly, the platform parity check is anchored to a SurveyCTO rendering that is byte-identical to the file the robustness round evaluated, and the whole of Appendix D was run in a clean environment with every recorded number reproducing. |
 | 21 to 22 Sep 2026 | Claude Code (Claude Opus 5) | Pin the two packages Appendix D needed, measure the prevalence envelope beyond thirty percent, carry the entropy fence onto `main` as an option that is off by default, and repeat the check of every reference, both that it exists and that it supports the claim it is cited for, against the full text wherever one could be obtained | The repository, the Crossref registry, Open Library and the cited web pages | **Accepted after verification.** The envelope script reproduces Table 5 exactly at the prevalences they share, and its eighty runs were made in the pinned environment; the mechanism described in section 6.4 was read from the flags recorded against each interview. With the fence off, the full robustness round reproduces its committed table exactly; with it on, every held-out figure recorded on the branch reproduces exactly. The limitation text in sections 6.4 and 8 was drafted by the tool and revised by me. The reference recheck found two entries not cited in the text, Hawkins (1980) and Tukey (1977), now removed from the list; citations that claimed more than the source supports, for Couper (1998), Yan and Tourangeau (2008), Zhang and Conrad (2014), Hoogeveen and Pape (2020), Iglewicz and Hoaglin (1993), Japkowicz and Stephen (2002), Kreuter (2013) and the three falsification papers cited in section 1.1; and wrong pinpoints for Birnbaum et al., Chandola et al., Goel et al. and Hodge and Austin. Each correction was checked against the source text and is recorded in Appendix E. |
-| 17 to 21 Oct 2026 | Claude Code (Claude Opus 5.5) | Bring the report to the 2026 template, reconcile the test and package counts with the tagged state, draft a requirements section and an evaluation against the objectives from the proposal, verify the two CRISP-DM sources used on the slides, and re-run Appendix D at `v-final-release` | The repository, the proposal, and the two CRISP-DM sources fetched from the web | **Reviewed, revised and endorsed on 19 Oct 2026.** The tool drafted section 1.5, section 9.1 with Table 9, the paragraph on CRISP-DM in section 3, the restated argument in section 2.4, the list of abbreviations, the shortened abstract and the title page lines, corrected the counts in sections 4, A.3, A.4 and A.6, and later added the five results-site tests named in section 4 and re-ran Appendix D at the final tag, recording that run in Appendix D. No pipeline code and no result changed. I reviewed and revised the prose and checked the factual statements against the report and its recorded outputs before endorsing it. |
+| 17 to 21 Oct 2026 | Claude Code (Claude Opus 5.5) | Bring the report to the 2026 template, reconcile the test and package counts with the tagged state, draft a requirements section and an evaluation against the objectives from the proposal, verify the two CRISP-DM sources used on the slides, and re-run Appendix D at `v-final-release` | The repository, the proposal, and the two CRISP-DM sources fetched from the web | **Reviewed, revised and endorsed on 19 Oct 2026.** The tool drafted section 1.5, section 9.1 with Table 9, the paragraph on CRISP-DM in section 3, the restated argument in section 2.4, the list of abbreviations, the shortened abstract and the title page lines, corrected the counts in sections 4, A.3, A.4 and A.6, built the review dashboard described in section 1.4 and its five tests on 18 October, and on 21 October re-ran Appendix D at the final tag, recording that run in Appendix D. No pipeline code and no result changed. I reviewed and revised the prose and checked the factual statements against the report and its recorded outputs before endorsing it. |
 
 ## 5. The decisions that mattered
 
@@ -128,12 +128,13 @@ E says so and the claim is held at the level the abstract or publisher record
 supports. And no number was taken on trust: every figure in the new tables is
 reproduced from a file under `output/`, and the whole of Appendix D was re-run
 in a clean environment to confirm it. **Endorsement, 19 October 2026:** I have
-read and revised the AI-drafted prose in this report, including sections 1.5
-and 9.1, and I endorse it as an accurate account of the work and evidence
-presented. The reflection in section 9.2 is in my own words. I have checked
-the factual claims against the report and its recorded outputs. The nine
-sources listed in Appendix E as unread remain outstanding and are not relied
-on for claims beyond the verification recorded there.
+read and revised the AI-drafted prose in this report, including sections 2 and
+7, Appendices E and F, and sections 1.5 and 9.1, and I endorse it as an
+accurate account of the work and evidence presented. The reflection in section
+9.2 is in my own words. I have checked the factual claims against the report
+and its recorded outputs. The nine sources listed in Appendix E as unread
+remain outstanding and are not relied on for claims beyond the verification
+recorded there.
 
 **A note on the entropy branch.** The branch that held the entropy fence
 correction, `fix/entropy-threshold-relative`, was created from a rewritten
@@ -151,7 +152,7 @@ corrected.
 
 No code-level suggestion entered the submitted work without a test or a recorded
 output check behind it. The five defects described in section 4 of the report
-are each covered by a test in the suite of forty-nine, which passes in full
+are each covered by a test in the suite of forty-four, which passes in full
 on Python 3.14.0. The first submission made that claim of a suite of thirty-
 seven, and it was wrong: two of the five fixes, the ODK placeholder and the
 exclusion of administrative events from section statistics, had no test at
