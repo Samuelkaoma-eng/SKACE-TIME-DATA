@@ -61,6 +61,19 @@ COVER_CORRECTIONS = {
     "DEPARTMENT OF COMPUTER SCIENCE": "DEPARTMENT OF COMPUTING AND INFORMATICS",
 }
 
+# The 2026 report template asks for these on the title page. They are written
+# into paragraphs the cover already has, so the number of cover elements copied
+# on the next rebuild does not change.
+REPORT_COVER_TYPE = "FINAL YEAR PROJECT REPORT"
+REPORT_COVER_YEAR = "Academic Year 2026"
+REPORT_COVER_DEGREE = ("A report submitted in partial fulfilment of the requirements for the degree of "
+                       "Bachelor of Science in Computer Science")
+REPORT_COVER_DATE = ("21", "st", " October 2026")
+
+# A4, in EMU, for printing. Margins are left as the reference document sets them.
+A4_WIDTH = 7560310
+A4_HEIGHT = 10692130
+
 
 @dataclass(frozen=True)
 class Deliverable:
@@ -72,6 +85,7 @@ class Deliverable:
     resource_path: str | None = None
     page_numbers: bool = False
     signature: bool = False
+    report_cover: bool = False
 
     @property
     def source_path(self) -> Path:
@@ -92,6 +106,7 @@ DELIVERABLES = (
         resource_path="report",
         page_numbers=True,
         signature=True,
+        report_cover=True,
     ),
     Deliverable(
         key="validation",
@@ -444,6 +459,73 @@ def correct_cover(path: Path) -> int:
     return changed
 
 
+def complete_report_cover(path: Path) -> int:
+    """Give the report's title page the lines the 2026 template requires.
+
+    The document type, the degree line, the academic year and the submission
+    date are written into the title paragraph, the empty paragraph below it and
+    the date line. Each is rewritten from the constants above on every build,
+    so running the build twice leaves the cover as it was after the first run.
+    """
+    document = Document(str(path))
+    cover = document.paragraphs[:14]
+    changed = 0
+
+    title_index = next((i for i, p in enumerate(cover) if p.style is not None and p.style.name == "Title"), None)
+    if title_index is None:
+        raise SystemExit("report cover has no Title paragraph")
+    for run in cover[title_index].runs:
+        if run.text.strip() in ("REPORT", REPORT_COVER_TYPE):
+            # Assigning `run.text` would drop the line break that puts the
+            # document type on a line of its own, so the run is rebuilt.
+            run.text = ""
+            run.add_break()
+            run.add_text(REPORT_COVER_TYPE)
+            changed += 1
+
+    below = cover[title_index + 1]
+    if below.text.strip() and not below.text.startswith(REPORT_COVER_DEGREE[:20]):
+        raise SystemExit(f"expected an empty paragraph below the report title, found {below.text!r}")
+    for run in list(below.runs):
+        run._element.getparent().remove(run._element)
+    below.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run = below.add_run(REPORT_COVER_DEGREE)
+    run.font.size = Pt(13)
+    run.add_break()
+    run = below.add_run(REPORT_COVER_YEAR)
+    run.font.size = Pt(13)
+    run.bold = True
+    changed += 1
+
+    date_line = next((p for p in cover if p.text.startswith("DATE:")), None)
+    if date_line is None:
+        raise SystemExit("report cover has no DATE line")
+    runs = date_line.runs
+    tab_run = next((i for i, r in enumerate(runs) if r._element.find(_qn("w:tab")) is not None), None)
+    if tab_run is None:
+        raise SystemExit("report cover DATE line has no tab")
+    for run in runs[tab_run + 1:]:
+        run._element.getparent().remove(run._element)
+    day, suffix, rest = REPORT_COVER_DATE
+    for text, superscript in ((day, False), (suffix, True), (rest, False)):
+        run = date_line.add_run(text)
+        run.font.size = Pt(14)
+        run.font.superscript = superscript
+    changed += 1
+
+    document.save(str(path))
+    return changed
+
+
+def set_a4(path: Path) -> None:
+    """Set every section to A4, which is what the department prints on."""
+    document = Document(str(path))
+    for section in document.sections:
+        section.page_width = A4_WIDTH
+        section.page_height = A4_HEIGHT
+    document.save(str(path))
+
+
 def sign(path: Path) -> bool:
     """Place the handwritten signature on the declaration line.
 
@@ -511,6 +593,9 @@ def build(deliverable: Deliverable) -> None:
         rendered = render(deliverable, Path(raw))
         prepend_cover(deliverable, rendered)
     cover = correct_cover(deliverable.target_path)
+    if deliverable.report_cover:
+        cover += complete_report_cover(deliverable.target_path)
+    set_a4(deliverable.target_path)
     rule_tables(deliverable.target_path)
     fitted = fit_tables(deliverable.target_path)
     captions = align_captions(deliverable.target_path)

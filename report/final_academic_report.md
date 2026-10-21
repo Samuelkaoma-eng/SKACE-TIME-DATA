@@ -3,13 +3,14 @@
 **Samuel Kaoma**
 Student number 2022016530
 
-Submitted in partial fulfilment of the requirements of CSC 4004
+Final Year Project Report, Academic Year 2026
+A report submitted in partial fulfilment of the requirements for the degree of Bachelor of Science in Computer Science (CSC 4004)
 Supervisor: Mr. Mofya Phiri
 
-September 2026
+21 October 2026
 
 Repository: https://github.com/Samuelkaoma-eng/SKACE-TIME-DATA
-Validated state: tag `v-resubmission`
+Validated state: tag `v-final-release` (commit `39cdcc9`)
 
 ---
 
@@ -26,7 +27,27 @@ in this study is synthetic and machine generated. No respondent data, and no
 data of any kind belonging to a third party, was uploaded to any external tool
 at any point.
 
-Signed: ......................................    Date: ......................
+Signed: ......................................    Date: 21 October 2026
+
+---
+
+## Supervisor approval
+
+I have read this report and approve it as meeting the requirements of CSC 4004
+Project for the degree of Bachelor of Science in Computer Science.
+
+Supervisor: Mr. Mofya Phiri
+
+Signature: ......................................    Date: ......................
+
+---
+
+## Acknowledgements
+
+I thank my supervisor, Mr. Mofya Phiri, for reading every draft of this report
+closely and for reviews that made it stricter than it would otherwise have
+been. I also thank the Department of Computing and Informatics for the
+framework within which the project was carried out.
 
 ---
 
@@ -53,94 +74,126 @@ T-01 are stable across the code, the output datasets and this report.
 | Section | Title | Page |
 |---|---|---|
 |  | Declaration | 2 |
-|  | Conventions used in this report | 2 |
-|  | Abstract | 6 |
-| 1 | **Introduction** | 7 |
-| 1.1 | Problem statement | 8 |
-| 1.2 | Aim | 8 |
-| 1.3 | Objectives | 8 |
-| 1.4 | Scope | 9 |
-| 1.5 | Contributions | 9 |
-| 1.6 | Structure of the report | 10 |
-| 2 | **Literature Review** | 10 |
-| 2.1 | Paradata and total survey error | 10 |
-| 2.2 | Response time and satisficing | 11 |
-| 2.3 | Detecting interviewer falsification | 12 |
-| 2.4 | Paradata in field and low-resource survey settings | 14 |
-| 2.5 | Outlier detection on skewed data | 15 |
-| 2.6 | Evaluation on synthetic and imbalanced data | 17 |
-| 3 | **Methodology** | 18 |
-| 3.1 | Common intermediate representation | 18 |
-| 3.2 | Feature taxonomy | 20 |
-| 3.3 | Key statistical formulations | 21 |
-| 3.4 | Anomaly detection | 22 |
-| 3.5 | Computational considerations | 25 |
-| 3.6 | Ethical considerations and AI usage disclosure | 25 |
-| 4 | **Implementation** | 26 |
-| 5 | **Evaluation Methodology** | 28 |
-| 5.1 | Synthetic data generation | 28 |
-| 5.2 | Design against overfitting | 31 |
-| 5.3 | Datasets | 32 |
-| 5.4 | Metrics and baselines | 32 |
-| 6 | **Results** | 32 |
-| 6.1 | Canonical suite | 32 |
-| 6.2 | Feature validity | 33 |
-| 6.3 | Baseline comparison and component contribution | 35 |
-| 6.4 | Class imbalance sweep | 37 |
-| 6.5 | Held-out stress evaluation | 41 |
-| 6.6 | Detection by anomaly type | 43 |
-| 6.7 | Scalability and regression checks | 45 |
-| 7 | **Discussion** | 47 |
-| 8 | **Limitations** | 51 |
-| 9 | **Conclusion** | 53 |
-| 9.1 | Reflection | 54 |
-|  | References | 55 |
-| A | **Appendix A. Artificial intelligence usage disclosure** | 58 |
-| B | **Appendix B. Per-run confusion counts** | 67 |
-| C | **Appendix C. Full feature validity results** | 68 |
-| D | **Appendix D. Reproduction commands** | 71 |
-| E | **Appendix E. Reference verification record** | 76 |
-| F | **Appendix F. Feature-to-source map** | 99 |
+|  | Supervisor approval | 2 |
+|  | Acknowledgements | 2 |
+|  | Conventions used in this report | 3 |
+|  | List of abbreviations | 6 |
+|  | Abstract | 7 |
+| 1 | **Introduction** | 8 |
+| 1.1 | Problem statement | 9 |
+| 1.2 | Aim | 9 |
+| 1.3 | Objectives | 9 |
+| 1.4 | Scope | 10 |
+| 1.5 | Stakeholders and requirements | 10 |
+| 1.6 | Contributions | 12 |
+| 1.7 | Structure of the report | 12 |
+| 2 | **Literature Review** | 13 |
+| 2.1 | Paradata and total survey error | 13 |
+| 2.2 | Response time and satisficing | 14 |
+| 2.3 | Detecting interviewer falsification | 15 |
+| 2.4 | Paradata in field and low-resource survey settings | 16 |
+| 2.5 | Outlier detection on skewed data | 18 |
+| 2.6 | Evaluation on synthetic and imbalanced data | 20 |
+| 3 | **Methodology** | 20 |
+| 3.1 | Common intermediate representation | 21 |
+| 3.2 | Feature taxonomy | 23 |
+| 3.3 | Key statistical formulations | 24 |
+| 3.4 | Anomaly detection | 25 |
+| 3.5 | Computational considerations | 27 |
+| 3.6 | Ethical considerations and AI usage disclosure | 28 |
+| 4 | **Implementation** | 28 |
+| 5 | **Evaluation Methodology** | 31 |
+| 5.1 | Synthetic data generation | 31 |
+| 5.2 | Design against overfitting | 33 |
+| 5.3 | Datasets | 34 |
+| 5.4 | Metrics and baselines | 34 |
+| 6 | **Results** | 35 |
+| 6.1 | Canonical suite | 35 |
+| 6.2 | Feature validity | 35 |
+| 6.3 | Baseline comparison and component contribution | 37 |
+| 6.4 | Class imbalance sweep | 39 |
+| 6.5 | Held-out stress evaluation | 42 |
+| 6.6 | Detection by anomaly type | 44 |
+| 6.7 | Scalability and regression checks | 46 |
+| 7 | **Discussion** | 48 |
+| 8 | **Limitations** | 52 |
+| 9 | **Conclusion** | 54 |
+| 9.1 | Evaluation against the objectives | 55 |
+| 9.2 | Reflection | 56 |
+|  | References | 57 |
+| A | **Appendix A. Artificial intelligence usage disclosure** | 60 |
+| B | **Appendix B. Per-run confusion counts** | 69 |
+| C | **Appendix C. Full feature validity results** | 70 |
+| D | **Appendix D. Reproduction commands** | 73 |
+| E | **Appendix E. Reference verification record** | 77 |
+| F | **Appendix F. Feature-to-source map** | 102 |
 
 ## List of Tables
 
 | Table | Title | Section | Page |
 |---|---|---|---|
-| 1 | Feature taxonomy, forty catalogued features in four groups | 3.2 | 20 |
-| 1a | Detector flags and default thresholds | 3.4 | 22 |
-| 1b | Synthetic generator parameters | 5.1 | 29 |
-| 2 | Ten largest feature effects, n500 SurveyCTO benchmark | 6.2 | 33 |
-| 3 | Full detector against two baselines representing current practice | 6.3 | 35 |
-| 4 | Contribution of each detection component, aggregated over ten runs | 6.3 | 36 |
-| 5 | Class imbalance sweep, held-out seed 7 | 6.4 | 37 |
-| 5a | Detection against prevalence, extended to ninety percent | 6.4 | 39 |
-| 6 | Held-out stress evaluation, seeds 7 and 99 in both formats | 6.5 | 41 |
-| 6a | Both baselines on the held-out stress runs | 6.5 | 42 |
-| 6b | One generated history written into both formats | 6.5 | 43 |
-| 7 | Per-class recall by injected anomaly type | 6.6 | 44 |
-| 8 | Scale behaviour, strict examiner audit | 6.7 | 46 |
-| 8a | Peak resident memory by dataset | 6.7 | 46 |
-| A1 | Artificial intelligence tool use, by episode | A.4 | 60 |
-| B1 | Confusion counts per run, robustness round | B.1 | 67 |
-| B2 | Confusion counts aggregated by platform format | B.2 | 68 |
-| C1 | Mann-Whitney U results for all forty features | C | 69 |
-| E1 | Verification of every reference, including those withdrawn | E | 76 |
-| E2 | Candidate sources for section 2, not yet cited | E | 97 |
-| F1 | Source for each of the forty features | F | 99 |
+| 1 | Feature taxonomy, forty catalogued features in four groups | 3.2 | 23 |
+| 1a | Detector flags and default thresholds | 3.4 | 25 |
+| 1b | Synthetic generator parameters | 5.1 | 32 |
+| 2 | Ten largest feature effects, n500 SurveyCTO benchmark | 6.2 | 36 |
+| 3 | Full detector against two baselines representing current practice | 6.3 | 37 |
+| 4 | Contribution of each detection component, aggregated over ten runs | 6.3 | 38 |
+| 5 | Class imbalance sweep, held-out seed 7 | 6.4 | 39 |
+| 5a | Detection against prevalence, extended to ninety percent | 6.4 | 40 |
+| 6 | Held-out stress evaluation, seeds 7 and 99 in both formats | 6.5 | 42 |
+| 6a | Both baselines on the held-out stress runs | 6.5 | 43 |
+| 6b | One generated history written into both formats | 6.5 | 44 |
+| 7 | Per-class recall by injected anomaly type | 6.6 | 45 |
+| 8 | Scale behaviour, strict examiner audit | 6.7 | 47 |
+| 8a | Peak resident memory by dataset | 6.7 | 47 |
+| 9 | Evaluation against the six objectives | 9.1 | 55 |
+| A1 | Artificial intelligence tool use, by episode | A.4 | 62 |
+| B1 | Confusion counts per run, robustness round | B.1 | 69 |
+| B2 | Confusion counts aggregated by platform format | B.2 | 69 |
+| C1 | Mann-Whitney U results for all forty features | C | 70 |
+| E1 | Verification of every reference, including those withdrawn | E | 77 |
+| E2 | Candidate sources for section 2, not yet cited | E | 101 |
+| F1 | Source for each of the forty features | F | 102 |
 
 ## List of Figures
 
 | Figure | Title | Section | Page |
 |---|---|---|---|
-| 1 | Five-layer pipeline architecture | 4 | 26 |
-| 2 | Precision and recall against anomaly prevalence | 6.4 | 38 |
-| 3 | Detection against anomaly prevalence, extended to ninety percent | 6.4 | 40 |
+| 1 | Five-layer pipeline architecture | 4 | 29 |
+| 2 | Precision and recall against anomaly prevalence | 6.4 | 40 |
+| 3 | Detection against anomaly prevalence, extended to ninety percent | 6.4 | 41 |
+
+## List of abbreviations
+
+| Abbreviation | Meaning |
+|---|---|
+| AI | Artificial intelligence |
+| CAI | Computer-assisted interviewing |
+| CRISP-DM | Cross-Industry Standard Process for Data Mining |
+| CSV | Comma-separated values, the file format of both platforms' exports |
+| DOI | Digital Object Identifier |
+| F1 | Harmonic mean of precision and recall |
+| FN, FP, TN, TP | False negative, false positive, true negative, true positive |
+| GPS | Global Positioning System |
+| IQR | Interquartile range, the distance between the first and third quartiles |
+| ISBN | International Standard Book Number |
+| ISO 8601 | The international standard for writing dates and times as text |
+| JSON | JavaScript Object Notation |
+| ms | Milliseconds |
+| ODK | Open Data Kit, the collection platform whose mobile client is ODK Collect |
+| PDF | Portable Document Format |
+| Q1, Q3 | First and third quartiles |
+| Q-, S-, V-, T- | Prefixes of the question-level, section-level, survey-level and statistical feature identifiers (Table 1) |
+| SMOTE | Synthetic Minority Over-sampling Technique |
+| URL | Uniform Resource Locator |
 
 ---
 
 ## Abstract
 
-Digital data collection platforms such as SurveyCTO and ODK Collect record detailed process data, commonly called paradata, alongside every interview. These audit logs hold timestamps, navigation events and validation errors that describe how an interview was conducted rather than what was answered. Survey methodology research has shown that such timing data can expose falsified interviews and speeding, yet paradata remains underused in practice. The platforms' own quality tools act field by field or interview by interview, and the raw logs differ across platforms, so turning them into a comparable set of interview-level indicators is left to each survey team. This study designed, implemented and evaluated an automated pipeline that parses SurveyCTO and ODK audit logs into a common intermediate representation, computes forty timing-based features across question, section and survey levels of granularity together with a statistical characterisation of each response time distribution, and flags anomalous interviews using interquartile range thresholds combined with transparent, configurable rules. The system was evaluated against synthetic benchmark datasets with labelled injected anomalies, including datasets generated from random seeds that were never used during development and a stress condition in which normal and anomalous behaviour deliberately overlap. Across a class imbalance sweep from five to thirty percent anomaly prevalence the detector achieved precision between 0.96 and 1.00 with full recall. On held-out stress datasets in both platform formats it achieved precision between 0.96 and 1.00 and recall between 0.84 and 0.89, exceeding the predefined success criteria of 0.80 precision and 0.75 recall. Extending the sweep to ninety percent established the envelope the method is valid in: both criteria held at every prevalence up to fifty percent in every condition tested, but when anomalies were the majority of the batch recall under stress fell to 0.44 and precision to 0.73, because the thresholds are estimated from the batch they judge. The method assumes that anomalies are a minority of the batch. The duration-only check that represents current practice recovered 66 of 100 anomalies on the canonical benchmark and none of the 400 in the held-out stress runs, where a single navigation rule recovered between 35 and 51 percent at precision below 0.22. When the same generated interviews were written in both formats, all forty features and every detector decision were identical, so the differences between the two formats' runs reflect different sampled interviews rather than the parsers. Across the stress runs speeding was detected in all 132 cases, disengagement in 121 of 136, and mild fabrication in 93 of 132. A diagnostic pass on those missed fabrications, run on development data only, found that response time entropy separates them from genuine interviews without overlap, so the shortfall is traced to threshold calibration rather than to any absence of signal in the features. The deliverables include a documented Python feature library, a paradata format guide, labelled validation datasets and this report.
+Digital data collection platforms such as SurveyCTO and ODK Collect record paradata alongside every interview: timestamps, navigation events and validation errors that describe how an interview was conducted rather than what was answered. Survey methodology research has shown that such timing data can expose falsified interviews and speeding, yet the raw logs differ across platforms, and turning them into comparable interview-level indicators is left to each survey team. This study designed, implemented and evaluated an automated pipeline that parses SurveyCTO and ODK audit logs into a common intermediate representation, computes forty timing-based features at question, section and survey level together with a statistical characterisation of each response time distribution, and flags anomalous interviews using interquartile range thresholds combined with transparent, configurable rules. It was evaluated on synthetic datasets with labelled injected anomalies, generated from held-out random seeds and including a stress condition in which normal and anomalous behaviour overlap. Across a sweep from five to thirty percent anomaly prevalence the detector achieved precision between 0.96 and 1.00 with full recall, and on the held-out stress datasets precision between 0.96 and 1.00 and recall between 0.84 and 0.89, exceeding the predefined criteria of 0.80 and 0.75. Both criteria held at every prevalence up to fifty percent but not beyond, because the thresholds are estimated from the batch they judge, so the method assumes that anomalies are a minority of the batch. A duration-only check representing current practice recovered 66 of 100 anomalies on the canonical benchmark and none of 400 under stress. When the same interviews were written in both formats, every feature and every detector decision was identical. Under stress, speeding was detected in all 132 cases, disengagement in 121 of 136 and mild fabrication in 93 of 132, a shortfall that a diagnostic pass traced to threshold calibration rather than to missing signal.
+
+**Keywords:** paradata; survey data quality; audit logs; interviewer falsification; response time; anomaly detection; interquartile range; SurveyCTO; ODK
 
 ## 1. Introduction
 
@@ -169,13 +222,40 @@ The aim of this project was to design and implement an automated pipeline for ex
 
 The project processes audit logs from SurveyCTO and ODK, extracts forty timing-based and behavioural features, characterises response patterns statistically, applies interquartile range and rule-based anomaly detection, and validates the system empirically using synthetic datasets with labelled anomalies. Real-time monitoring, dashboard integration, machine learning deployment and primary data collection were excluded from scope at proposal stage and remain so.
 
-### 1.5 Contributions
+### 1.5 Stakeholders and requirements
+
+The proposal stated its requirements implicitly, through its aim, objectives, scope and evaluation criteria. They are set out explicitly here, each with its source in the proposal, and section 9.1 evaluates the work against the objectives they derive from.
+
+Four groups have an interest in the system. **Field supervisors** receive the anomaly report and decide which interviews to back-check; they need to see why an interview was flagged, and their review capacity is limited, so every false alarm costs them time. **Survey teams**, including the data managers who receive uploads, run the pipeline on incoming audit logs, choose its thresholds and pass its outputs on; they need it to accept either platform's exports and to run without specialist intervention. **Enumerators** are the people whose work a flag concerns. They do not operate the system, but they bear the cost of every false positive, which is why explainability and precision carry weight in the requirements below. **Survey researchers** reuse the feature library, its documentation and the labelled datasets.
+
+The functional requirements are these.
+
+- **FR1.** Ingest SurveyCTO and ODK audit logs as CSV files, detecting the format automatically, including files in which both platforms' rows have been concatenated (proposal sections 1.4 and 3.2; Objective 2).
+- **FR2.** Normalise every input into one common intermediate representation, marking malformed rows rather than discarding them silently (proposal section 3.2).
+- **FR3.** Compute thirty to fifty timing-based features at question, section and survey level (Objective 3).
+- **FR4.** Characterise each interview's response time distribution by its variance, entropy, skewness and kurtosis (Objective 4).
+- **FR5.** Flag anomalous interviews using interquartile range fences and rule-based thresholds, giving each interview a score, a severity category and the list of flags that fired (Objective 5; proposal section 3.3).
+- **FR6.** Evaluate detection against labelled ground truth, reporting precision, recall and F1 overall, by anomaly type and by detection component (proposal section 5).
+- **FR7.** Generate synthetic audit logs in both formats with labelled injected anomalies of each type (proposal section 5.1).
+- **FR8.** Write the feature dataset, the anomaly report and the question-level and section-level tables as structured files, accompanied by feature documentation and a paradata format guide (Objective 6; proposal section 4).
+
+The non-functional requirements are these.
+
+- **NFR1. Detection quality.** Precision of at least 0.80 and recall of at least 0.75 for the combined detector (proposal section 5).
+- **NFR2. Explainability.** Every flag is a named rule or fence that a supervisor can check, and no opaque model is used (proposal section 3.3).
+- **NFR3. Extensibility.** Supporting a further platform requires a new parser and no change downstream (proposal section 3).
+- **NFR4. Scalability.** Processing cost grows approximately linearly with the number of audit events, from pilot studies to surveys of thousands of interviews (proposal section 3.3.1).
+- **NFR5. Configurability.** Every threshold can be changed without changing code, because thresholds drawn from the literature may not transfer between instruments (proposal section 8).
+- **NFR6. Reproducibility.** Every reported result can be regenerated from recorded seeds and documented commands, and the code is covered by automated tests (proposal sections 3.4 and 4).
+- **NFR7. Privacy.** The system processes paradata only, never survey answers, and validation uses synthetic data (proposal section 3.5).
+
+### 1.6 Contributions
 
 This work makes four contributions. The first is a format-agnostic intermediate representation for survey paradata, a six-column normalisation of SurveyCTO and ODK audit logs that decouples every downstream component from platform specifics, so that supporting an additional platform requires a new parser and no change to the feature library, the detector or the reporting layer. The second is a documented and tested feature library of forty timing-based indicators with stable identifiers spanning question, section and survey granularity together with a statistical characterisation of each interview's response time distribution, released with a coverage table that states for every feature where it is implemented, whether the pipeline exported it, and how it is tested. The third is a like-for-like baseline comparison, in which the full detector and two methods representing current practice are computed from the same raw files, the same features and the same ground truth inside a single audited script, so that the improvement over aggregate-duration checking is measured rather than asserted. The fourth is an evaluation designed to fail: held-out seeds, a stress difficulty in which normal and anomalous profiles overlap by construction, a class prevalence sweep, and a component breakdown that isolates and reports the weaker half of the author's own detector.
 
-### 1.6 Structure of the report
+### 1.7 Structure of the report
 
-Section 2 reviews the literature in five themes: paradata and total survey error, response time and satisficing, falsification detection, paradata in low-resource field collection, and outlier detection on skewed data. Section 3 sets out the methodology, including the common intermediate representation, the forty-feature taxonomy and the detector with its default thresholds. Section 4 describes the implementation and the defects found and fixed during development. Section 5 describes the synthetic data generator, the safeguards against overfitting, the datasets and the baselines, and section 6 reports the results. Section 7 discusses what the results support and what they do not, section 8 states the limitations, and section 9 concludes with a reflection on the project. The appendices give the disclosure of artificial intelligence use (A), per-run confusion counts (B), the full feature validity results (C), the reproduction commands (D), the record of reference verification (E) and the map from each feature to its source (F).
+Section 2 reviews the literature in five themes: paradata and total survey error, response time and satisficing, falsification detection, paradata in low-resource field collection, and outlier detection on skewed data. Section 3 sets out the methodology, including the common intermediate representation, the forty-feature taxonomy and the detector with its default thresholds. Section 4 describes the implementation and the defects found and fixed during development. Section 5 describes the synthetic data generator, the safeguards against overfitting, the datasets and the baselines, and section 6 reports the results. Section 7 discusses what the results support and what they do not, section 8 states the limitations, and section 9 concludes with an evaluation against the six objectives and a reflection on the project. The appendices give the disclosure of artificial intelligence use (A), per-run confusion counts (B), the full feature validity results (C), the reproduction commands (D), the record of reference verification (E) and the map from each feature to its source (F).
 
 ## 2. Literature Review
 
@@ -211,7 +291,7 @@ Three things follow for this project. The timing signature of fabrication is con
 
 The literature above is drawn largely from well-resourced survey programmes, and the deployment case for this project rests on settings that look different. The platform this project targets was built for those settings: Hartung et al. (2010) present ODK as an "open-source suite of tools designed to build information services for developing regions" (p. 1), comprising Collect for mobile data entry, Aggregate for server-side storage, and Build and Voice alongside them, and describe four deployments that exercise the design. Both platforms now record process data as a standard feature rather than as an add-on. ODK Collect can attach an audit log to every submission, recording each event, the node it concerns, and start and end times in epoch milliseconds (ODK, n.d.). SurveyCTO records per-field timing in its text audits, and offers quality tools of its own, including a minimum time per field with a count of speed violations, and automated checks that warn about quality concerns in incoming data (SurveyCTO, n.d.-a, n.d.-b).
 
-What is scarce in these settings is not the data but the capacity to act on it. Hoogeveen and Pape (2020) collect World Bank experience of collecting data in fragile and low-capacity states, and the book's foreword describes it as shifting the paradigm from "there are no data" to "how do we go about collecting data here?" (Hoogeveen and Pape, 2020, foreword). Supervisory capacity is thin, back-checking a meaningful share of interviews is often impractical, and collection runs on the same mobile platforms this project targets. Finn and Ranchhod (2017) supply the counterfactual that makes the problem concrete: fabrication in South Africa's National Income Dynamics Study, affecting about 7 percent of the sample, was detected while fieldwork was still under way and the affected interviews were re-conducted, and they find that it would not have affected their univariate and cross-sectional estimates meaningfully, but would have led to substantially different conclusions once panel estimators were used (Finn and Ranchhod, 2017, p. 129). Fabrication in field surveys is therefore real, occurs at measurable rates, and is detectable while collection is still in progress, which is the window a paradata pipeline operates in; and its consequences are uneven enough that detecting it is a better strategy than reasoning about whether a particular analysis would survive it.
+What is scarce in these settings is not the data but the capacity to act on it. Hoogeveen and Pape (2020) collect World Bank experience of collecting data in fragile and low-capacity states, and the book's foreword describes it as shifting the paradigm from "there are no data" to "how do we go about collecting data here?" (Hoogeveen and Pape, 2020, foreword). Only the foreword has been read, so the book is cited for its scope and nothing more. The argument that follows is this project's own, not the book's. Where collecting data is difficult enough to need such a book, supervising its collection is likely to be stretched as well: back-checking a meaningful share of interviews means sending staff back to the same hard-to-reach households, and that is costly in exactly the settings where budgets are tight. The audit log, by contrast, is a byproduct of collection (section 2.1) that either platform can attach to every submission, so analysing it adds no fieldwork. Finn and Ranchhod (2017) supply the counterfactual that makes the problem concrete: fabrication in South Africa's National Income Dynamics Study, affecting about 7 percent of the sample, was detected while fieldwork was still under way and the affected interviews were re-conducted, and they find that it would not have affected their univariate and cross-sectional estimates meaningfully, but would have led to substantially different conclusions once panel estimators were used (Finn and Ranchhod, 2017, p. 129). Fabrication in field surveys is therefore real, occurs at measurable rates, and is detectable while collection is still in progress, which is the window a paradata pipeline operates in; and its consequences are uneven enough that detecting it is a better strategy than reasoning about whether a particular analysis would survive it.
 
 The most directly comparable deployment is Goel, Abraham and Lahoti (2022), who used paradata during the India Working Survey to identify enumerators whose field practice deviated from that of their peers, and fed the finding back to them through their supervisors while collection was still running. Two features of their design bear on this project. The first is dynamic benchmarking: they compare each enumerator against a group facing similar field conditions rather than against a fixed constant, which is the reasoning behind the median-relative thresholds in Table 1a. The second is a caution this project adopts in section 7. A flag, they write, "should not be construed as conclusive evidence of wrongdoing", because "while it correctly identifies deviant behavior, it does not go into the reasons for it" (Goel et al., 2022, p. 10).
 
@@ -236,6 +316,8 @@ The nearest precedent in the falsification literature runs the other way, and is
 ## 3. Methodology
 
 The system is a multi-stage pipeline that proceeds from raw log ingestion through parsing, feature extraction, statistical characterisation and anomaly detection to structured output generation. Development followed an iterative, test-driven approach in Python 3.10 and later versions, using Pandas and NumPy for data processing, SciPy for statistical functions, Matplotlib and Seaborn for visualisation, and Pytest for automated testing (McKinney, 2017).
+
+The work was organised around the Cross-Industry Standard Process for Data Mining, CRISP-DM, which divides a data mining project into six phases: business understanding, data understanding, data preparation, modelling, evaluation and deployment (Chapman et al., 2000, p. 10). The model was chosen because it describes the project as it actually ran rather than as it was planned. Its authors state that the sequence of the phases "is not rigid" and that the outcome of each phase decides which phase comes next (Chapman et al., 2000, p. 10), and Wirth and Hipp (2000, section 5), reporting its use in practice, advise planning for iterations explicitly because a phase is never completely finished before the next one starts. In this project business understanding corresponds to the problem statement and requirements in section 1, data understanding to the study of the two platforms' audit logs in section 3.1, data preparation to the parsers and the intermediate representation, and modelling to the feature library and the detector in sections 3.2 to 3.4. Evaluation, in sections 5 and 6, twice sent the work back to an earlier phase: once when perfect scores showed that the synthetic anomalies were too cleanly separated and the generator had to be rebuilt (section 7), and once when a clean-environment audit exposed the timestamp defect described in section 4. Deployment was out of scope (section 1.4), and is addressed only as the operating procedure proposed in section 7.
 
 ### 3.1 Common intermediate representation
 
@@ -331,7 +413,7 @@ Features that require sample context are computed at batch level. Duration relat
 
 Every detector threshold lives in a configuration object validated at load time, with defaults matching the values justified in the methodology. A configuration file can be supplied on the command line, and a recalibration script derives a configuration from a labelled dataset by sweeping the score threshold and selecting the value that best satisfies the precision and recall targets. Configurations record their provenance, including the datasets used and the generation timestamp, so that any reported result can be traced to the exact settings that produced it. Reproducibility extends to the data: every synthetic dataset records its random seed, size, anomaly ratio and difficulty in an accompanying summary file, and regenerating any benchmark is a single documented command.
 
-The automated test suite contains forty-three tests covering the parsers, each feature extractor, the detector, the configuration validation and the end-to-end pipeline, and the suite passes in full at the time of writing. During a line-by-line review of the codebase two defects were found and fixed: an upstream data integrity flag was being overwritten by the detector, and missing field names in ODK logs were being converted to the literal string nan instead of the intended placeholder. A third defect surfaced during evaluation, when newly added form-level events were found to be inflating section pause statistics, and was fixed by excluding administrative events from section aggregation. A final pre-submission audit in a clean environment surfaced two further defects: the conversion from ISO 8601 timestamps to epoch milliseconds assumed the nanosecond datetime resolution of earlier pandas versions and silently produced values a thousand times too small under pandas 3, and the question-level response time was computed as the first-to-last event span, duplicating a separate feature, rather than as the documented sum of event durations. Both were corrected.
+The automated test suite contains forty-nine tests. Forty-four cover the parsers, each feature extractor, the detector, the configuration validation and the end-to-end pipeline, and are the suite at `v-final-release`; the other five, in `tests/test_results_site.py`, were added in October 2026 and check that the review dashboard described in the repository README explains every detector flag and lists the forty features. The suite passes in full at the time of writing. During a line-by-line review of the codebase two defects were found and fixed: an upstream data integrity flag was being overwritten by the detector, and missing field names in ODK logs were being converted to the literal string nan instead of the intended placeholder. A third defect surfaced during evaluation, when newly added form-level events were found to be inflating section pause statistics, and was fixed by excluding administrative events from section aggregation. A final pre-submission audit in a clean environment surfaced two further defects: the conversion from ISO 8601 timestamps to epoch milliseconds assumed the nanosecond datetime resolution of earlier pandas versions and silently produced values a thousand times too small under pandas 3, and the question-level response time was computed as the first-to-last event span, duplicating a separate feature, rather than as the documented sum of event durations. Both were corrected.
 
 Each of the five fixes now has a regression test: the preserved integrity flag (`test_detector_preserves_upstream_data_quality_flag`), the ODK placeholder (`test_odk_parser_missing_field_names_use_placeholder`), the exclusion of administrative events from section statistics (`test_section_features_exclude_administrative_form_events`), the timestamp conversion (`test_odk_parser_iso_timestamps_convert_to_epoch_ms`) and the response time definition (`test_question_features_preserve_field_level_behavior`). The first three were added during revision. In the version first submitted, the ODK placeholder and administrative-event fixes had no test, and the statement that all five fixes were covered was wrong. Three further tests were added at the same time: one confirming that the fence multiplier is configurable, one confirming that a single generated history parses identically from both formats (section 6.5), and one confirming that a log in ODK's documented native layout is detected and its form-level events excluded from the section statistics (section 3.1).
 
@@ -558,7 +640,7 @@ A twentyfold increase in input cost a factor of 19.05 in runtime on this run, an
 
 Memory was measured rather than assumed, with each dataset processed in a fresh process by `scripts/measure_memory.py` (Table 8a). The first submission stated that only interview-level summaries are held for the batch stage. That is not what the code does: the batch path used by `run_pipeline.py` keeps the question-level and section-level tables for every interview in memory until they are written out, alongside the interview summaries, so memory grows linearly with the number of interviews. Above an interpreter and library baseline of about 142 MiB, the pipeline added about 19 MiB for 500 interviews and 68 MiB for 2,000, roughly 34 KiB per interview, and 337 MiB for 10,000, which is the same rate. Memory is not a constraint at these sizes, but a survey of several hundred thousand interviews would need the granular tables streamed to disk rather than held.
 
-**Table 8a. Peak resident memory by dataset.** Sources: `output/memory_profile.md` and, for n10000, `output/memory_n10000/memory_profile.md`; Windows 11, Python 3.14.0 with pandas 2.3.2. In the pinned environment of Appendix D.1 (pandas 3.0.1) the same measurement gave 172.1 and 173.9 MiB at n500 and 247.7 and 247.5 MiB at n2000; the rate per interview is higher there, about 50 KiB, but growth is still linear.
+**Table 8a. Peak resident memory by dataset.** Sources: `output/memory_profile.md` and, for n10000, `output/memory_n10000/memory_profile.md`; Windows 11, Python 3.14.0 with pandas 2.3.2. In the pinned environment of Appendix D.1 (pandas 3.0.1) the same measurement gave 172.1 and 173.9 MiB at n500 and 247.7 and 247.5 MiB at n2000, and the run of Appendix D at the final tag on 21 October 2026 gave 174.3 and 175.1 MiB, 250.3 and 251.0 MiB, and 611.5 MiB at n10000; the rate per interview is higher there, about 48 KiB, but growth is still linear.
 
 | Dataset | Interviews | Question-level rows | Peak memory | Above baseline |
 |---|---|---|---|---|
@@ -570,7 +652,7 @@ Memory was measured rather than assumed, with each dataset processed in a fresh 
 
 The runtime figures above are wall clock timings of a single run and they move between runs on the same machine. A separate aggregate timing file, `output/synthetic_dataset_metrics.csv`, records 57.54 s and 1,037.74 s for the same two datasets, a factor of 18.04, from a different run. These are two measurements, not one measurement reported twice, and the strict examiner audit is the source cited throughout this report and in the validation documentation. Both runs, and the independent reproduction, show a roughly constant cost per interview, which is the claim the scaling result supports; whether the factor lands just below or just above twenty is variation between runs.
 
-After all changes made during the robustness round, the canonical benchmark suite continued to score precision 1.0000 and recall 1.0000 in both platform formats, confirming that hardening the evaluation did not degrade performance on the original success cases, and the automated test suite, now forty-four tests, passed in full.
+After all changes made during the robustness round, the canonical benchmark suite continued to score precision 1.0000 and recall 1.0000 in both platform formats, confirming that hardening the evaluation did not degrade performance on the original success cases, and the automated test suite, forty-four tests at `v-final-release`, passed in full.
 
 ## 7. Discussion
 
@@ -614,15 +696,32 @@ Because a flag concerns a named enumerator's work, a deployment would also need 
 
 This project set out to make timing-based paradata usable for survey quality assurance at scale, and delivered a working system: format-aware parsers for the two dominant collection platforms, a documented forty-feature library spanning three levels of granularity and a statistical characterisation layer, a transparent and configurable anomaly detector, a labelled synthetic benchmark generator, and an evaluation that meets its predefined success criteria under deliberately hostile conditions. Precision remained between 0.96 and 1.00 and recall between 0.84 and 1.00 on data the detector had never seen, including a stress condition constructed to blur the line between genuine and anomalous behaviour. That result holds inside a measured envelope: the method assumes anomalies are a minority of the batch, both criteria hold up to fifty percent prevalence, and beyond that detection collapses, so the pipeline must be run on batches pooled across enumerators. The system detects speeding essentially perfectly, disengagement reliably, and blatant fabrication reliably. Mild fabrication is detected in roughly seven cases in ten, and the diagnostic reported here locates that shortfall in threshold calibration rather than in the univariate design itself, which makes it a tractable target rather than a boundary. Five of the six objectives set at proposal stage are met in full. The second, format-aware parsers for SurveyCTO and ODK, is met for the two synthetic formats evaluated here and only in part for the platforms' native exports (section 3.1). Future work should validate the parsers on native exports and the system against real field data with verified outcomes, estimate thresholds from a verified reference set so that detection no longer depends on the batch being mostly genuine, settle the entropy fence trade-off against operational evidence of relative error costs rather than synthetic prevalence alone, extend detection with an interpretable multivariate layer, and add parsers for further platforms, each of which the architecture was explicitly designed to accommodate.
 
-### 9.1 Reflection
+### 9.1 Evaluation against the objectives
 
-Three things from this project will stay with me.
+Table 9 takes the six objectives of section 1.3 in turn, names the sections that evidence each, and records whether it was met. An objective is recorded as met only where the evidence covers every part of it, and the limit of the evidence is stated where there is one.
 
-The first is what the early results taught me about evaluating my own work. The first full evaluation returned perfect precision and recall on every dataset, and I recorded it as success. It was not: the synthetic anomalies were too cleanly separated from genuine interviews, and parts of the detector had been tuned to the generator that produced them. Rebuilding the evaluation around held-out seeds, overlapping profiles and a prevalence sweep produced lower numbers, and those lower numbers are the ones I can defend. I have stopped reading a perfect score as a result and started reading it as a warning that the test is too easy.
+**Table 9. Evaluation against the six objectives.**
 
-The second is the entropy fence. The diagnostic showed that the fabricated interviews the detector misses are separable on response time entropy, and the correction I developed raised fabricated recall from 93 of 132 to 132 of 132. It also dropped the lowest precision in the round from 0.9570 to 0.8333, and those additional false positives fall on genuine interviews at the low prevalence that most resembles a real survey. Every flag in this system is an accusation about a named enumerator's work, so I did not make it the default. It ships switched off, for a deployment that weighs the two errors differently to turn on. Deciding against my own improvement as the default, and reporting both numbers, was the hardest judgement in the project, and I still think it was the right one.
+| Objective | Evidence | Status |
+|---|---|---|
+| 1. Review and catalogue timing-based quality indicators from the literature, mapped to a feature taxonomy | Section 2; Table 1 in section 3.2; Appendix F maps each of the forty features to its source; Appendix E records the verification of every source | **Met.** 23 of the forty features are attributed to a named source; the other 17 are stated in Appendix F to be design choices of this project |
+| 2. Format-aware parsers for SurveyCTO and ODK producing a common intermediate representation | Sections 3.1 and 4; Table 6b in section 6.5, identical features and decisions from both formats on matched histories; section 8 | **Partly met.** Met for the two synthetic formats evaluated. ODK's documented native layout is detected and parsed, tested against a log built from the documentation rather than a real export; SurveyCTO's native text audit is not supported |
+| 3. A feature extraction module computing thirty to fifty indicators at question, section and survey level | Section 3.2 and Table 1; section 6.2 and Appendix C, the validity of all forty features; `docs/feature_coverage.md` | **Met.** Forty features across the three levels and a statistical group. Eight are constant on the synthetic corpus, so the evaluation is silent on them (section 6.2) |
+| 4. Statistical characterisation including variance, entropy, skewness and kurtosis | Section 3.3; features T-01 to T-10 in Table 1, among them variance (T-01), Shannon entropy (T-03), skewness (T-04) and excess kurtosis (T-05) | **Met** |
+| 5. Anomaly detection by interquartile range thresholds and rules, validated against precision and recall criteria | Section 3.4 and Table 1a; sections 6.1 to 6.6, including Tables 3, 5, 5a, 6 and 7 | **Met.** Precision between 0.96 and 1.00 and recall between 0.84 and 1.00 on held-out data, against criteria of 0.80 and 0.75. Both criteria hold up to fifty percent prevalence and not beyond (section 6.4), and mild fabrication is detected in 93 of 132 cases (section 6.6) |
+| 6. Structured output datasets, feature documentation and a paradata format guide for reuse | Section 4, the reporting layer; `output/`; `docs/feature_documentation.md`, `docs/feature_library_usage.md` and `docs/paradata_format_guide.md`; the labelled datasets in `data/synthetic_datasets/` | **Met.** The format guide describes the synthetic layouts the pipeline was evaluated on and states where they differ from the native exports |
 
-The third is about sources, and it is not comfortable. Two of the references in my first submission could not be located, and they carried some of the claims I leaned on most heavily. Losing them cost me the fabrication signature, the disengagement signature and seventeen of the forty feature justifications, and it taught me that a citation is a claim about a document that either exists and says what I attribute to it, or does not. I now check every reference against its primary source, record the check with a date, and treat a source I have not read myself as unusable. With the time again I would keep that record from the first week rather than reconstructing it at the end, and I would log every use of an AI tool as it happened, for the same reason: a record made afterwards is weaker evidence than one made at the time.
+Five objectives are met and one is partly met. The gap in the second is the same one section 8 records as a limitation: no native export from either platform has yet been processed.
+
+### 9.2 Reflection
+
+This project changed how I judge evidence in three practical ways.
+
+At first, I treated perfect precision and recall as proof that the detector worked. Looking back, those scores said more about the test data than the system: the generated anomalous interviews were too easy to distinguish, and some detector choices had followed the generator's patterns. I had to redesign the evaluation with held-out random seeds, more overlap between genuine and anomalous behaviour, and tests at different anomaly prevalences. The resulting scores were lower, but they tell me more about where the system is dependable and where it fails. I now see an unexpectedly perfect result as a reason to question the evaluation before celebrating it.
+
+I also learned that improving one metric can make a system worse for the people who rely on it. The optional entropy fence identifies fabricated interviews that the default detector misses, raising recall from 93 of 132 to 132 of 132. But at low prevalence it also reduces the round's lowest precision from 0.9570 to 0.8333, meaning more genuine interviews would be flagged. Since a flag can affect how an enumerator's work is judged, I kept this change off by default and reported both outcomes. A deployment team can enable it if its evidence and error costs justify that choice. I am more confident in this decision because I did not hide the trade-off behind the higher recall figure.
+
+Finally, I learned to treat references as evidence that must be checked, not decoration around an argument. Two references in my first submission could not be found, and several claims had depended on them. Rechecking the literature forced me to revise the feature justifications and the account of fabrication and disengagement indicators. I now record source checks and use only claims supported by material I have examined. I should have maintained that record from the start, just as I should have logged AI assistance when it occurred rather than reconstructing it later. Both practices make it easier for another person to trace how the report's claims were produced.
 
 ## References
 
@@ -635,6 +734,8 @@ The third is about sources, and it is not comfortable. Two of the references in 
 - Bushery, J.M., Reichert, J.W., Albright, K.A. and Rossiter, J.C. (1999) 'Using date and time stamps to detect interviewer falsification', *Proceedings of the Survey Research Methods Section*. Alexandria, VA: American Statistical Association, pp. 316-320. Available at: http://www.asasrms.org/Proceedings/papers/1999_053.pdf
 
 - Chandola, V., Banerjee, A. and Kumar, V. (2009) 'Anomaly detection: a survey', *ACM Computing Surveys*, 41(3), pp. 1-58.
+
+- Chapman, P., Clinton, J., Kerber, R., Khabaza, T., Reinartz, T., Shearer, C. and Wirth, R. (2000) *CRISP-DM 1.0: Step-by-step Data Mining Guide*. SPSS Inc.
 
 - Cohen, J. (1988) *Statistical Power Analysis for the Behavioral Sciences*. 2nd edn. Hillsdale, NJ: Lawrence Erlbaum Associates.
 
@@ -678,6 +779,8 @@ The third is about sources, and it is not comfortable. Two of the references in 
 
 - SurveyCTO (n.d.-b) *Collecting high-quality data*. SurveyCTO Documentation. Available at: https://docs.surveycto.com/04-monitoring-and-management/02-managing-for-quality/01.collecting-high-quality-data.html (Accessed: 10 September 2026).
 
+- Wirth, R. and Hipp, J. (2000) 'CRISP-DM: towards a standard process model for data mining', in *Proceedings of the 4th International Conference on the Practical Applications of Knowledge Discovery and Data Mining*. Manchester, pp. 29-39.
+
 - Yan, T. and Tourangeau, R. (2008) 'Fast times and easy questions: the effects of age, experience and question complexity on web survey response times', *Applied Cognitive Psychology*, 22(1), pp. 51-68.
 
 - Zhang, C. and Conrad, F.G. (2014) 'Speeding in web surveys: the tendency to answer very fast and its association with straightlining', *Survey Research Methods*, 8(2), pp. 127-135.
@@ -691,7 +794,7 @@ The third is about sources, and it is not comfortable. Two of the references in 
 
 This appendix is the full disclosure of artificial intelligence tool use in this project, required by section 9.4 of the project proposal and by the supervision framework for the academic year. It is maintained in the repository as `docs/ai_usage_log.md` and reproduced here in expanded form. The log was started on 6 July 2026; entries before that date are reconstructed from the development history and version control record and are marked as reconstructed, which is a limitation discussed in section A.7.
 
-The intellectual content of this project is my own. The research question, the literature review and the argument it makes, the forty-feature taxonomy, the common intermediate representation, the parser design, the choice of interquartile and rule-based detection, the thresholds shipped on `main`, the synthetic generator and its anomaly profiles, the success criteria, the interpretation of every result, and the decision to report weaker per-class results transparently are mine.
+The intellectual content of this project is my own. The research question, the argument the literature review makes, the forty-feature taxonomy, the common intermediate representation, the parser design, the choice of interquartile and rule-based detection, the thresholds shipped on `main`, the synthetic generator and its anomaly profiles, the success criteria, the interpretation of every result, and the decision to report weaker per-class results transparently are mine.
 
 ### A.2 What was provided to external tools, and what was not
 
@@ -714,11 +817,11 @@ Version identifiers are recorded where they are recoverable. Hosted assistant pr
 | Tool | Version | Recoverable | Period of use |
 |---|---|---|---|
 | GitHub Copilot | Visual Studio Code extension, version not recorded at time of use | No | March to April 2026 |
-| Claude (hosted assistant) | Product version not exposed to the user; not pinned | No | March to September 2026 |
+| Claude (hosted assistant) | Product version not exposed to the user; not pinned | No | March to October 2026 |
 | ChatGPT (hosted assistant) | Product version not exposed to the user; not pinned | No | April 2026 |
 | Python | 3.14.0 | Yes | Final validation runs |
 | pandas | 3.0.1 | Yes | Final validation runs |
-| Full environment | `requirements-validated.txt`, 143 pinned packages | Yes | Final validation runs |
+| Full environment | `requirements-validated.txt`, 148 pinned packages | Yes | Final validation runs |
 
 The last three rows are not AI tools and are listed because the reproducibility of every figure in this report depends on them, and because two of the five defects recorded in section 4 were caused by a pandas version change rather than by a logic error.
 
@@ -740,9 +843,10 @@ Each row records what the tool was asked for in substance, what was given to it,
 | 19 to 25 Aug 2026 | Claude | Identify what the validation documentation is missing relative to the proposal commitments | Validation documentation, `output/` | **Accepted in part.** This identified the absence of aggregate confusion counts, baseline figures, effect sizes and a per-component breakdown. Every value added was recomputed from existing project outputs by scripts in `scripts/` and checked by me. |
 | 19 to 25 Aug 2026 | Claude | Bounded diagnostic on the fabricated false negatives: is there a feature that separates them | Development seeds 11 and 42 only, synthetic | **Accepted as diagnosis, rejected as a change.** The finding that entropy separates the missed cases completely is reported in section 6.6. The threshold correction it motivated was developed, evaluated once, and deliberately not merged; it remains on a separate branch. No threshold on `main` was changed. |
 | 25 Aug to 5 Sep 2026 | Claude | Locate stale or contradictory wording across the report, validation document and presentation; assemble front matter, figures and appendices | Documentation and `output/` files | **Modified.** Corrections were made against recorded outputs. The figures in sections 4, 6.4 and 6.6 are generated by `scripts/build_report_figures.py` from values transcribed from recorded output files, and I checked each plotted value against its source. |
-| 10 to 16 Sep 2026 | Claude Code (Claude Opus 5) | Check every reference against its primary source, obtain and read the open-access full texts, and rebuild section 2 from them; draft the corrections the supervisor's review required | The repository, the report, and public sources fetched from the web | **Modified.** The tool carried out the bibliographic checks, read the sources that were obtainable, and drafted the rebuilt literature review, the comparison in section 7, appendices E and F and the reflection in section 9.1. Appendix E records how far each source was verified; no claim in section 2 rests on a source listed there as abstract-level or not consulted. The drafted prose is mine to read, correct and endorse before submission, and section A.5 states what that leaves outstanding. |
-| 10 to 16 Sep 2026 | Claude Code (Claude Opus 5) | Make the fence multiplier configurable, add the regression tests the review found missing, and build the baseline, platform parity and memory analyses it asked for | The repository | **Accepted after verification.** Every change is covered by a test or reproduces a recorded output: the suite is now forty-two tests, the baseline script reproduces Table 3 exactly, the platform parity check is anchored to a SurveyCTO rendering that is byte-identical to the file the robustness round evaluated, and the whole of Appendix D was run in a clean environment with every recorded number reproducing. |
+| 10 to 16 Sep 2026 | Claude Code (Claude Opus 5) | Check every reference against its primary source, obtain and read the open-access full texts, and rebuild section 2 from them; draft the corrections the supervisor's review required | The repository, the report, and public sources fetched from the web | **Modified.** The tool carried out the bibliographic checks, read the sources that were obtainable, and drafted the rebuilt literature review, the comparison in section 7, appendices E and F and the reflection in section 9.2. Appendix E records how far each source was verified; no claim in section 2 rests on a source listed there as abstract-level or not consulted. The drafted prose is mine to read, correct and endorse before submission, and section A.5 states what that leaves outstanding. |
+| 10 to 16 Sep 2026 | Claude Code (Claude Opus 5) | Make the fence multiplier configurable, add the regression tests the review found missing, and build the baseline, platform parity and memory analyses it asked for | The repository | **Accepted after verification.** Every change is covered by a test or reproduces a recorded output: the suite reached forty-three tests at `v-resubmission` and forty-four at `v-final-release`, the baseline script reproduces Table 3 exactly, the platform parity check is anchored to a SurveyCTO rendering that is byte-identical to the file the robustness round evaluated, and the whole of Appendix D was run in a clean environment with every recorded number reproducing. |
 | 21 to 22 Sep 2026 | Claude Code (Claude Opus 5) | Pin the two packages Appendix D needed, measure the prevalence envelope beyond thirty percent, carry the entropy fence onto `main` as an option that is off by default, and repeat the check of every reference, both that it exists and that it supports the claim it is cited for, against the full text wherever one could be obtained | The repository, the Crossref registry, Open Library and the cited web pages | **Accepted after verification.** The envelope script reproduces Table 5 exactly at the prevalences they share, and its eighty runs were made in the pinned environment; the mechanism described in section 6.4 was read from the flags recorded against each interview. With the fence off, the full robustness round reproduces its committed table exactly; with it on, every held-out figure recorded on the branch reproduces exactly. The limitation text in sections 6.4 and 8 was drafted by the tool and revised by me. The reference recheck found two entries not cited in the text, Hawkins (1980) and Tukey (1977), now removed from the list; citations that claimed more than the source supports, for Couper (1998), Yan and Tourangeau (2008), Zhang and Conrad (2014), Hoogeveen and Pape (2020), Iglewicz and Hoaglin (1993), Japkowicz and Stephen (2002), Kreuter (2013) and the three falsification papers cited in section 1.1; and wrong pinpoints for Birnbaum et al., Chandola et al., Goel et al. and Hodge and Austin. Each correction was checked against the source text and is recorded in Appendix E. |
+| 17 to 21 Oct 2026 | Claude Code (Claude Opus 5.5) | Bring the report to the 2026 template, reconcile the test and package counts with the tagged state, draft a requirements section and an evaluation against the objectives from the proposal, verify the two CRISP-DM sources used on the slides, and re-run Appendix D at `v-final-release` | The repository, the proposal, and the two CRISP-DM sources fetched from the web | **Reviewed, revised and endorsed on 19 Oct 2026.** The tool drafted section 1.5, section 9.1 with Table 9, the paragraph on CRISP-DM in section 3, the restated argument in section 2.4, the list of abbreviations, the shortened abstract and the title page lines, corrected the counts in sections 4, A.3, A.4 and A.6, and later added the five results-site tests named in section 4 and re-ran Appendix D at the final tag, recording that run in Appendix D. No pipeline code and no result changed. I reviewed and revised the prose and checked the factual statements against the report and its recorded outputs before endorsing it. |
 
 ### A.5 The decisions that mattered
 
@@ -754,13 +858,13 @@ Three episodes changed the submitted work in ways worth stating explicitly rathe
 
 **Rejected.** The entropy threshold correction motivated by the August diagnostic raises fabricated per-class recall from 93 of 132 at 0.70 to 132 of 132 and drops the lowest precision anywhere in the round from 0.9570 to 0.8333. I developed it, froze it, evaluated it once, and decided not to make it the default, for the reasons argued in section 7: the cost concentrates at low prevalence, which is the condition that most resembles deployment. It ships on `main` as an option that is off by default. Every figure in this report describes the detector with it off.
 
-**Disclosed.** The revision of September 2026 used AI assistance more extensively than any earlier episode, and the extent is stated here rather than left to the table. The tool checked every reference against its primary source, obtained and read the sources that were publicly available, rebuilt section 2 from them, drafted the comparison in section 7, appendices E and F and the reflection in section 9.1, wrote the three analysis scripts and the regression tests added in section 4, and applied the corrections the supervisor's review listed. Two boundaries were held throughout. No claim was written about a source that had not been read: where a source could not be obtained, Appendix E says so and the claim is held at the level the abstract or publisher record supports. And no number was taken on trust: every figure in the new tables is reproduced from a file under `output/`, and the whole of Appendix D was re-run in a clean environment to confirm it. What remains mine, and what the next paragraph does not excuse, is the obligation to read the drafted prose, confirm that it says what I am prepared to defend, and obtain the nine sources still listed in Appendix E as unread.
+**Disclosed.** The revision of September 2026 used AI assistance more extensively than any earlier episode, and the extent is stated here rather than left to the table. The tool checked every reference against its primary source, obtained and read the sources that were publicly available, rebuilt section 2 from them, drafted the comparison in section 7, appendices E and F and an earlier version of the reflection in section 9.2, since rewritten by me, wrote the three analysis scripts and the regression tests added in section 4, and applied the corrections the supervisor's review listed. Two boundaries were held throughout. No claim was written about a source that had not been read: where a source could not be obtained, Appendix E says so and the claim is held at the level the abstract or publisher record supports. And no number was taken on trust: every figure in the new tables is reproduced from a file under `output/`, and the whole of Appendix D was re-run in a clean environment to confirm it. **Endorsement, 19 October 2026:** I have read and revised the AI-drafted prose in this report, including sections 1.5 and 9.1, and I endorse it as an accurate account of the work and evidence presented. The reflection in section 9.2 is in my own words. I have checked the factual claims against the report and its recorded outputs. The nine sources listed in Appendix E as unread remain outstanding and are not relied on for claims beyond the verification recorded there.
 
 **A note on the entropy branch.** The branch that held the entropy fence correction, `fix/entropy-threshold-relative`, was created from a rewritten history and shares no commit with `main`, so it could not be merged. Its change was carried onto `main` instead, as the `entropy_fence_scale` option, off by default, with a regression test and the design note `docs/entropy_fence_change.md`; with the option set to 3.0 the held-out figures reproduce exactly. The branch was then retired, and its history is preserved under the tag `archive/entropy-fence`. Its code comment and design note claimed that the correction reduces to Tukey's fence for a symmetric distribution; that is wrong, for the reason given in section 7, and both have been corrected. The correction is a lower-side analogue of the semi-interquartile fence documented by Hubert and Vandervieren (2008, section 1), which is discussed in section 2.5.
 
 ### A.6 Tests attached to significant outputs
 
-No code-level suggestion entered the submitted work without a test or a recorded output check behind it. The five defects described in section 4 are each covered by a test in the suite of forty-three, which passes in full on Python 3.14.0. The first submission made that claim of a suite of thirty-seven, and it was wrong: two of the five fixes, the ODK placeholder and the exclusion of administrative events from section statistics, had no test at all, and a third covered the preserved integrity flag only indirectly. The three tests added in September, named in section 4, make the statement true. Every quantitative claim in this report resolves to a file under `output/`, and the commands that regenerate those files are in Appendix D. The feature coverage table is generated by `scripts/build_feature_coverage.py` rather than maintained by hand, so it cannot drift from the code. The component breakdown in section 6.3 is recomputed from recorded predictions rather than from a fresh run, so it describes exactly the runs reported elsewhere in this report.
+No code-level suggestion entered the submitted work without a test or a recorded output check behind it. The five defects described in section 4 are each covered by a test in the suite of forty-nine, which passes in full on Python 3.14.0. The first submission made that claim of a suite of thirty-seven, and it was wrong: two of the five fixes, the ODK placeholder and the exclusion of administrative events from section statistics, had no test at all, and a third covered the preserved integrity flag only indirectly. The three tests added in September, named in section 4, make the statement true. Every quantitative claim in this report resolves to a file under `output/`, and the commands that regenerate those files are in Appendix D. The feature coverage table is generated by `scripts/build_feature_coverage.py` rather than maintained by hand, so it cannot drift from the code. The component breakdown in section 6.3 is recomputed from recorded predictions rather than from a fresh run, so it describes exactly the runs reported elsewhere in this report.
 
 ### A.7 Limitations of this disclosure
 
@@ -810,7 +914,7 @@ Source for both tables: `output/robustness_validation/`, summarised in `output/r
 
 All forty catalogued features, tested with Mann-Whitney U on the n500 SurveyCTO benchmark of 400 normal and 100 anomalous interviews, with p-values Bonferroni-adjusted at a family-wise alpha of 0.05. Ordered by absolute effect size. Thirty features are significant after adjustment.
 
-Seven features are constant across the entire corpus. For them the output file records a Mann-Whitney statistic of 20000.0, which is exactly 400 × 100 / 2, the value produced when every normal-anomalous pair is tied. The p-value is undefined because the statistic then has no variance; in this environment (SciPy 1.17.1) it is written as missing, and the independent reproduction recorded it as 1.0. The table shows it as not defined. S-04 is not quite constant, because its per-section ratios average to one only up to floating-point rounding, which gives it a statistic of 19998.5 and p = 1.0. Section 6.2 explains each of these features by its implementation; the evaluation is silent on their value in real data.
+Seven features are constant across the entire corpus. For them the output file records a Mann-Whitney statistic of 20000.0, which is exactly 400 × 100 / 2, the value produced when every normal-anomalous pair is tied. The p-value is undefined because the statistic then has no variance; the committed output file, produced in July 2026 under earlier NumPy and pandas versions, writes it as missing, while the pinned environment of Appendix D.1 (SciPy 1.17.1, NumPy 2.4.3, pandas 3.0.1) and the independent reproduction both record it as 1.0. The table shows it as not defined. S-04 is not quite constant, because its per-section ratios average to one only up to floating-point rounding, which gives it a statistic of 19998.5 and p = 1.0. Section 6.2 explains each of these features by its implementation; the evaluation is silent on their value in real data.
 
 **Table C1. Mann-Whitney U results for all forty features.**
 
@@ -863,7 +967,7 @@ Source: `output/feature_validation_results.csv` and `output/feature_validation_r
 
 ## Appendix D. Reproduction commands
 
-Every command below is run from the repository root. The state reported here is the tag `v-final-release`, which contains every script this appendix names; `git rev-parse` on that tag resolves it to the exact commit. The earlier tag `v-validation-complete` predates `requirements-validated.txt` and `scripts/component_breakdown.py` and does not contain everything named here. Appendix D was run top to bottom on a copy of the working tree in a fresh virtual environment on 10 September 2026 (Windows 11, Python 3.14.0, `requirements-validated.txt`). Every step passed except the full workflow, which failed because the n10000 pack did not yet exist; the order above corrects that. Every recorded confusion count reproduced exactly, as did the component, baseline and parity tables, and the feature validity values agreed to within 6 × 10⁻¹⁶. D.11 was not run there, because it requires Microsoft Word. The sequence was then run again on 16 September 2026 from a clean clone of the tagged tree, at commit `a432441`, which differs from the tag only in the rebuilt Word and PDF deliverables and in the page numbers measured into the contents lists. All fourteen steps passed, in one hour and fifty-three minutes, and every recorded number reproduced with no mismatches: the confusion counts of all ten runs of the robustness round, the component breakdown, the baseline table, the parity metrics and summary, and precision and recall of 1.0000 on the canonical suite. The feature validity values agreed to within 6 x 10^-16, the residual difference being the pandas version. D.11 was run on the submission machine and produced the Word and PDF deliverables that accompany this report. An independent run of the appendix from the tag `v-resubmission`, on a different Python version and a different pandas version from those pinned here, passed the test suite and reproduced the robustness round of D.3 exactly, so the reported results do not depend on the author's machine or on the pinned library versions. Thirteen of its fifteen commands completed; the two D.11 commands failed because `requirements-validated.txt` at that tag omitted two packages they import, which D.1 now pins.
+Every command below is run from the repository root. The state reported here is the tag `v-final-release`, commit `39cdcc9`, which contains every script this appendix names. The earlier tag `v-validation-complete` predates `requirements-validated.txt` and `scripts/component_breakdown.py` and does not contain everything named here. Appendix D was run top to bottom on a copy of the working tree in a fresh virtual environment on 10 September 2026 (Windows 11, Python 3.14.0, `requirements-validated.txt`). Every step passed except the full workflow, which failed because the n10000 pack did not yet exist; the order above corrects that. Every recorded confusion count reproduced exactly, as did the component, baseline and parity tables, and the feature validity values agreed to within 6 × 10⁻¹⁶. D.11 was not run there, because it requires Microsoft Word. The sequence was then run again on 16 September 2026 from a clean clone of the tagged tree, at commit `a432441`, which differs from the tag only in the rebuilt Word and PDF deliverables and in the page numbers measured into the contents lists. All fourteen steps passed, in one hour and fifty-three minutes, and every recorded number reproduced with no mismatches: the confusion counts of all ten runs of the robustness round, the component breakdown, the baseline table, the parity metrics and summary, and precision and recall of 1.0000 on the canonical suite. The feature validity values agreed to within 6 x 10^-16, the residual difference being the pandas version. D.11 was run on the submission machine and produced the Word and PDF deliverables that accompany this report. An independent run of the appendix from the tag `v-resubmission`, on a different Python version and a different pandas version from those pinned here, passed the test suite and reproduced the robustness round of D.3 exactly, so the reported results do not depend on the author's machine or on the pinned library versions. Thirteen of its fifteen commands completed; the two D.11 commands failed because `requirements-validated.txt` at that tag omitted two packages they import, which D.1 now pins. Appendix D was run again in full on 21 October 2026 at the tag `v-final-release` (commit `39cdcc9`), from a fresh clone of the public repository in a new environment built from `requirements-validated.txt` (148 packages; Windows 11, Python 3.14.0). Every command from D.2 to D.15 completed, D.11 and D.15 included, in three hours and forty-seven minutes, and the suite passed 44 of 44 at the tag. Every metric, confusion count, baseline, parity result and prevalence envelope run reproduced exactly, the report figures were byte-identical, and the n10000 pack regenerated byte-identically from its seed. The only differences in the regenerated files were run times, peak memory, and skewness and kurtosis values that agree to within 6 × 10⁻¹³, which no detector rule reads.
 
 ### D.1 Environment
 
@@ -879,7 +983,7 @@ Verified on Python 3.14.0 with pandas 3.0.1. The pinned file records all 148 pac
 python -m pytest -q
 ```
 
-Expected: 44 passed.
+Expected: 49 passed. At the `v-final-release` tag the suite has 44 tests; the five in `tests/test_results_site.py` were added after it.
 
 ### D.3 The authoritative robustness round
 
@@ -1003,7 +1107,7 @@ python scripts/run_prevalence_envelope.py
 
 Every reference was checked against its primary source for authors, title, venue, year and pages, and the DOI or URL used is given. The last column records how far the supporting passage has been verified, using three levels: **full text** means the source was obtained and read at the passage cited; **abstract** means only the abstract or publisher record was consulted, so the claim is held at the level that record supports; **not consulted** means the work has not been obtained, and the report cites it only for its scope, never for a specific finding. A reference that fails the bibliographic check is removed from the report, not annotated.
 
-The bibliographic checks and the full-text reading recorded here were carried out with an AI tool on 10 and 16 September 2026, as episode 11 of Appendix A records. The bibliographic check was repeated on 22 September 2026: every DOI resolved in the Crossref registry to the recorded authors, title, venue, volume and pages, every URL returned the cited document, and every ISBN matched its Open Library record. Nine sources remain at abstract or not-consulted level; obtaining them from the university library and completing the last column is the outstanding work on this appendix, and it is listed at the end.
+The bibliographic checks and the full-text reading recorded here were carried out with an AI tool on 10 and 16 September 2026, as episode 11 of Appendix A records. The bibliographic check was repeated on 22 September 2026: every DOI resolved in the Crossref registry to the recorded authors, title, venue, volume and pages, every URL returned the cited document, and every ISBN matched its Open Library record. Two further sources, Chapman et al. (2000) and Wirth and Hipp (2000), were added on 17 October 2026 for the account of CRISP-DM in section 3, and were checked against their full texts on that date. Nine sources remain at abstract or not-consulted level; obtaining them from the university library and completing the last column is the outstanding work on this appendix, and it is listed at the end.
 
 **Table E1. Verification of every reference, including those withdrawn.**
 
@@ -1017,6 +1121,7 @@ The bibliographic checks and the full-text reading recorded here were carried ou
 | Bredl, Winker and Kötschau (2012), *Survey Methodology* 38(1), pp. 1-10 | https://www150.statcan.gc.ca/n1/pub/12-001-x/2012001/article/11680-eng.pdf | Correct | Full text; duration indicator p. 2 |
 | Bushery et al. (1999), ASA Survey Research Methods Section Proceedings, pp. 316-320 | http://www.asasrms.org/Proceedings/papers/1999_053.pdf | Correct | Full text; both quotations, the process control charts and the three screening criteria, p. 317 |
 | Chandola, Banerjee and Kumar (2009), *ACM Computing Surveys* 41(3), article 15 | https://doi.org/10.1145/1541880.1541882 | Correct | Full text; univariate definition section 2.1, unsupervised assumption section 2.3.3, which the report previously gave as section 3. The paper does not discuss masking, and the earlier citation for it has been corrected |
+| Chapman, Clinton, Kerber, Khabaza, Reinartz, Shearer and Wirth (2000), *CRISP-DM 1.0: Step-by-step Data Mining Guide* | No DOI. Copy of the SPSS release (document CRISPMWP-1104) archived from https://www.the-modeling-agency.com/crisp-dm.pdf, checked 17 October 2026 | Correct. Title page lists the seven authors and their organisations; copyright 1999 and 2000 held by the CRISP-DM consortium, released by SPSS Inc. in 2000 | Full text; the six phases, and the statements that their sequence is not rigid and that the outcome of each phase decides the next, p. 10. Added for section 3, because the presentation used CRISP-DM to structure the project |
 | Cohen (1988), *Statistical Power Analysis for the Behavioral Sciences*, 2nd edn | https://doi.org/10.4324/9780203771587 | Correct. Confirmed in the Crossref registry; the DOI identifies Routledge's 2013 reissue of the same second edition | Not consulted; cited only for the conventional effect-size measure |
 | Conrad, Tourangeau, Couper and Zhang (2017), *Survey Research Methods* 11(1), pp. 45-61 | https://ojs.ub.uni-konstanz.de/srm/article/view/6304 | Correct | Full text; absolute definition of speeding and the 350 ms per word benchmark, section 1 |
 | Couper (1998), ASA Survey Research Methods Section Proceedings, pp. 41-49 | http://www.asasrms.org/Proceedings/papers/1998_006.pdf | Pages were missing in the first submission; pp. 41-49 added | Full text; process data p. 44, keystroke files p. 45. The paper says process data and does not use the word paradata, so the introduction now cites it for process data and Kreuter (2013) for the term |
@@ -1026,7 +1131,7 @@ The bibliographic checks and the full-text reading recorded here were carried ou
 | Hartung et al. (2010), *ICTD '10*, pp. 1-12 | https://doi.org/10.1145/2369220.2369236 | Correct; page range confirmed in the Crossref registry | Full text; description of the suite p. 1 |
 | Hawkins (1980), *Identification of Outliers* | https://doi.org/10.1007/978-94-015-3994-4 | Correct. Confirmed in the Crossref registry, which lists Springer's digitised edition of the 1980 Chapman and Hall book | Not consulted. No longer cited anywhere in the text, so **removed from the reference list** |
 | Hodge and Austin (2004), *Artificial Intelligence Review* 22, pp. 85-126 | https://doi.org/10.1007/s10462-004-4304-y | Correct | Full text of the authors' manuscript; single-dimensional methods and boxplots, section 2, previously given as section 3 |
-| Hoogeveen and Pape (eds) (2020), *Data Collection in Fragile States* | https://doi.org/10.1007/978-3-030-25120-8 | Correct; open access, first published online October 2019 | Full text of the foreword, from which the quotation is taken. The foreword is by a World Bank Global Practice director, not the editors, and the report no longer presents it as the editors' aim; individual chapters not read |
+| Hoogeveen and Pape (eds) (2020), *Data Collection in Fragile States* | https://doi.org/10.1007/978-3-030-25120-8 | Correct; open access, first published online October 2019 | Full text of the foreword, from which the quotation is taken. The foreword is by a World Bank Global Practice director, not the editors, and the report no longer presents it as the editors' aim; individual chapters not read. The claims in section 2.4 about thin supervisory capacity and the cost of back-checking, which earlier read as if they came from this book, are now stated as this project's own argument, and the book is cited for its scope only (17 October 2026) |
 | Hubert and Vandervieren (2008), *Computational Statistics & Data Analysis* 52, pp. 5186-5201 | https://doi.org/10.1016/j.csda.2007.11.008 | Correct | Full text of the authors' accepted manuscript; exceedance probabilities, the practitioner quotation and the semi-interquartile fence all in section 1. Section numbers are cited rather than pages because the manuscript is not paginated as published |
 | Iglewicz and Hoaglin (1993), *How to Detect and Handle Outliers* | ISBN 978-0-87389-247-6 | Correct; volume 16 of the ASQC Basic References in Quality Control | Not consulted; cited only for the unsuitability of mean-and-standard-deviation methods on skewed data. A citation for the distribution-free property of rank tests, which the book does not concern, has been removed |
 | Japkowicz and Stephen (2002), *Intelligent Data Analysis* 6(5), pp. 429-449 | https://doi.org/10.3233/IDA-2002-6504 | Correct | Abstract, which states the systematic variation of the imbalance level and its interaction with concept complexity and training set size; cited only for that. Earlier wording that the paper recommends a prevalence sweep, and that such a sweep is the standard mitigation, went beyond the abstract and has been corrected |
@@ -1040,6 +1145,7 @@ The bibliographic checks and the full-text reading recorded here were carried ou
 | SurveyCTO (n.d.-a), *Field type: text audit* | https://docs.surveycto.com/02-designing-forms/01-core-concepts/03zd.field-types-text-audit.html | Correct | Full page read: the default and eventlog layouts |
 | SurveyCTO (n.d.-b), *Collecting high-quality data* | https://docs.surveycto.com/04-monitoring-and-management/02-managing-for-quality/01.collecting-high-quality-data.html | Correct | Full page read: speed limits, speed violation counts, automated quality checks |
 | Tukey (1977), *Exploratory Data Analysis* | ISBN 978-0-201-07616-5 | Correct; confirmed in the Open Library ISBN record | Not consulted. Cited as a secondary source, as cited in Hubert and Vandervieren (2008, section 1), so **removed from the reference list** in line with the other works cited through them |
+| Wirth and Hipp (2000), *Proceedings of the 4th International Conference on the Practical Applications of Knowledge Discovery and Data Mining*, pp. 29-39 | No DOI. Authors' copy hosted at https://mubsep.mubs.ac.ug/mod/resource/view.php?id=49290, checked 17 October 2026 | Authors, title and content confirmed against the authors' copy, which carries no proceedings header or page numbers. Venue, Manchester and pp. 29-39 are as given in published reference lists; one list gives pp. 29-40, and the proceedings volume itself was not obtained | Full text; the sequence of phases is not strict, section 3.2; the advice to plan for iterations explicitly and the observation that no phase is completely done before the next starts, section 5 |
 | Yan and Tourangeau (2008), *Applied Cognitive Psychology* 22(1), pp. 51-68 | https://doi.org/10.1002/acp.1331 | Correct; confirmed in the Crossref registry | Full text; determinants of response time p. 51, positive skew p. 52, the disclaimer about data quality p. 56. The draft's claim that the paper links fast answers to lower quality was not supported, since the authors say their emphasis is not on that relation, and has been corrected. The introduction also cited them for fast completion indicating rushed or fabricated responses, which they do not discuss; that citation now rests on Bushery et al. and Zhang and Conrad, and Yan and Tourangeau are cited only for longer response times signalling extra processing (p. 56) |
 | Zhang and Conrad (2014), *Survey Research Methods* 8(2), pp. 127-135 | https://ojs.ub.uni-konstanz.de/srm/article/view/5453 | Correct | Full text; the 300 ms per word threshold and the straightlining association, section 2; age and education findings, p. 127. The report had said the tendency was stronger among younger and less educated respondents, merging two findings; it now separates them |
 
